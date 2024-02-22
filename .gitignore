@@ -1,0 +1,34 @@
+# Ignore compiled Python files
+*.pyc
+
+# Ignore virtual environment directories
+venv/
+
+# Ignore log files
+*.log
+
+# Ignore configuration files
+config.ini
+
+# Ignore directories
+glas_code/
+test_files/
+results/
+myvenv/
+tickets_ioc/
+__pycache__/
+
+# Ignore python files
+tb_cred.py
+config.py
+mongo_craden.py
+
+# Ignore test files
+test_main.py
+test_whitelist_file.py
+
+# Ignore data files
+*.csv
+*.txt
+*.gz
+*.json
