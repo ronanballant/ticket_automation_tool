@@ -1,18 +1,16 @@
 import csv
 
 from config import logger, results_file_path
-from rule_fetcher import RuleFetcher
 
 
 class TicketResolver:
     DAYS_SINCE_CREATION = 30  # days since creation
 
-    def __init__(self, entity, file_time) -> None:
+    def __init__(self, entity, rules, file_time) -> None:
         self.entity = entity
-        self.file = RuleFetcher().file
+        self.rules = rules
         self.file_path = results_file_path + f"{file_time}_results.csv"
         self.prepare_fp_rule_query()
-        self.create_rule_table()
         self.match_rule()
         self.write_resolutions()
 
@@ -52,91 +50,6 @@ class TicketResolver:
                 self.entity.domain_age = "new"
         else:
             self.entity.domain_age = "-"
-
-    def create_rule_table(self):
-        logger.info("Generating rule sets")
-        transformed_data = {}
-
-        for row in self.file:
-            queue = row["group"]
-            rule_type = row["type"]
-            is_in_intel = str_to_bool(row["is_in_intel"])
-            is_filtered = str_to_bool(row["is_filtered"])
-            category_strength = row["category_strength"]
-            age = row["age"]
-            min_positives = row["min_positives"]
-            max_positives = row["max_positives"]
-            min_confidence = row["min_confidence"]
-            max_confidence = row["max_confidence"]
-            verdict = row["verdict"]
-            response = row["response"]
-
-            rule_dict = {"verdict": verdict, "response": response}
-
-            if queue not in transformed_data:
-                transformed_data[queue] = {}
-            if rule_type not in transformed_data[queue]:
-                transformed_data[queue][rule_type] = {}
-            if is_in_intel not in transformed_data[queue][rule_type]:
-                transformed_data[queue][rule_type][is_in_intel] = {}
-            if is_filtered not in transformed_data[queue][rule_type][is_in_intel]:
-                transformed_data[queue][rule_type][is_in_intel][is_filtered] = {}
-            if (
-                category_strength
-                not in transformed_data[queue][rule_type][is_in_intel][is_filtered]
-            ):
-                transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ] = {}
-            if (
-                age
-                not in transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ]
-            ):
-                transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age] = {}
-            if (
-                min_positives
-                not in transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age]
-            ):
-                transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives] = {}
-            if (
-                max_positives
-                not in transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives]
-            ):
-                transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives][max_positives] = {}
-            if (
-                min_confidence
-                not in transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives][max_positives]
-            ):
-                transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives][max_positives][min_confidence] = {}
-            if (
-                max_confidence
-                not in transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives][max_positives][min_confidence]
-            ):
-                transformed_data[queue][rule_type][is_in_intel][is_filtered][
-                    category_strength
-                ][age][min_positives][max_positives][min_confidence][
-                    max_confidence
-                ] = rule_dict
-
-        self.rules = transformed_data
 
     def match_rule(self):
         if self.entity.has_data is True:
@@ -243,15 +156,3 @@ class TicketResolver:
                 # add webroot
         except Exception as e:
             logger.error("Error writing to {}. Error: {}", self.file_path, e)
-
-
-def str_to_bool(string):
-    if type(string) == str:
-        if string.lower() == "true":
-            return True
-        elif string.lower() == "-":
-            return string
-        else:
-            return False
-    else:
-        return string

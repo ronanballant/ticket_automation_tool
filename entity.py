@@ -1,3 +1,4 @@
+import tldextract as tld
 from config import logger
 
 
@@ -14,17 +15,17 @@ class Entity:
         self.ticket_type = ticket_type
         self.reporter = reporter
         self.clean_domain()
+        self.get_core_domain()
         self.append_entity()
 
     def append_entity(self):
         whitelist_domains = [
             "virginmedia.com",
-            "www.virginmedia.com",
             "urldefense.com",
-            "www.o2.co.uk",
             "o2.co.uk",
+            "nomdebug.com",
         ]
-        if self.entity not in whitelist_domains:
+        if self.core_domain not in whitelist_domains:
             Entity.entity_list.append(self)
             logger.info("{} entity instance created", self.entity)
 
@@ -49,3 +50,6 @@ class Entity:
         self.domain = "".join(
             char for char in self.entity if char not in characters_to_remove
         ).strip()
+
+    def get_core_domain(self):
+        self.core_domain = tld.extract(self.entity).registered_domain

@@ -6,7 +6,7 @@ import time
 import requests
 
 import get_az_secret
-from config import (cert_name, cert_path, close_ticket_api, jira_ticket_api,
+from config import (cert_name, cert_path, jira_ticket_api,
                     key_name, key_path, logger, response_file_path,
                     unresolved_file_path)
 
@@ -15,12 +15,8 @@ class TicketResponder:
     def __init__(self, entities):
         self.entities = entities
         self.time = time.time()
-        self.unresolved_file_path = (
-            unresolved_file_path + f"{self.time}_domains_to_analyse.csv"
-        )
-        self.response_file_path = (
-            response_file_path + f"{self.time}_result_comments.csv"
-        )
+        self.unresolved_file_path = unresolved_file_path + f"{self.time}_domains_to_analyse.csv"
+        self.response_file_path = response_file_path + f"{self.time}_result_comments.csv"
         self.get_keys()
         self.group_tickets()
 
@@ -47,13 +43,8 @@ class TicketResponder:
             else:
                 pass
 
-            if entity.resolution.lower() != "in progress":
-                tickets[entity.ticket_id]["responses"].append((entity.comment))
-            else:
-                tickets[entity.ticket_id]["responses"].append(
-                    (f"{entity.entity} is currently being analysed.")
-                )
-                open_tickets.append((entity.domain, entity.ticket_id, entity.response))
+            tickets[entity.ticket_id]["responses"].append((entity.comment))
+            open_tickets.append((entity.domain, entity.ticket_id, entity.comment))
 
         self.responses = tickets
         self.unresolved_entities = open_tickets
@@ -65,17 +56,17 @@ class TicketResponder:
             end = "\n\nIf there are any further questions we will be happy to respond.\nSecOPs Team"
             comment = greeting + "\n\n".join(values.get("responses")) + end
             send_comment = False
-            resolution = "resolved"
+            resolved = True
             for response in values.get("responses"):
-                if "is currently being analysed" in response:
-                    resolution = "in progress"
+                if "is currently under investigation" in response:
+                    resolved = False
                 else:
                     send_comment = True
 
             if send_comment is True:
                 self.add_comment(ticket, comment)
 
-            self.close_ticket(ticket, resolution)
+            self.close_ticket(ticket, resolved)
             # self.save_responses(ticket, comment)
 
         os.remove(cert_path)
@@ -83,7 +74,7 @@ class TicketResponder:
 
     def add_comment(self, ticket, comment, assignee="rballant"):
         logger.info("Adding comment to {}", ticket)
-        url = jira_ticket_api + "{ticket}"
+        url = jira_ticket_api + ticket
 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
@@ -95,7 +86,7 @@ class TicketResponder:
         }
 
         response = requests.request(
-            "PUT", url, json=payload, cert=(self.cert_path, self.key_path), verify=False
+            "PUT", url, json=payload, headers=headers, cert=(self.cert_path, self.key_path), verify=False
         )
 
     def create_sps_ticket(self):
@@ -111,7 +102,7 @@ class TicketResponder:
             self.entities, key=lambda x: x.ticket_id, reverse=False
         )
         for entity in sorted_entities:
-            if entity.resolution == "In Progress":
+            if entity.resolution.lower() == "in progress":
                 line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.response}|"
                 open_list.append(line)
             else:
@@ -179,7 +170,7 @@ class TicketResponder:
         ]
         sorted_entities = sorted(self.entries, key=lambda x: x.ticket_id, reverse=False)
         for entity in sorted_entities:
-            if entity.resolution == "In Progress":
+            if entity.resolution.lower() == "in progress":
                 line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.confidence}|{entity.resolution}|{entity.response}|"
                 open_list.append(line)
             else:
@@ -237,16 +228,16 @@ class TicketResponder:
 
         self.add_comment(issue, comment, assignee="")
 
-    def close_ticket(self, ticket, resolution):
+    def close_ticket(self, ticket, resolved):
         logger.info("Resolving {}", ticket)
-        url = close_ticket_api + f"{ticket}/transitions"
+        url = jira_ticket_api + f"{ticket}/transitions"
 
         headers = {"Content-Type": "application/json"}
 
-        if resolution == "in progress":
-            payload = {"transition": {"id": "4"}}
+        if resolved is True:
+            payload = { "transition": {"id": "5"}}
         else:
-            payload = {"transition": {"id": "5"}}
+            payload = { "transition": {"id": "4"}}
 
         response = requests.request(
             "PUT",

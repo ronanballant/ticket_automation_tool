@@ -6,6 +6,7 @@ from etp_intel_fetcher import EtpIntelFetcher
 from intel_processor import IntelProcessor
 from jira_ticket_resolver import TicketResolver
 from response_creator import ResponseCreator
+from rule_fetcher import RuleFetcher
 from sps_intel_fetcher import SpsIntelFetcher
 from ticket_fetcher import TicketFetcher
 from ticket_responder import TicketResponder
@@ -28,10 +29,11 @@ def run_sps_process():
 
     SpsIntelFetcher(Entity.entity_list)
 
+    rule_set = RuleFetcher()
     file_time = time.time()
     for entity in Entity.entity_list:
         VirusTotalFetcher(entity)
-        TicketResolver(entity, file_time)
+        TicketResolver(entity, rule_set.rules, file_time)
         ResponseCreator(entity)
 
     responder = TicketResponder(Entity.entity_list)

@@ -59,6 +59,7 @@ class SpsIntelFetcher:
         entity.intel_feed = "-"
         entity.intel_confidence = "-"
         entity.intel_source = "-"
+        entity.confidence_level = "-"
         entity.is_in_intel = False
         entity.e_list_entry = False
 
