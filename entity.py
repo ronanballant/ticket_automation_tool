@@ -6,10 +6,11 @@ class Entity:
     entity_list = []
 
     def __init__(
-        self, queue, domain, entity_type, ticket, ticket_type, reporter
+        self, queue, domain, entity_type, urls, ticket, ticket_type, reporter
     ) -> None:
         self.queue = queue
         self.entity = domain
+        self.urls = urls
         self.entity_type = entity_type
         self.ticket_id = ticket
         self.ticket_type = ticket_type
