@@ -19,13 +19,14 @@ def run_sps_process():
     for ticket, values in tickets.items():
         ticket_id = ticket
         domains = values.get("domains")
+        urls = values.get("urls")
         ticket_type = values.get("ticket_type")
         reporter = values.get("reporter")
         entity_type = values.get("entity_type")
 
         if ticket_type == "FN" or ticket_type == "FP":
             for domain in domains:
-                Entity("SPS", domain, entity_type, ticket_id, ticket_type, reporter)
+                Entity("SPS", domain, entity_type, urls, ticket_id, ticket_type, reporter)
 
     SpsIntelFetcher(Entity.entity_list)
 
@@ -49,13 +50,14 @@ def run_etp_process():
     for ticket, values in tickets.items():
         ticket_id = ticket
         domains = values.get("domains")
+        urls = values.get("urls")
         ticket_type = values.get("ticket_type")
         reporter = values.get("reporter")
         entity_type = values.get("entity_type")
 
         if ticket_type == "FN" or ticket_type == "FP":
             for domain in domains:
-                Entity("SPS", domain, entity_type, ticket_id, ticket_type, reporter)
+                Entity("ETP", domain, entity_type, urls, ticket_id, ticket_type, reporter)
 
     EtpIntelFetcher(Entity.entity_list)
 

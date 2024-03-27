@@ -53,69 +53,73 @@ class TicketResolver:
 
     def match_rule(self):
         if self.entity.has_data is True:
-            if self.entity.e_list_entry is False:
-                logger.info("Matching data against rule set")
-                group = self.rules.get(self.entity.queue, self.rules.get("-"))
-                type_match = group.get(self.entity.ticket_type, group.get("-"))
-                is_in_intel = type_match.get(
-                    self.entity.is_in_intel, type_match.get("-")
-                )
-                is_filtered = is_in_intel.get(
-                    self.entity.is_filtered, is_in_intel.get("-")
-                )
-                category_strength = is_filtered.get(
-                    self.entity.intel_category_strength, is_filtered.get("-")
-                )
-                age = category_strength.get(
-                    self.entity.domain_age, category_strength.get("-")
-                )
+            if self.subdomain_count <= 3:
+                if self.entity.e_list_entry is False:
+                    logger.info("Matching data against rule set")
+                    group = self.rules.get(self.entity.queue, self.rules.get("-"))
+                    type_match = group.get(self.entity.ticket_type, group.get("-"))
+                    is_in_intel = type_match.get(
+                        self.entity.is_in_intel, type_match.get("-")
+                    )
+                    is_filtered = is_in_intel.get(
+                        self.entity.is_filtered, is_in_intel.get("-")
+                    )
+                    category_strength = is_filtered.get(
+                        self.entity.intel_category_strength, is_filtered.get("-")
+                    )
+                    age = category_strength.get(
+                        self.entity.domain_age, category_strength.get("-")
+                    )
 
-                if self.entity.positives != "-":
-                    min_positives = {}
-                    max_positives = {}
-                    for key, item_value in age.items():
-                        if int(key) <= self.entity.positives:
-                            new_values = {
-                                key: value for key, value in item_value.items()
-                            }
-                            min_positives.update(new_values)
+                    if self.entity.positives != "-":
+                        min_positives = {}
+                        max_positives = {}
+                        for key, item_value in age.items():
+                            if int(key) <= self.entity.positives:
+                                new_values = {
+                                    key: value for key, value in item_value.items()
+                                }
+                                min_positives.update(new_values)
 
-                    for key, item_value in min_positives.items():
-                        if int(key) >= self.entity.positives:
-                            new_values = {
-                                key: value for key, value in item_value.items()
-                            }
-                            max_positives.update(new_values)
+                        for key, item_value in min_positives.items():
+                            if int(key) >= self.entity.positives:
+                                new_values = {
+                                    key: value for key, value in item_value.items()
+                                }
+                                max_positives.update(new_values)
+                    else:
+                        min_positives = age.get(self.entity.positives)
+                        max_positives = min_positives.get(self.entity.positives)
+
+                    if self.entity.confidence_level != "-":
+                        min_confidence = {}
+                        match = {}
+                        for key, item_value in max_positives.items():
+                            if int(key) <= self.entity.confidence_level:
+                                new_values = {
+                                    key: value for key, value in item_value.items()
+                                }
+                                min_confidence.update(new_values)
+
+                        for key, item_value in min_confidence.items():
+                            if int(key) >= self.entity.confidence_level:
+                                new_values = {
+                                    key: value for key, value in item_value.items()
+                                }
+                                match.update(new_values)
+                    else:
+                        min_confidence = max_positives.get(self.entity.confidence_level)
+                        match = min_confidence.get(self.entity.confidence_level)
+
+                    self.entity.resolution = match["verdict"]
+                    response = match["response"].replace("\\n", "\n")
+                    self.entity.response = response
                 else:
-                    min_positives = age.get(self.entity.positives)
-                    max_positives = min_positives.get(self.entity.positives)
-
-                if self.entity.confidence_level != "-":
-                    min_confidence = {}
-                    match = {}
-                    for key, item_value in max_positives.items():
-                        if int(key) <= self.entity.confidence_level:
-                            new_values = {
-                                key: value for key, value in item_value.items()
-                            }
-                            min_confidence.update(new_values)
-
-                    for key, item_value in min_confidence.items():
-                        if int(key) >= self.entity.confidence_level:
-                            new_values = {
-                                key: value for key, value in item_value.items()
-                            }
-                            match.update(new_values)
-                else:
-                    min_confidence = max_positives.get(self.entity.confidence_level)
-                    match = min_confidence.get(self.entity.confidence_level)
-
-                self.entity.resolution = match["verdict"]
-                response = match["response"].replace("\\n", "\n")
-                self.entity.response = response
+                    self.entity.resolution = "In Progress"
+                    self.entity.response = f"Entity in exact match lists with {self.entity.url_count} paths"
             else:
                 self.entity.resolution = "In Progress"
-                self.entity.response = "Entity in exact match lists"
+                self.entity.response = f"Entity has {self.entity.subdomain_count} subdomains in the intel"
         else:
             logger.info("No data to match against rule set")
             self.entity.resolution = "In Progress"

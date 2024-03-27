@@ -70,7 +70,7 @@ class TicketFetcher:
                             reporter = "[~{}]".format(user_name)
                         description = fields.get("description")
                         if description:
-                            domains, entity_type = collect_domains(description)
+                            domains, urls = collect_entities(description, ticket_id)
                         summary = fields.get("summary")
                         if summary:
                             ticket_type = get_ticket_type(summary)
@@ -81,9 +81,10 @@ class TicketFetcher:
                             "reporter": reporter,
                             "description": description,
                             "domains": list(domains),
+                            "urls": list(urls),
+                            "entity_type": "DOMAIN",
                             "components": fields.get("components"),
                             "labels": entry.get("labels"),
-                            "entity_type": entity_type,
                         }
         else:
             logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
@@ -92,17 +93,34 @@ class TicketFetcher:
         os.remove(key_path)
 
 
-def collect_domains(desc):
-    logger.info("Extracting domains from tickets")
-    desc = clean_description(desc)
+def collect_urls(description):
+    pattern = re.compile(
+        "([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*"
+    )
+    matches = re.finditer(pattern, description)
+    urls = [match.group(0) for match in matches]
+    urls = sorted(urls, key=len, reverse=True)
+    for url in urls:
+        description = description.replace(url, " ")
+    return description, urls
+
+
+def collect_domains(decsription):
     pattern = re.compile(
         "((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}"
     )
-    matches = re.finditer(pattern, desc)
-    domains = [match.group(0) for match in matches]
-    logger.info(f"Extracted {len(set(domains))} domains from tickets")
-    entity_type = "DOMAIN"
-    return set(domains), entity_type
+    matches = re.finditer(pattern, decsription)
+    domains = [(match.group(0)) for match in matches]
+    return domains
+
+
+def collect_entities(desc, ticket):
+    logger.info("Extracting entities from tickets")
+    desc = clean_description(desc)
+    desc, urls = collect_urls(desc)
+    domains = collect_domains(desc)
+    logger.info(f"Extracted {len(set(domains))} domains and {len(set(urls))} from {ticket}")
+    return set(domains), set(urls)
 
 
 def clean_description(description):

@@ -68,6 +68,8 @@ def get_domain_data(domains):
             "intel_feed": result.intel.feed,
             "intel_confidence": result.intel.confidence,
             "intel_source": result.intel.source,
+            "subdomain_count": result.intel.subdomain_count,
+            "url_count": result.intel.url_count,
             "is_in_intel": result.intel.is_in_intel,
             "e_list_entry": result.intel.e_list_entry,
         }

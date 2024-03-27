@@ -33,7 +33,7 @@ class Intel:
         )
 
         grep_process = subprocess.Popen(
-            ["grep", "-m 1", pattern],
+            ["grep", "-w", pattern],
             stdin=cat_feed_process.stdout,
             stdout=subprocess.PIPE,
         )
@@ -71,58 +71,78 @@ class Intel:
         self.e_list_entry = False
 
         if self.is_in_intel is False:
-            e_cat_feed_process = subprocess.Popen(
-                [
-                    "/usr/local/nom/bin/cat-feed",
-                    "--type",
-                    "pmlist",
-                    "tpsvc_malware_lv5_e",
-                    "tpsvc_phishing_lv5_e",
-                    "tpsvc_unidentified_lv5_e",
-                    "tpsvc_malware_lv4_e",
-                    "tpsvc_phishing_lv4_e",
-                    "tpsvc_unidentified_lv4_e",
-                    "tpsvc_malware_lv3_e",
-                    "tpsvc_phishing_lv3_e",
-                    "tpsvc_unidentified_lv3_e",
-                ],
-                stdout=subprocess.PIPE,
+            self.get_e_list_entries()
+            self.subdomain_count = 0
+        else:
+            wc_process = subprocess.run(
+                ["wc", "-l"], input=grep_decoded, stdout=subprocess.PIPE
             )
+            self.subdomain_count = int(wc_process.stdout.decode("utf-8"))
+            self.url_count = 0
+            
 
-            e_grep_process = subprocess.Popen(
-                ["grep", "-m 1", pattern],
-                stdin=e_cat_feed_process.stdout,
-                stdout=subprocess.PIPE,
-            )
-            e_grep_decoded = e_grep_process.stdout.read()
+    def get_e_list_entry(self):        
+        pattern = f"\s{self.domain}\s"
+        e_cat_feed_process = subprocess.Popen(
+            [
+                "/usr/local/nom/bin/cat-feed",
+                "--type",
+                "pmlist",
+                "tpsvc_malware_lv5_e",
+                "tpsvc_phishing_lv5_e",
+                "tpsvc_unidentified_lv5_e",
+                "tpsvc_malware_lv4_e",
+                "tpsvc_phishing_lv4_e",
+                "tpsvc_unidentified_lv4_e",
+                "tpsvc_malware_lv3_e",
+                "tpsvc_phishing_lv3_e",
+                "tpsvc_unidentified_lv3_e",
+            ],
+            stdout=subprocess.PIPE,
+        )
 
-            e_cut_feed = subprocess.run(
-                ["cut", "-f", "8"], input=e_grep_decoded, stdout=subprocess.PIPE
-            )
-            e_feed = e_cut_feed.stdout.decode("utf-8").replace("\n", "")
+        e_grep_process = subprocess.Popen(
+            ["grep", "-w", pattern],
+            stdin=e_cat_feed_process.stdout,
+            stdout=subprocess.PIPE,
+        )
+        e_grep_decoded = e_grep_process.stdout.read()
 
-            e_cut_data = subprocess.Popen(
-                ["cut", "-f", "6"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
-            )
-            e_data, err = e_cut_data.communicate(e_grep_decoded)
+        e_cut_feed = subprocess.run(
+            ["cut", "-f", "8"], input=e_grep_decoded, stdout=subprocess.PIPE
+        )
+        e_feed = e_cut_feed.stdout.decode("utf-8").replace("\n", "")
 
-            e_source_string = subprocess.run(
-                ["cut", "-d", '"', "-f", "6"], input=e_data, stdout=subprocess.PIPE
-            )
-            e_source = e_source_string.stdout.decode("utf-8").replace("\n", "")
+        e_cut_data = subprocess.Popen(
+            ["cut", "-f", "6"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
+        e_data, err = e_cut_data.communicate(e_grep_decoded)
 
-            e_confidence_string = subprocess.run(
-                ["cut", "-d", '"', "-f", "3"], input=e_data, stdout=subprocess.PIPE
-            )
-            e_confidence = (
-                e_confidence_string.stdout.decode("utf-8")
-                .replace("\n", "")
-                .replace(":", "")
-                .replace(",", "")
-            )
+        e_source_string = subprocess.run(
+            ["cut", "-d", '"', "-f", "6"], input=e_data, stdout=subprocess.PIPE
+        )
+        e_source = e_source_string.stdout.decode("utf-8").replace("\n", "")
 
-            self.feed = e_feed
-            self.confidence = e_confidence
-            self.source = e_source
-            self.is_in_intel = True if self.feed else False
-            self.e_list_entry = True
+        e_confidence_string = subprocess.run(
+            ["cut", "-d", '"', "-f", "3"], input=e_data, stdout=subprocess.PIPE
+        )
+        e_confidence = (
+            e_confidence_string.stdout.decode("utf-8")
+            .replace("\n", "")
+            .replace(":", "")
+            .replace(",", "")
+        )
+
+        self.feed = e_feed
+        self.confidence = e_confidence
+        self.source = e_source
+        self.is_in_intel = True if self.feed else False
+        self.e_list_entry = True
+
+        if self.e_list_entry is True:
+            wc_process = subprocess.run(
+                ["wc", "-l"], input=e_grep_decoded, stdout=subprocess.PIPE
+            )
+            self.url_count = int(wc_process.stdout.decode("utf-8"))
+        else:
+            self.url_count = 0

@@ -50,6 +50,8 @@ class SpsIntelFetcher:
                     if entity.intel_confidence != "-":
                         if entity.intel_confidence:
                             entity.intel_confidence = float(entity.intel_confidence)
+                    entity.subdomain_count = result.get("subdomain_count", 0)
+                    entity.url_count = result.get("url_count", 0)
                     entity.intel_source = result.get("intel_source", "-")
                     entity.e_list_entry = str_to_bool(result.get("e_list_entry", False))
                 else:
@@ -60,6 +62,9 @@ class SpsIntelFetcher:
         entity.intel_confidence = "-"
         entity.intel_source = "-"
         entity.confidence_level = "-"
+        entity.subdomains_in_intel = "-"
+        entity.subdomain_count = 0
+        entity.url_count = 0 
         entity.is_in_intel = False
         entity.e_list_entry = False
 

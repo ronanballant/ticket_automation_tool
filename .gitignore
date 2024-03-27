@@ -26,6 +26,7 @@ mongo_craden.py
 # Ignore test files
 test_main.py
 test_whitelist_file.py
+test.py
 
 # Ignore data files
 *.csv
