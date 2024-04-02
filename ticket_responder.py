@@ -93,20 +93,20 @@ class TicketResponder:
         allow_list_entries = []
         block_list_entries = []
         closed_list = [
-            "||status||ticket_id||ticket_type||entity||Malicious Reports||last_seen||categories||Feed||Source||Confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||subdomains||malicious reports||last_seen||categories||feed||source||confidence||resolution||response||"
         ]
         open_list = [
-            "||status||ticket_id||ticket_type||entity||Malicious Reports||last_seen||categories||Feed||Source||Confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||subdomains||malicious reports||last_seen||categories||feed||source||confidence||resolution||response||"
         ]
         sorted_entities = sorted(
             self.entities, key=lambda x: x.ticket_id, reverse=False
         )
         for entity in sorted_entities:
             if entity.resolution.lower() == "in progress":
-                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.response}|"
+                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.response}|"
                 open_list.append(line)
             else:
-                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.response}|"
+                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.response}|"
                 closed_list.append(line)
 
             if entity.resolution.lower() == "allow":
@@ -163,18 +163,18 @@ class TicketResponder:
         allow_list_entries = []
         block_list_entries = []
         closed_list = [
-            "||status||ticket_id||ticket_type||entity||Malicious Reports||last_seen||categories||Feed||Source||Confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||subdomains||malicious_reports||last_seen||categories||feed||source||confidence||resolution||response||"
         ]
         open_list = [
-            "||status||ticket_id||ticket_type||entity||Malicious Reports||last_seen||categories||Feed||Source||Confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||subdomains||malicious_reports||last_seen||categories||feed||source||confidence||resolution||response||"
         ]
         sorted_entities = sorted(self.entries, key=lambda x: x.ticket_id, reverse=False)
         for entity in sorted_entities:
             if entity.resolution.lower() == "in progress":
-                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.confidence}|{entity.resolution}|{entity.response}|"
+                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.confidence}|{entity.resolution}|{entity.response}|"
                 open_list.append(line)
             else:
-                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.confidence}|{entity.resolution}|{entity.response}|"
+                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.confidence}|{entity.resolution}|{entity.response}|"
                 closed_list.append(line)
 
             if entity.resolution.lower() == "allow":
