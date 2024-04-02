@@ -21,10 +21,34 @@ class Entity:
 
     def append_entity(self):
         whitelist_domains = [
-            "virginmedia.com",
-            "urldefense.com",
-            "o2.co.uk",
+            "abuse.ch",
+            "akamai.com",
+            "alienvault.com",
+            "any.run",
+            "bing.com",
+            "bluecoat.com",
+            "brightcloud.com",
+            "fortiguard.com",
+            "google.com",
+            "hybrid-analysis.com",
+            "joesandbox.com",
             "nomdebug.com",
+            "o2.co.uk",
+            "paloaltonetworks.com",
+            "checkphish.ai",
+            "phishtank.org",
+            "scamadviser.com",
+            "slack.com",
+            "sucuri.net",
+            "talium.co",
+            "talosintelligence.com",
+            "trendmicro.com",
+            "urldefense.com",
+            "urlscan.io",
+            "urlvoid.com",
+            "virginmedia.com",
+            "virustotal.com",
+            "yahoo.com",
         ]
         if self.core_domain not in whitelist_domains:
             Entity.entity_list.append(self)

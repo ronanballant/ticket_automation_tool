@@ -17,14 +17,20 @@ class TicketFetcher:
         self.parse_tickets()
 
     def get_keys(self):
-        cert = get_az_secret.get_az_secret(cert_name)
-        self.cert_path = cert_path
-        with open(self.cert_path, "w") as f:
-            f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
-        key = get_az_secret.get_az_secret(key_name)
-        self.key_path = key_path
-        with open(self.key_path, "w") as f:
-            f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
+        self.cert_path = 'osemyono.crt'
+        # with open(self.cert_path, "r") as f:
+        #     cert = f.readlines()
+
+        # with open(self.cert_path, 'w') as f:
+        #     f.write(cert[0].replace('\\n','\n').replace('\n ','\n'))
+
+        # cert = get_az_secret.get_az_secret('osemyono-crt')
+        # key = get_az_secret.get_az_secret('osemyono-key')
+        self.key_path = 'osemyono.key'
+        # with open(self.key_path, "r") as f:
+        #     key = f.readlines()
+        # with open(self.key_path, 'w') as f:
+        #     f.write(key[0].replace('\\n','\n').replace('\n ','\n'))
 
     def get_tickets(self):
         logger.info("Fetching tickets from {} queue", self.queue.lower())
@@ -33,7 +39,7 @@ class TicketFetcher:
             jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
 
         if self.queue.lower() == "etp":
-            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee IS EMPTY and "Next Steps" ~ SecOps'
+            jql_query = 'project="Enterprise Tier 3 Escalation Support" and "Next Steps" ~ SecOps'
 
         params = {"jql": jql_query, "maxResults": 100}
 
@@ -53,9 +59,6 @@ class TicketFetcher:
             self.tickets = {}
             if issues:
                 for entry in issues:
-                    for key, val in entry["fields"].items():
-                        if "custom" not in key:
-                            print(key, val)
                     ticket_id = entry.get("key")
                     fields = entry.get("fields")
                     if fields:
@@ -89,8 +92,8 @@ class TicketFetcher:
         else:
             logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
 
-        os.remove(cert_path)
-        os.remove(key_path)
+        # os.remove(cert_path)
+        # os.remove(key_path)
 
 
 def collect_urls(description):
