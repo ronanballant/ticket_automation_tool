@@ -20,6 +20,10 @@ class EtpIntelFetcher:
             cursor = blacklist.find({"etp_record": entity.etp_domain})
             entity.mongo_results = [record for record in cursor]
 
+            sudomain_pattern = f".*.{entity.etp_domain}"
+            cursor = blacklist.find({{"#data": {"$regex": sudomain_pattern}}})
+            entity.subdomain_count = len(cursor)
+
     def assign_results(self):
         etp_domain_status_list = []
 
