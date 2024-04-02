@@ -81,6 +81,7 @@ class SpsIntelFetcher:
                         entity.intel_source,
                         entity.is_in_intel,
                         entity.e_list_entry,
+                        entity.subdomain_count,
                     ]
                 )
 
@@ -96,6 +97,7 @@ class SpsIntelFetcher:
                     "intel_source": row[3],
                     "is_in_intel": row[4],
                     "e_list_entry": row[5],
+                    "subdomain_count": row[6],
                 }
 
             self.assign_results()
