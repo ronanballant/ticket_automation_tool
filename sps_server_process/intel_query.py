@@ -9,7 +9,7 @@ class Intel:
         self.get_intel_feed()
 
     def get_intel_feed(self):
-        pattern = f"\s{self.domain}\s"
+        pattern = f"{self.domain}\s"
         cat_feed_process = subprocess.Popen(
             [
                 "/usr/local/nom/bin/cat-feed",
@@ -32,12 +32,19 @@ class Intel:
             stdout=subprocess.PIPE,
         )
 
-        grep_process = subprocess.Popen(
+        grep_all_process = subprocess.Popen(
             ["grep", "-w", pattern],
-            stdin=cat_feed_process.stdout,
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
-        grep_decoded = grep_process.stdout.read()
+        grep_all_decoded = grep_all_process.communicate(input=cat_feed_process.stdout.read())[0]
+
+        grep_process = subprocess.Popen(
+            ["grep", "-m", "1", pattern],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
+        grep_decoded = grep_process.communicate(input=grep_all_decoded)[0]
 
         cut_feed = subprocess.run(
             ["cut", "-f", "8"], input=grep_decoded, stdout=subprocess.PIPE
@@ -71,11 +78,13 @@ class Intel:
         self.e_list_entry = False
 
         if self.is_in_intel is False:
-            self.get_e_list_entries()
+            self.get_e_list_entry()
             self.subdomain_count = 0
         else:
             wc_process = subprocess.run(
-                ["wc", "-l"], input=grep_decoded, stdout=subprocess.PIPE
+                ["wc", "-l"], 
+                input=grep_all_decoded, 
+                stdout=subprocess.PIPE
             )
             self.subdomain_count = int(wc_process.stdout.decode("utf-8"))
             self.url_count = 0
@@ -101,12 +110,20 @@ class Intel:
             stdout=subprocess.PIPE,
         )
 
-        e_grep_process = subprocess.Popen(
+
+        e_grep_all_process = subprocess.Popen(
             ["grep", "-w", pattern],
-            stdin=e_cat_feed_process.stdout,
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
-        e_grep_decoded = e_grep_process.stdout.read()
+        e_grep_all_decoded = e_grep_all_process.communicate(input=e_cat_feed_process.stdout.read())[0]
+
+        e_grep_process = subprocess.Popen(
+            ["grep", "-m", "1", pattern],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
+        e_grep_decoded = e_grep_process.communicate(input=e_grep_all_decoded)[0]
 
         e_cut_feed = subprocess.run(
             ["cut", "-f", "8"], input=e_grep_decoded, stdout=subprocess.PIPE

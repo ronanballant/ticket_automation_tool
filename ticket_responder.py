@@ -64,6 +64,7 @@ class TicketResponder:
                     send_comment = True
 
             if send_comment is True:
+                self.get_component()
                 self.add_comment(ticket, comment)
 
             self.close_ticket(ticket, resolved)
@@ -72,18 +73,27 @@ class TicketResponder:
         os.remove(cert_path)
         os.remove(key_path)
 
-    def add_comment(self, ticket, comment, assignee="rballant"):
+    def add_comment(self, queue, ticket, label, comment, assignee="rballant"):
         logger.info("Adding comment to {}", ticket)
         url = jira_ticket_api + ticket
 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
-        payload = {
-            "update": {
-                "comment": [{"add": {"body": comment}}],
-                "assignee": [{"set": {"name": assignee}}],
+        if queue.lower() == "sps":
+            payload = {
+                "update": {
+                    "comment": [{"add": {"body": comment}}],
+                    "assignee": [{"set": {"name": assignee}}],
+                }
             }
-        }
+        else:
+            payload = {
+                "update": {
+                    "comment": [{"add": {"body": comment}}],
+                    "assignee": [{"set": {"name": assignee}}],
+                    "labels": [{"add": label}],
+                }
+            }
 
         response = requests.request(
             "PUT", url, json=payload, headers=headers, cert=(self.cert_path, self.key_path), verify=False
@@ -229,6 +239,7 @@ class TicketResponder:
         self.add_comment(issue, comment, assignee="")
 
     def close_ticket(self, ticket, resolved):
+        # ENT_SECOPS_FALSE_POSITIVE
         logger.info("Resolving {}", ticket)
         url = jira_ticket_api + f"{ticket}/transitions"
 

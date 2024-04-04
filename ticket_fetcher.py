@@ -133,9 +133,10 @@ def clean_description(description):
 
 
 def get_ticket_type(summary):
-    if "fn" in summary.lower() or "false negative" in summary.lower():
+    summary = summary.lower()
+    if "fn" in summary or "false negative" in summary:
         return "FN"
-    elif "fp" in summary.lower() or "false positive" in summary.lower():
+    elif "fp" in summary or "false positive" in summary:
         return "FP"
     else:
         return "None"

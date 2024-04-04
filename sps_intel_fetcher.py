@@ -62,7 +62,6 @@ class SpsIntelFetcher:
         entity.intel_confidence = "-"
         entity.intel_source = "-"
         entity.confidence_level = "-"
-        entity.subdomains_in_intel = "-"
         entity.subdomain_count = 0
         entity.url_count = 0 
         entity.is_in_intel = False
@@ -82,6 +81,7 @@ class SpsIntelFetcher:
                         entity.is_in_intel,
                         entity.e_list_entry,
                         entity.subdomain_count,
+                        entity.url_count,
                     ]
                 )
 
@@ -98,6 +98,7 @@ class SpsIntelFetcher:
                     "is_in_intel": row[4],
                     "e_list_entry": row[5],
                     "subdomain_count": row[6],
+                    "url_count": row[7],
                 }
 
             self.assign_results()
