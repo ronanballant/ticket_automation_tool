@@ -2,13 +2,13 @@ import csv
 import json
 import os
 import time
+import traceback
 
 import requests
-import traceback
+
 import get_az_secret
-from config import (cert_name, cert_path, jira_ticket_api,
-                    key_name, key_path, logger, response_file_path,
-                    unresolved_file_path)
+from config import (cert_name, cert_path, jira_ticket_api, key_name, key_path,
+                    logger, response_file_path, unresolved_file_path)
 
 
 class TicketResponder:
@@ -17,8 +17,12 @@ class TicketResponder:
         self.time = time.time()
         self.unresolved_file_path = unresolved_file_path + f"{self.time}_domains_to_analyse.csv"
         self.response_file_path = response_file_path + f"{self.time}_result_comments.csv"
+        self.get_username()
         self.get_keys()
         self.group_tickets()
+
+    def get_username(self):
+        self.username = os.getenv("USER") or os.getenv("USERNAME")
 
     def get_keys(self):
         self.cert_path = "osemyono.crt"
@@ -48,7 +52,7 @@ class TicketResponder:
                 }
             else:
                 pass
-            
+
             tickets[entity.ticket_id]["responses"].append((entity.comment))
             tickets[entity.ticket_id]["is_resolved"].append(entity.is_resolved)
             open_tickets.append((entity.domain, entity.ticket_id, entity.comment))
@@ -60,7 +64,7 @@ class TicketResponder:
         self.resolved_tickets = []
         for ticket, values in self.responses.items():
             reporter = values.get("reporter")
-            greeting = "Hi {}\n\n".format(reporter)
+            greeting = f"Hi {reporter}\n\n"
             end = "\n\nIf there are any further questions we will be happy to respond.\nSecOPs Team"
             comment = greeting + "\n\n".join(values.get("responses")) + end
             send_comment = False
@@ -71,26 +75,27 @@ class TicketResponder:
                 else:
                     send_comment = True
 
-            # Un-comment after test week
-            # if send_comment is True:
-            #     self.add_comment(self.queue, ticket, comment)
+            if send_comment is True:
+                print(f"Responding to {ticket}")
+                self.add_comment(ticket, comment, self.username)
+            else:
+                print(f"{ticket} is open to analyse - No response sent ")
 
             entity_resolutions = values.get("is_resolved")
             ticket_resolved = True
             for resolution in entity_resolutions:
                 if resolution is False:
                     ticket_resolved = False
-            
+
             if ticket_resolved is True:
                 self.resolved_tickets.append(ticket)
 
-            # Un-comment after test week
-            # self.close_ticket(ticket, resolved)
+            self.close_ticket(ticket, resolved)
 
         # os.remove(cert_path)
         # os.remove(key_path)
 
-    def add_comment(self, queue, ticket, comment, label="", assignee="rballant"):
+    def add_comment(self, queue, ticket, comment, assignee="rballant", label=""):
         logger.info(f"Adding comment to {ticket}")
         url = jira_ticket_api + ticket
 
@@ -113,10 +118,17 @@ class TicketResponder:
             }
 
         response = requests.request(
-            "PUT", url, json=payload, headers=headers, cert=(self.cert_path, self.key_path), verify=False
+            "PUT",
+            url,
+            json=payload,
+            headers=headers,
+            cert=(self.cert_path, self.key_path),
+            verify=False,
         )
 
     def create_sps_ticket(self):
+        print("\nCreating SPS ticket")
+        logger.info("Creating SPS ticket")
         allow_list_entries = []
         block_list_entries = []
         closed_list = [
@@ -184,9 +196,11 @@ class TicketResponder:
             "*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table
         )
 
-        self.add_comment("SPS", issue, comment)
+        self.add_comment("SPS", issue, comment, self.username)
 
     def create_etp_ticket(self):
+        print("\nCreating ETP ticket")
+        logger.info("Creating ETP ticket")
         allow_list_entries = []
         block_list_entries = []
         closed_list = [
@@ -195,7 +209,9 @@ class TicketResponder:
         open_list = [
             "||status||ticket_id||ticket_type||entity||subdomains||malicious_reports||last_seen||categories||feed||source||filtered||cat_strength||confidence||resolution||response||"
         ]
-        sorted_entities = sorted(self.entities, key=lambda x: x.ticket_id, reverse=False)
+        sorted_entities = sorted(
+            self.entities, key=lambda x: x.ticket_id, reverse=False
+        )
         for entity in sorted_entities:
             if entity.resolution.lower() == "in progress":
                 line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.is_filtered}|{entity.intel_category_strength}|{entity.resolution}|{entity.response}|"
@@ -206,11 +222,11 @@ class TicketResponder:
 
             if entity.resolution.lower() == "allow":
                 allow_list_entries.append(
-                    f"{entity.etp_domain},{entity.entity_type},ALL_TYPES_BEST_MATCH,no malicious indications,{self.time},Added by rballant,{entity.intel_source}"
+                    f"{entity.etp_domain},{entity.entity_type},ALL_TYPES_BEST_MATCH,no malicious indications,{self.time},Added by {self.username},{entity.intel_source}"
                 )
             if entity.resolution.lower() == "block":
                 block_list_entries.append(
-                    f"{entity.etp_domain},{entity.entity_type},{entity.attribution},Known,{entity.attribution_id},{entity.attribution_description},etp-manual,{self.time},added by rballant"
+                    f"{entity.etp_domain},{entity.entity_type},{entity.attribution},Known,{entity.attribution_id},{entity.attribution_description},etp-manual,{self.time},added by {self.username}"
                 )
 
         open_table = "\n".join(open_list)
@@ -254,7 +270,7 @@ class TicketResponder:
                 data=json_object,
                 headers=headers,
                 cert=(self.cert_path, self.key_path),
-                verify=False
+                verify=False,
             )
         except Exception as e:
             logger.error(f"Failed to create ETP jira ticket - Error: {e}")
@@ -265,10 +281,11 @@ class TicketResponder:
             status = str(response.status_code)
             if status.startswith("2"):
                 logger.info(f"ETP ticket {issue} created succesfully")
-                self.add_comment(self.queue, issue, comment, assignee="")
+                self.add_comment(self.queue, issue, comment, self.username)
             else:
-                logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
-
+                logger.info(
+                    f"Failed to create ETP ticket {issue}. Status code: {status}"
+                )
 
     def close_ticket(self, ticket, resolved):
         # ENT_SECOPS_FALSE_POSITIVE
@@ -278,9 +295,9 @@ class TicketResponder:
         headers = {"Content-Type": "application/json"}
 
         if resolved is True:
-            payload = { "transition": {"id": "5"}}
+            payload = {"transition": {"id": "5"}}
         else:
-            payload = { "transition": {"id": "4"}}
+            payload = {"transition": {"id": "4"}}
 
         try:
             response = requests.request(
@@ -298,5 +315,3 @@ class TicketResponder:
                 logger.info(f"Closed ticket {ticket}")
             else:
                 logger.info(f"Failed to close {ticket}. Status code: {status}")
-
-

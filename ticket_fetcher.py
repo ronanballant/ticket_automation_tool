@@ -87,6 +87,7 @@ class TicketFetcher:
                             "labels": entry.get("labels"),
                         }
         else:
+            print(f"Error Fetching Tickets - Status code: {self.req.status_code}")
             logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
 
         # os.remove(cert_path)
@@ -110,7 +111,10 @@ def collect_domains(decsription):
     matches = re.finditer(pattern, decsription)
     matched_domains = [(match.group(0)) for match in matches]
 
-    domains = [domain[4:] if domain.startswith("www.") else domain for domain in matched_domains]
+    domains = [
+        domain[4:] if domain.startswith("www.") else domain
+        for domain in matched_domains
+    ]
 
     return domains
 
@@ -130,20 +134,7 @@ def clean_description(description):
     logger.info("Cleaning description")
     pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
     description = re.sub(pattern, " ", description)
-    characters_to_remove = [
-        "[", 
-        "]", 
-        "*", 
-        '"', 
-        "'", 
-        "{", 
-        "}", 
-        ";", 
-        "\\", 
-        "(", 
-        ")", 
-        ","
-    ]
+    characters_to_remove = ["[", "]", "*", '"', "'", "{", "}", ";", "\\", "(", ")", ","]
     desc = "".join(
         char for char in description if char not in characters_to_remove
     ).strip()
@@ -165,6 +156,7 @@ def clean_description(description):
 
 def get_ticket_type(summary, description):
     summary = summary.lower()
+    description = description.lower()
     if "fn test" in summary or "fn test" in description:
         return "FN"
     elif "fp test" in summary or "fp test" in description:

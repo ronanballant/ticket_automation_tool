@@ -66,20 +66,22 @@ class ResponseCreator:
                 self.entity.entity
             )
         elif phishing_source_matches:
-            self.entity.source_response = "{} was flagged as it was identified for Phishing activity. ".format(
-                self.entity.entity
+            self.entity.source_response = (
+                "{} was flagged as it was identified for Phishing activity. ".format(
+                    self.entity.entity
+                )
             )
         elif external_source_matches:
             self.entity.source_response = "{} was flagged as it was reported malicious by security vendors. ".format(
                 self.entity.entity
             )
         elif botnet_source_matches:
-            self.entity.source_response = "{} was flagged as it collided with a DGA. ".format(
-                self.entity.entity
+            self.entity.source_response = (
+                "{} was flagged as it collided with a DGA. ".format(self.entity.entity)
             )
         elif "ETP:MANUAL_BLACKLIST_MALWARE" in self.entity.intel_source:
-            self.entity.source_response = "{} was flagged for malware distribution. ".format(
-                self.entity.entity
+            self.entity.source_response = (
+                "{} was flagged for malware distribution. ".format(self.entity.entity)
             )
         else:
             self.entity.source_response = ""
@@ -91,8 +93,10 @@ class ResponseCreator:
             self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*Resolution*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.entity} is currently under investigation.\n "
         elif self.entity.resolution.lower() == "allow":
             self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n {self.entity.source_response} {self.entity.response}\n "
+        elif self.entity.resolution.lower() == "block":
+            self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \nFollowing a thorough investigation, several indications of {self.entity.attribution} were found. \nTherefore the domain will be added to the intel.\n*Links*:\n{self.entity.vt_link}\n"
         else:
             if self.entity.is_in_intel is True:
                 self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.response} \n*Links*:\n{self.entity.vt_link}\n "
             else:
-                self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.response} \n"              
+                self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.response} \n"

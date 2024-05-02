@@ -1,5 +1,6 @@
 import tldextract as tld
 from config import logger
+import re
 
 
 class Entity:
@@ -49,8 +50,13 @@ class Entity:
             "yahoo.com",
         ]
         if self.core_domain not in whitelist_domains:
-            Entity.entity_list.append(self)
-            logger.info(f"{self.entity} entity instance created")
+            if self.is_not_file_extension():
+                Entity.entity_list.append(self)
+                print(f"Entity Found: {self.entity}")
+                logger.info(f"{self.entity} entity instance created")
+            else:
+                print(f"Skipping {self.entity} - file detected")
+                logger.info(f"Skipping {self.entity} - file detected")
 
     def clean_domain(self):
         logger.info(f"Cleaning {self.entity}")
@@ -73,6 +79,10 @@ class Entity:
         self.domain = "".join(
             char for char in self.entity if char not in characters_to_remove
         ).strip()
+
+    def is_not_file_extension(self):
+        file_extension_pattern = r'\.(txt|.exc|tsv|csv|py|json|ext)$'
+        return not re.match(file_extension_pattern, self.core_domain)
 
     def get_core_domain(self):
         self.core_domain = tld.extract(self.entity).registered_domain

@@ -12,7 +12,7 @@ from config import interal_vt_api, logger, vt_api_key
 
 class VirusTotalFetcher:
     vt_request_count = 0
-    vt_api_threshold = 100
+    vt_api_threshold = 200
 
     def __init__(self, entity) -> None:
         self.entity = entity
@@ -110,17 +110,20 @@ class VirusTotalFetcher:
                     logger.info("%s: VT query successful", self.entity.domain)
                 else:
                     self.no_data()
+                    print(f"Bad VT Response for {self.entity.domain}")
                     logger.error("%s: VT Bad Response", self.entity.domain)
             except:
                 self.no_data()
+                print(f"Error parsing VT data for {self.entity.domain}")
                 logger.error("%s: Error parsing VT data", self.entity.domain)
             VirusTotalFetcher.vt_request_count += 1
         else:
             self.no_data()
+            print("%s: VT API Quota Reached", self.entity.domain)
             logger.error("%s: VT Failed - API Quota Reached", self.entity.domain)
 
     def no_data(self):
-        logger.info(f"Assiging no data to {self.entity.domain}")
+        logger.info(f"Assigning no data to {self.entity.domain}")
         self.entity.has_data = False
         self.entity.positives = "-"
         self.entity.creation_date = "-"
