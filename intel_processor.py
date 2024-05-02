@@ -46,7 +46,7 @@ class IntelProcessor:
                 # logger.info(result.stdout)
                 print("Send to whitelist: {}".format(self.whitelist))
             except subprocess.CalledProcessError as e:
-                logger.error("ERROR Processing Whitelist Entities:", e)
+                logger.error(f"ERROR Processing Whitelist Entities: {e}")
 
         if self.blocklist:
             ssh_command = [
@@ -65,4 +65,4 @@ class IntelProcessor:
                 # logger.info(result.stdout)
                 print("Send to whitelist: {}".format(self.blocklist))
             except subprocess.CalledProcessError as e:
-                logger.error("ERROR Processing Whitelist Entities:", e)
+                logger.error(f"ERROR Processing Whitelist Entities: {e}")

@@ -62,7 +62,7 @@ class VirusTotalFetcher:
 
             domain_vt_api = f"https://www.virustotal.com/api/v3/domains/{domain}"
             try:
-                logger.info("{}: Fetching VT data", domain)
+                logger.info(f"{domain}: Fetching VT data")
                 response = requests.get(domain_vt_api, headers=request_headers)
                 if response.status_code == 200:
                     decoded_response = json.loads(response.text)
@@ -120,7 +120,7 @@ class VirusTotalFetcher:
             logger.error("%s: VT Failed - API Quota Reached", self.entity.domain)
 
     def no_data(self):
-        logger.info("Assiging no data to {}", self.entity.domain)
+        logger.info(f"Assiging no data to {self.entity.domain}")
         self.entity.has_data = False
         self.entity.positives = "-"
         self.entity.creation_date = "-"

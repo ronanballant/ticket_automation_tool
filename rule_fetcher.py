@@ -6,6 +6,7 @@ from config import logger, rule_table_path
 class RuleFetcher:
     def __init__(self) -> None:
         self.open_file()
+        self.create_rule_table()
 
     def open_file(self):
         with open(rule_table_path, "r", newline="", encoding="utf-8") as csv_file:

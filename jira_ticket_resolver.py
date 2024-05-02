@@ -1,4 +1,6 @@
 import csv
+import os
+
 
 from config import logger, results_file_path
 
@@ -53,40 +55,33 @@ class TicketResolver:
 
     def match_rule(self):
         if self.entity.has_data is True:
-            if self.subdomain_count <= 3:
+            if int(self.entity.subdomain_count) <= 3:
                 if self.entity.e_list_entry is False:
-                    logger.info("Matching data against rule set")
-                    group = self.rules.get(self.entity.queue, self.rules.get("-"))
-                    type_match = group.get(self.entity.ticket_type, group.get("-"))
-                    is_in_intel = type_match.get(
-                        self.entity.is_in_intel, type_match.get("-")
-                    )
-                    is_filtered = is_in_intel.get(
-                        self.entity.is_filtered, is_in_intel.get("-")
-                    )
-                    category_strength = is_filtered.get(
-                        self.entity.intel_category_strength, is_filtered.get("-")
-                    )
-                    age = category_strength.get(
-                        self.entity.domain_age, category_strength.get("-")
-                    )
+                    logger.info(f"Matching {self.entity.entity} data against rule set")
+                    group = self.rules.get(self.entity.queue)
+                    type_match = group.get(self.entity.ticket_type)
+                    is_in_intel = type_match.get(self.entity.is_in_intel)
+                    is_filtered = is_in_intel.get(self.entity.is_filtered)
+                    category_strength = is_filtered.get(self.entity.intel_category_strength)
+                    age = category_strength.get(self.entity.domain_age)
 
                     if self.entity.positives != "-":
+                        age.pop("-", None)
                         min_positives = {}
                         max_positives = {}
                         for key, item_value in age.items():
                             if int(key) <= self.entity.positives:
                                 new_values = {
-                                    key: value for key, value in item_value.items()
+                                    k: value for k, value in item_value.items()
                                 }
-                                min_positives.update(new_values)
+                                min_positives = merge_dicts(min_positives, new_values)
 
                         for key, item_value in min_positives.items():
                             if int(key) >= self.entity.positives:
                                 new_values = {
                                     key: value for key, value in item_value.items()
                                 }
-                                max_positives.update(new_values)
+                                max_positives = merge_dicts(max_positives, new_values)
                     else:
                         min_positives = age.get(self.entity.positives)
                         max_positives = min_positives.get(self.entity.positives)
@@ -99,7 +94,7 @@ class TicketResolver:
                                 new_values = {
                                     key: value for key, value in item_value.items()
                                 }
-                                min_confidence.update(new_values)
+                                min_confidence = merge_dicts(min_confidence, new_values)
 
                         for key, item_value in min_confidence.items():
                             if int(key) >= self.entity.confidence_level:
@@ -126,8 +121,11 @@ class TicketResolver:
             self.entity.response = "No VT data"
 
     def write_resolutions(self):
+        if not os.path.exists(results_file_path):
+            os.makedirs(results_file_path)
+        
         try:
-            logger.info("Writing resolutions to {}", self.file_path)
+            logger.info(f"Writing resolutions to {self.file_path}")
             with open(self.file_path, mode="a", newline="") as file:
                 csv_writer = csv.writer(file)
 
@@ -159,4 +157,15 @@ class TicketResolver:
                     )
                 # add webroot
         except Exception as e:
-            logger.error("Error writing to {}. Error: {}", self.file_path, e)
+            logger.error(f"Error writing to {self.file_path}. Error: {e}")
+
+def merge_dicts(dict1, dict2):
+    for key, value in dict2.items():
+        if key in dict1:
+            if isinstance(dict1[key], dict) and isinstance(value, dict):
+                merge_dicts(dict1[key], value) 
+            else:
+                dict1[key] += value 
+        else:
+            dict1[key] = value
+    return dict1

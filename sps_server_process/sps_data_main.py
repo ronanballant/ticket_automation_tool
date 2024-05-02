@@ -72,6 +72,7 @@ def get_domain_data(domains):
             "url_count": result.intel.url_count,
             "is_in_intel": result.intel.is_in_intel,
             "e_list_entry": result.intel.e_list_entry,
+            "subdomain_only": result.intel.subdomain_only,
         }
         # "webroot": result.webroot,
 

@@ -10,7 +10,7 @@ class ResponseCreator:
         self.create_response()
 
     def get_feed_response(self):
-        logger.info("Generating source based response for {}", self.entity.entity)
+        logger.info(f"Generating source based response for {self.entity.entity}")
         external_source_list = [
             "sophos",
             "surbl",
@@ -62,7 +62,7 @@ class ResponseCreator:
             "resolved IP and name pattern" in self.entity.intel_source
             or "ncdippat" in self.entity.intel_source
         ):
-            self.entity.source_response = "{} was flagged as it resolved to an IP address with a bad reputaion. ".format(
+            self.entity.source_response = "{} was flagged as it resolved to an IP address with a bad reputation. ".format(
                 self.entity.entity
             )
         elif phishing_source_matches:
@@ -85,7 +85,9 @@ class ResponseCreator:
             self.entity.source_response = ""
 
     def create_response(self):
+        self.entity.is_resolved = True
         if self.entity.resolution.lower() == "in progress":
+            self.entity.is_resolved = False
             self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*Resolution*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.entity} is currently under investigation.\n "
         elif self.entity.resolution.lower() == "allow":
             self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n {self.entity.source_response} {self.entity.response}\n "

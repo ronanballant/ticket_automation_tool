@@ -5,9 +5,7 @@ from config import logger
 class Entity:
     entity_list = []
 
-    def __init__(
-        self, queue, domain, entity_type, urls, ticket, ticket_type, reporter
-    ) -> None:
+    def __init__(self, queue, domain, entity_type, urls, ticket, ticket_type, reporter) -> None:
         self.queue = queue
         self.entity = domain
         self.urls = urls
@@ -52,10 +50,10 @@ class Entity:
         ]
         if self.core_domain not in whitelist_domains:
             Entity.entity_list.append(self)
-            logger.info("{} entity instance created", self.entity)
+            logger.info(f"{self.entity} entity instance created")
 
     def clean_domain(self):
-        logger.info("Cleaning domain name")
+        logger.info(f"Cleaning {self.entity}")
         characters_to_remove = [
             "[",
             "]",

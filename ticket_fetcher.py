@@ -5,8 +5,7 @@ import re
 import requests
 
 import get_az_secret
-from config import (cert_name, cert_path, jira_search_api, key_name, key_path,
-                    logger)
+from config import cert_name, cert_path, jira_search_api, key_name, key_path, logger
 
 
 class TicketFetcher:
@@ -17,17 +16,21 @@ class TicketFetcher:
         self.parse_tickets()
 
     def get_keys(self):
-        cert = get_az_secret.get_az_secret(cert_name)
-        self.cert_path = cert_path
-        with open(self.cert_path, "w") as f:
-            f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
-        key = get_az_secret.get_az_secret(key_name)
-        self.key_path = key_path
-        with open(self.key_path, "w") as f:
-            f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
+        self.cert_path = "osemyono.crt"
+        self.key_path = "osemyono.key"
+
+    # def get_keys(self):
+    #     cert = get_az_secret.get_az_secret(cert_name)
+    #     self.cert_path = cert_path
+    #     with open(self.cert_path, "w") as f:
+    #         f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
+    #     key = get_az_secret.get_az_secret(key_name)
+    #     self.key_path = key_path
+    #     with open(self.key_path, "w") as f:
+    #         f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
 
     def get_tickets(self):
-        logger.info("Fetching tickets from {} queue", self.queue.lower())
+        logger.info(f"Fetching tickets from {self.queue.lower()} queue")
 
         if self.queue.lower() == "sps":
             jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
@@ -70,7 +73,7 @@ class TicketFetcher:
                             domains, urls = collect_entities(description, ticket_id)
                         summary = fields.get("summary")
                         if summary:
-                            ticket_type = get_ticket_type(summary)
+                            ticket_type = get_ticket_type(summary, description)
                         self.tickets[ticket_id] = {
                             "ticket_type": ticket_type,
                             "summary": fields.get("summary"),
@@ -86,14 +89,12 @@ class TicketFetcher:
         else:
             logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
 
-        os.remove(cert_path)
-        os.remove(key_path)
+        # os.remove(cert_path)
+        # os.remove(key_path)
 
 
 def collect_urls(description):
-    pattern = re.compile(
-        "([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*"
-    )
+    pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
     matches = re.finditer(pattern, description)
     urls = [match.group(0) for match in matches]
     urls = sorted(urls, key=len, reverse=True)
@@ -107,7 +108,10 @@ def collect_domains(decsription):
         "((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}"
     )
     matches = re.finditer(pattern, decsription)
-    domains = [(match.group(0)) for match in matches]
+    matched_domains = [(match.group(0)) for match in matches]
+
+    domains = [domain[4:] if domain.startswith("www.") else domain for domain in matched_domains]
+
     return domains
 
 
@@ -116,13 +120,30 @@ def collect_entities(desc, ticket):
     desc = clean_description(desc)
     desc, urls = collect_urls(desc)
     domains = collect_domains(desc)
-    logger.info(f"Extracted {len(set(domains))} domains and {len(set(urls))} from {ticket}")
+    logger.info(
+        f"Extracted {len(set(domains))} domains and {len(set(urls))} urls from {ticket}"
+    )
     return set(domains), set(urls)
 
 
 def clean_description(description):
     logger.info("Cleaning description")
-    characters_to_remove = ["[", "]", "*", '"', "'", "{", "}", ";", "\\", "(", ")", ","]
+    pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
+    description = re.sub(pattern, " ", description)
+    characters_to_remove = [
+        "[", 
+        "]", 
+        "*", 
+        '"', 
+        "'", 
+        "{", 
+        "}", 
+        ";", 
+        "\\", 
+        "(", 
+        ")", 
+        ","
+    ]
     desc = "".join(
         char for char in description if char not in characters_to_remove
     ).strip()
@@ -132,11 +153,21 @@ def clean_description(description):
     return desc
 
 
-def get_ticket_type(summary):
+# def get_ticket_type(summary):
+#     summary = summary.lower()
+#     if "fn" in summary or "false negative" in summary:
+#         return "FN"
+#     elif "fp" in summary or "false positive" in summary:
+#         return "FP"
+#     else:
+#         return "None"
+
+
+def get_ticket_type(summary, description):
     summary = summary.lower()
-    if "fn" in summary or "false negative" in summary:
+    if "fn test" in summary or "fn test" in description:
         return "FN"
-    elif "fp" in summary or "false positive" in summary:
+    elif "fp test" in summary or "fp test" in description:
         return "FP"
     else:
         return "None"
