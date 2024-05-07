@@ -306,6 +306,7 @@ class TicketResponder:
                 data=payload,
                 headers=headers,
                 cert=(self.cert_path, self.key_path),
+                verify=False,
             )
         except Exception as e:
             logger.error(f"Failed to close {ticket} - Error: {e}")

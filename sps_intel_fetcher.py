@@ -44,6 +44,7 @@ class SpsIntelFetcher:
             result = self.results.get(entity.domain)
             if result:
                 entity.is_in_intel = str_to_bool(result.get("is_in_intel", "-"))
+                entity.subdomain_only = str_to_bool(result.get("subdomain_only"))
                 if entity.is_in_intel is True:
                     entity.intel_feed = result.get("intel_feed", "-")
                     entity.intel_confidence = result.get("intel_confidence", "-")
@@ -68,6 +69,7 @@ class SpsIntelFetcher:
         entity.url_count = 0 
         entity.is_in_intel = False
         entity.e_list_entry = False
+        entity.subdomain_only = False
 
     def write_intel_file(self):
         with open(sps_intel_file_path, mode="w", newline="") as file:
@@ -84,6 +86,7 @@ class SpsIntelFetcher:
                         entity.e_list_entry,
                         entity.subdomain_count,
                         entity.url_count,
+                        entity.subdomain_only,
                     ]
                 )
 
@@ -101,6 +104,7 @@ class SpsIntelFetcher:
                     "e_list_entry": row[5],
                     "subdomain_count": row[6],
                     "url_count": row[7],
+                    "subdomain_only": row[8],
                 }
 
             self.assign_results()

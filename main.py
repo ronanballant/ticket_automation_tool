@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        # default='sps',
+        default='sps',
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         exit(1)
 
     try:
-        if args.queue.lower() is "sps":
+        if args.queue.lower() == "sps":
             run_sps_process()
         else:
             run_etp_process()

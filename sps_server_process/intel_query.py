@@ -111,6 +111,8 @@ class Intel:
             if self.subdomain_count > 0:
                 self.subdomain_only = True
                 self.is_in_intel = True
+            else:
+                self.subdomain_only = False
         else: 
             self.subdomain_only = False
                 

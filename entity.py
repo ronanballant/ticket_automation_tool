@@ -48,6 +48,8 @@ class Entity:
             "virginmedia.com",
             "virustotal.com",
             "yahoo.com",
+            "akamai1.com",
+            "bp1.com",
         ]
         if self.core_domain not in whitelist_domains:
             if self.is_not_file_extension():
