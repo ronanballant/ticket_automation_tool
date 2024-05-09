@@ -292,6 +292,7 @@ class TicketResponder:
     def close_ticket(self, ticket, resolved):
         # ENT_SECOPS_FALSE_POSITIVE
         logger.info(f"Resolving {ticket}")
+
         url = jira_ticket_api + f"{ticket}/transitions"
 
         headers = {"Content-Type": "application/json"}
@@ -302,14 +303,14 @@ class TicketResponder:
             payload = {"transition": {"id": "4"}}
 
         try:
-            response = requests.request(
-                "PUT",
+            response = requests.post(
                 url,
-                data=payload,
+                json=payload,
                 headers=headers,
                 cert=(self.cert_path, self.key_path),
                 verify=False,
             )
+            pass
         except Exception as e:
             logger.error(f"Failed to close {ticket} - Error: {e}")
         else:

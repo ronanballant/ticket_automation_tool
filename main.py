@@ -75,7 +75,7 @@ def run_sps_process():
 
     responder = TicketResponder(Entity.entity_list)
     print("\nCreating SPS Results Ticket")
-    responder.create_sps_ticket()
+    # responder.create_sps_ticket()
     print("\nResponding to Tickets")
     responder.update_tickets()
 
