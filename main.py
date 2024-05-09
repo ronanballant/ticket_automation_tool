@@ -68,7 +68,7 @@ def run_sps_process():
     rule_set = RuleFetcher()
     file_time = time.time()
     for entity in Entity.entity_list:
-        print(f"Processing {entity}")
+        print(f"Processing {entity.entity}")
         VirusTotalFetcher(entity)
         TicketResolver(entity, rule_set.rules, file_time)
         ResponseCreator(entity)

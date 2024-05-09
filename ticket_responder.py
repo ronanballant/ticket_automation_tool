@@ -12,6 +12,7 @@ from config import (cert_name, cert_path, jira_ticket_api, key_name, key_path,
 
 
 class TicketResponder:
+    requests.packages.urllib3.disable_warnings(requests.urllib3.exceptions.InsecureRequestWarning)
     def __init__(self, entities):
         self.entities = entities
         self.time = time.time()
@@ -20,6 +21,7 @@ class TicketResponder:
         self.get_username()
         self.get_keys()
         self.group_tickets()
+
 
     def get_username(self):
         self.username = os.getenv("USER") or os.getenv("USERNAME")
@@ -77,7 +79,7 @@ class TicketResponder:
 
             if send_comment is True:
                 print(f"Responding to {ticket}")
-                self.add_comment(ticket, comment, self.username)
+                self.add_comment(self.queue, ticket, comment, self.username)
             else:
                 print(f"{ticket} is open to analyse - No response sent ")
 
