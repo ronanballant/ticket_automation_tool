@@ -1,8 +1,7 @@
 import csv
 import os
 
-from config import (etp_automation_results_location, logger,
-                    sps_automation_results_location)
+from config import (etp_automation_results_location, logger, sps_automation_results_location)
 
 
 class AutomationLogger:
