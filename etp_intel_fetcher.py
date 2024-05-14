@@ -9,10 +9,10 @@ import csv
 class EtpIntelFetcher:
     def __init__(self, entities) -> None:
         self.entities = entities
-        # self.fetch_intel()
-        # self.assign_results()
-        # self.write_intel_file()
-        self.open_intel()
+        self.fetch_intel()
+        self.assign_results()
+        self.write_intel_file()
+        # self.open_intel()
 
     def fetch_intel(self):
         mongo_db_cred = tb_cred.login["mongo_int"]
@@ -170,10 +170,16 @@ class EtpIntelFetcher:
 
         for entity in self.entities:
             result = results.get(entity.domain)
-            entity.mongo_results = [result]
-            entity.subdomain_count = result.get("subdomain_count", 0)
-            entity.etp_domain = result.get("etp_domain")
-            entity.subdomain_only = result.get("subdomain_only")
+            if result:
+                entity.mongo_results = [result]
+                entity.subdomain_count = result.get("subdomain_count", 0)
+                entity.etp_domain = result.get("etp_domain")
+                entity.subdomain_only = result.get("subdomain_only")
+            else:
+                entity.mongo_results = []
+                entity.subdomain_count = 0
+                entity.etp_domain = entity.entity
+                entity.subdomain_only = 'False'
 
         self.assign_results()
 

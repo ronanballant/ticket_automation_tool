@@ -13,6 +13,8 @@ from config import (cert_name, cert_path, jira_ticket_api, key_name, key_path,
 
 class TicketResponder:
     requests.packages.urllib3.disable_warnings(requests.urllib3.exceptions.InsecureRequestWarning)
+    service_type_sent = []
+
     def __init__(self, entities):
         self.entities = entities
         self.time = time.time()
@@ -48,9 +50,12 @@ class TicketResponder:
             self.queue = entity.queue
             if entity.ticket_id not in tickets.keys():
                 tickets[entity.ticket_id] = {
+                    "queue": entity.queue,
+                    "ticket_type": entity.ticket_type,
                     "responses": [],
                     "reporter": entity.reporter,
                     "is_resolved": [],
+                    "source": entity.intel_source 
                 }
             else:
                 pass
@@ -61,72 +66,6 @@ class TicketResponder:
 
         self.responses = tickets
         self.unresolved_entities = open_tickets
-
-    def update_tickets(self):
-        self.resolved_tickets = []
-        for ticket, values in self.responses.items():
-            reporter = values.get("reporter")
-            greeting = f"Hi {reporter}\n\n"
-            end = "\n\nIf there are any further questions we will be happy to respond.\nSecOPs Team"
-            comment = greeting + "\n\n".join(values.get("responses")) + end
-            send_comment = False
-            resolved = True
-            for response in values.get("responses"):
-                if "is currently under investigation" in response:
-                    resolved = False
-                else:
-                    send_comment = True
-
-            if send_comment is True:
-                print(f"Responding to {ticket}")
-                self.add_comment(self.queue, ticket, comment, self.username)
-            else:
-                print(f"No response to {ticket} - Open to analyse")
-
-            entity_resolutions = values.get("is_resolved")
-            ticket_resolved = True
-            for resolution in entity_resolutions:
-                if resolution is False:
-                    ticket_resolved = False
-
-            if ticket_resolved is True:
-                self.resolved_tickets.append(ticket)
-
-            self.close_ticket(ticket, resolved)
-
-        # os.remove(cert_path)
-        # os.remove(key_path)
-
-    def add_comment(self, queue, ticket, comment, assignee="rballant", label=""):
-        logger.info(f"Adding comment to {ticket}")
-        url = jira_ticket_api + ticket
-
-        headers = {"Accept": "application/json", "Content-Type": "application/json"}
-
-        if queue.lower() == "sps":
-            payload = {
-                "update": {
-                    "comment": [{"add": {"body": comment}}],
-                    "assignee": [{"set": {"name": assignee}}],
-                }
-            }
-        else:
-            payload = {
-                "update": {
-                    "comment": [{"add": {"body": comment}}],
-                    "assignee": [{"set": {"name": assignee}}],
-                    "labels": [{"add": label}],
-                }
-            }
-
-        response = requests.request(
-            "PUT",
-            url,
-            json=payload,
-            headers=headers,
-            cert=(self.cert_path, self.key_path),
-            verify=False,
-        )
 
     def create_sps_ticket(self):
         print("\nCreating SPS ticket")
@@ -207,11 +146,6 @@ class TicketResponder:
             else:
                 logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
                 print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
-
-
-
-
-
 
         self.add_comment("SPS", issue, comment, self.username)
 
@@ -305,37 +239,157 @@ class TicketResponder:
                 logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
                 print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
 
-    def close_ticket(self, ticket, resolved):
-        logger.info(f"Resolving {ticket}")
 
-        url = jira_ticket_api + f"{ticket}/transitions"
+    def update_tickets(self):
+        self.resolved_tickets = []
+        for ticket, values in self.responses.items():
+            queue = values.get("queue")
+            source = values.get("source")
+            ticket_type = values.get("ticket_type")
+            reporter = values.get("reporter")
+            greeting = f"Hi {reporter}\n\n"
+            end = "\n\nIf there are any further questions we will be happy to respond.\nSecOPs Team"
+            comment = greeting + "\n\n".join(values.get("responses")) + end
+            send_comment = False
+            resolved = True
+            for response in values.get("responses"):
+                if "is currently under investigation" in response:
+                    resolved = False
+                else:
+                    send_comment = True
 
-        headers = {"Content-Type": "application/json"}
-
-        if resolved is True:
-            payload = {"transition": {"id": "5"}}
-            print(f"{ticket} - Closed")
-        else:
-            payload = {"transition": {"id": "4"}}
-            print(f"{ticket} - In Progress")
-
-        try:
-            response = requests.post(
-                url,
-                json=payload,
-                headers=headers,
-                cert=(self.cert_path, self.key_path),
-                verify=False,
-            )
-            pass
-        except Exception as e:
-            logger.error(f"Failed to update {ticket} status - Error: {e}")
-            print(f"\nFailed to update {ticket} status - Error: {e}\n")
-        else:
-            status = str(response.status_code)
-            if status.startswith("2"):
-                logger.info(f"Closed ticket {ticket}")
-                print(f"Closed ticket {ticket}")
+            if send_comment is True:
+                print(f"Responding to {ticket}")
+                self.add_comment(self.queue, ticket, comment, self.username)
             else:
-                logger.info(f"Failed to update {ticket} status. Status code: {status}")
-                print(f"\nFailed to update {ticket} status. Status code: {status}\n")
+                print(f"No response to {ticket} - Open to analyse")
+
+            entity_resolutions = values.get("is_resolved")
+            ticket_resolved = True
+            for resolution in entity_resolutions:
+                if resolution is False:
+                    ticket_resolved = False
+
+            if ticket_resolved is True:
+                self.resolved_tickets.append(ticket)
+
+            self.close_ticket(queue, ticket, ticket_type, source, resolved)
+
+        # os.remove(cert_path)
+        # os.remove(key_path)
+
+    def add_comment(self, queue, ticket, comment, assignee="rballant", label=""):
+        logger.info(f"Adding comment to {ticket}")
+        url = jira_ticket_api + ticket
+
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+        if queue.lower() == "sps":
+            payload = {
+                "update": {
+                    "comment": [{"add": {"body": comment}}],
+                    "assignee": [{"set": {"name": assignee}}],
+                }
+            }
+        else:
+            payload = {
+                "update": {
+                    "comment": [{"add": {"body": comment}}],
+                    "assignee": [{"set": {"name": assignee}}],
+                    "labels": [{"add": label}],
+                }
+            }
+
+        response = requests.request(
+            "PUT",
+            url,
+            json=payload,
+            headers=headers,
+            cert=(self.cert_path, self.key_path),
+            verify=False,
+        )
+
+
+    def close_ticket(self, queue, ticket, ticket_type, source, resolved):
+        if queue == 'SPS':
+            ticket_in_progress = "4"
+            ticket_resolved = "5"
+            transitions = [ticket_in_progress, ticket_resolved]
+        else:
+            ticket_triaged = "31"
+            ticket_in_progress = "221"
+            ticket_resolved = "141"
+            transitions = [ticket_triaged, ticket_in_progress, ticket_resolved]
+            
+        logger.info(f"Resolving {ticket}")
+        if resolved is True:
+            self.add_service_type(ticket, ticket_type, source)
+            self.transition_ticket(ticket, transitions)
+        else:
+            self.transition_ticket(ticket, transitions[:-1])
+
+
+    def add_service_type(self, ticket, ticket_type, source):
+        if ticket not in TicketResponder.service_type_sent:
+            if ticket_type == 'FP':
+                if any(substring in source.lower() for substring in ["nominum", "etp"]):
+                    service_type = "ESCR_TRUE_POSITIVE_INT_FEED"
+                else:
+                    service_type = "ESCR_TRUE_POSITIVE_THIRD_PARTY"
+            if ticket_type == 'FN':
+                    service_type = "ESCR_TRUE_NEGATIVE_GENERIC"
+
+            url = jira_ticket_api + f"{ticket}"
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "update": {
+                    "customfield_17300": [{"set": {"value":service_type}}]
+                    }
+                }
+
+            try:
+                response = requests.put(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    cert=(cert_path, key_path),
+                    verify=False,
+                )
+                pass
+            except Exception as e:
+                print(f"\nFailed to add service type to {ticket} status - Error: {e}\n")
+            else:
+                status = str(response.status_code)
+                if status.startswith("2"):
+                    TicketResponder.service_type_sent.append(ticket)
+                    print(f"Added service type to {ticket}")
+                else:
+                    print(f"\nFailed to add service type to {ticket}. Status code: {status}\n")
+
+    def transition_ticket(self, ticket, transitions):
+        url = jira_ticket_api + f"{ticket}/transitions"
+        headers = {"Content-Type": "application/json"}
+        for transition in transitions:
+            payload = {"transition": {"id": transition}}
+            try:
+                response = requests.post(
+                    url,
+                    json=payload,
+                    headers=headers,
+                    cert=(self.cert_path, self.key_path),
+                    verify=False,
+                )
+                pass
+            except Exception as e:
+                logger.error(f"Failed to transition {ticket} status - Error: {e}")
+                print(f"\nFailed to update {ticket} status - Error: {e}\n")
+                break
+            else:
+                status = str(response.status_code)
+                if status.startswith("2"):
+                    logger.info(f"Closed ticket {ticket}")
+                    print(f"Closed ticket {ticket}")
+                else:
+                    logger.info(f"Failed to update {ticket} status. Status code: {status}")
+                    print(f"\nFailed to update {ticket} status. Status code: {status}\n")
+                    break

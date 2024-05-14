@@ -33,6 +33,8 @@ main_temp.py
 etp_intel_file.csv
 etp_automation_results_data.csv
 sps_automation_results_data.csv
+sps_automation_data.csv
+etp_automation_data.csv
 sps_intel_file.csv
 intel_file.csv
 *.tsv
