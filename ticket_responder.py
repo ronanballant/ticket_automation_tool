@@ -8,7 +8,7 @@ import requests
 
 import get_az_secret
 from config import (cert_name, cert_path, jira_ticket_api, key_name, key_path,
-                    logger, response_file_path, unresolved_file_path)
+                    logger, results_file_path)
 
 
 class TicketResponder:
@@ -16,8 +16,8 @@ class TicketResponder:
     def __init__(self, entities):
         self.entities = entities
         self.time = time.time()
-        self.unresolved_file_path = unresolved_file_path + f"{self.time}_domains_to_analyse.csv"
-        self.response_file_path = response_file_path + f"{self.time}_result_comments.csv"
+        self.unresolved_file_path = results_file_path + f"{self.time}_domains_to_analyse.csv"
+        self.response_file_path = results_file_path + f"{self.time}_result_comments.csv"
         self.get_username()
         self.get_keys()
         self.group_tickets()
@@ -27,8 +27,8 @@ class TicketResponder:
         self.username = os.getenv("USER") or os.getenv("USERNAME")
 
     def get_keys(self):
-        self.cert_path = "osemyono.crt"
-        self.key_path = "osemyono.key"
+        self.cert_path = cert_path
+        self.key_path = key_path
 
     # def get_keys(self):
     #     cert = get_az_secret.get_az_secret(cert_name)
@@ -81,7 +81,7 @@ class TicketResponder:
                 print(f"Responding to {ticket}")
                 self.add_comment(self.queue, ticket, comment, self.username)
             else:
-                print(f"{ticket} is open to analyse - No response sent ")
+                print(f"No response to {ticket} - Open to analyse")
 
             entity_resolutions = values.get("is_resolved")
             ticket_resolved = True
@@ -182,21 +182,36 @@ class TicketResponder:
             }
         }
 
-        response = requests.post(
-            jira_ticket_api,
-            json=data,
-            headers=headers,
-            cert=(self.cert_path, self.key_path),
-            verify=False,
-        )
+        try:
+            response = requests.post(
+                jira_ticket_api,
+                json=data,
+                headers=headers,
+                cert=(self.cert_path, self.key_path),
+                verify=False,
+            )
+        except Exception as e:
+            logger.error(f"Failed to create SPS jira ticket - Error: {e}")
+            print(f"\nFailed to create SPS jira ticket - Error: {e}\n")
+        else:
+            issue_decoded = response.content.decode("utf-8")
+            issue_json = json.loads(issue_decoded)
+            issue = issue_json.get("key")
+            status = str(response.status_code)
+            if status.startswith("2"):
+                logger.info(f"SPS ticket {issue} created succesfully")
+                print(f"\nSPS ticket {issue} created succesfully\n")
 
-        issue_decoded = response.content.decode("utf-8")
-        issue_json = json.loads(issue_decoded)
-        issue = issue_json.get("key")
+                comment = ("*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table)
+                self.add_comment(self.queue, issue, comment, self.username)
+            else:
+                logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
+                print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
 
-        comment = (
-            "*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table
-        )
+
+
+
+
 
         self.add_comment("SPS", issue, comment, self.username)
 
@@ -276,6 +291,7 @@ class TicketResponder:
             )
         except Exception as e:
             logger.error(f"Failed to create ETP jira ticket - Error: {e}")
+            print(f"\nFailed to create ETP jira ticket - Error: {e}\n")
         else:
             issue_decoded = response.content.decode("utf-8")
             issue_json = json.loads(issue_decoded)
@@ -283,14 +299,13 @@ class TicketResponder:
             status = str(response.status_code)
             if status.startswith("2"):
                 logger.info(f"ETP ticket {issue} created succesfully")
+                print(f"\nETP ticket {issue} created succesfully\n")
                 self.add_comment(self.queue, issue, comment, self.username)
             else:
-                logger.info(
-                    f"Failed to create ETP ticket {issue}. Status code: {status}"
-                )
+                logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
+                print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
 
     def close_ticket(self, ticket, resolved):
-        # ENT_SECOPS_FALSE_POSITIVE
         logger.info(f"Resolving {ticket}")
 
         url = jira_ticket_api + f"{ticket}/transitions"
@@ -299,8 +314,10 @@ class TicketResponder:
 
         if resolved is True:
             payload = {"transition": {"id": "5"}}
+            print(f"{ticket} - Closed")
         else:
             payload = {"transition": {"id": "4"}}
+            print(f"{ticket} - In Progress")
 
         try:
             response = requests.post(
@@ -312,10 +329,13 @@ class TicketResponder:
             )
             pass
         except Exception as e:
-            logger.error(f"Failed to close {ticket} - Error: {e}")
+            logger.error(f"Failed to update {ticket} status - Error: {e}")
+            print(f"\nFailed to update {ticket} status - Error: {e}\n")
         else:
             status = str(response.status_code)
             if status.startswith("2"):
                 logger.info(f"Closed ticket {ticket}")
+                print(f"Closed ticket {ticket}")
             else:
-                logger.info(f"Failed to close {ticket}. Status code: {status}")
+                logger.info(f"Failed to update {ticket} status. Status code: {status}")
+                print(f"\nFailed to update {ticket} status. Status code: {status}\n")

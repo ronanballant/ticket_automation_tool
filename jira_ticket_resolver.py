@@ -41,7 +41,6 @@ class TicketResolver:
             self.entity.confidence_level = "-"
             self.entity.intel_feed = "-"
             self.entity.intel_confidence = "-"
-            self.entity.intel_source = "-"
             self.entity.e_list_entry = False
 
         if self.entity.has_data:
@@ -57,9 +56,8 @@ class TicketResolver:
             if self.entity.has_data is True:
                 if int(self.entity.subdomain_count) <= 3:
                     if self.entity.e_list_entry is False:
-                        logger.info(
-                            f"Matching {self.entity.entity} data against rule set"
-                        )
+                        logger.info(f"Matching {self.entity.entity} data against rule set")
+                        print(f"Matching {self.entity.entity} to rule set")
                         group = self.rules.get(self.entity.queue)
                         type_match = group.get(self.entity.ticket_type)
                         is_in_intel = type_match.get(self.entity.is_in_intel)

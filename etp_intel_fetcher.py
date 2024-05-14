@@ -9,10 +9,10 @@ import csv
 class EtpIntelFetcher:
     def __init__(self, entities) -> None:
         self.entities = entities
-        self.fetch_intel()
-        self.assign_results()
-        self.write_intel_file()
-        # self.open_intel()
+        # self.fetch_intel()
+        # self.assign_results()
+        # self.write_intel_file()
+        self.open_intel()
 
     def fetch_intel(self):
         mongo_db_cred = tb_cred.login["mongo_int"]
@@ -35,6 +35,11 @@ class EtpIntelFetcher:
             cursor = blacklist.find({"#data": {"$regex": sudomain_pattern}})
             subdomain_results = [record for record in cursor]
             entity.subdomain_count = len(subdomain_results)
+
+            if len(entity.mongo_results) == 0 and entity.subdomain_count > 0:
+                entity.subdomain_only = True
+            else:
+                entity.subdomain_only = False
 
 
     # def fetch_intel(self):
@@ -63,7 +68,7 @@ class EtpIntelFetcher:
                         "category": record.get("category", ""),
                         "source_feed": ", ".join(record.get("source_feed", [])),
                         "description": ", ".join(record.get("description", "")),
-                        "filtered": record.get("filtered", "-"),
+                        "filtered": record.get("filtered", False),
                         "filter_reason": record.get("filter_reason", ""),
                         "threat_id": record.get("threat_id", ""),
                         "list_id": record.get("list_id", ""),
@@ -94,6 +99,8 @@ class EtpIntelFetcher:
                     entity.intel_list_id = strongest_result.get("list_id", "-")
                     if entity.intel_list_id != "-":
                         entity.intel_category_strength = "strong" if entity.intel_list_id in [1, 2, 3] else "weak"
+                    else:
+                        entity.intel_category_strength = "-"
                     entity.intel_threat_keywords = strongest_result.get("threat_keywords", "-")
                     entity.is_in_intel = True if entity.intel_category != "-" else False
                 else:
@@ -105,7 +112,7 @@ class EtpIntelFetcher:
         entity.intel_category = "-"
         entity.intel_source = "-"
         entity.intel_description = "-"
-        entity.is_filtered = "-"
+        entity.is_filtered = False
         entity.filter_reason = "-"
         entity.intel_threat_id = "-"
         entity.intel_list_id = "-"
@@ -113,6 +120,7 @@ class EtpIntelFetcher:
         entity.intel_category_strength = "-"
         entity.is_in_intel = False
         entity.subdomain_count = 0
+        entity.subdomain_only = False
 
     def write_intel_file(self):
         with open(etp_intel_file_path, mode="w", newline="") as file:
@@ -134,6 +142,7 @@ class EtpIntelFetcher:
                         entity.is_in_intel,
                         entity.subdomain_count,
                         entity.etp_domain,
+                        entity.subdomain_only,
                     ]
                 )
 
@@ -156,6 +165,7 @@ class EtpIntelFetcher:
                     "is_in_intel": str_to_bool(row[10]),
                     "subdomain_count": row[11],
                     "etp_domain": row[12],
+                    "subdomain_only": str_to_bool(row[13]),
                 }
 
         for entity in self.entities:
@@ -163,6 +173,7 @@ class EtpIntelFetcher:
             entity.mongo_results = [result]
             entity.subdomain_count = result.get("subdomain_count", 0)
             entity.etp_domain = result.get("etp_domain")
+            entity.subdomain_only = result.get("subdomain_only")
 
         self.assign_results()
 

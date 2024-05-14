@@ -1,15 +1,15 @@
 import csv
 import os
 
-from config import (etp_automation_results_location, logger, sps_automation_results_location)
+from config import (etp_automation_data_location, logger, sps_automation_data_location)
 
 
 class AutomationLogger:
     def __init__(self, entities, responder, start, runtime) -> None:
         self.entities = entities
         self.responder = responder
-        self.sps_data_file = sps_automation_results_location
-        self.etp_data_file = etp_automation_results_location
+        self.sps_data_file = sps_automation_data_location
+        self.etp_data_file = etp_automation_data_location
         self.start_time = start
         self.runtime = str(runtime)
         self.get_ticket_resolutions()

@@ -16,8 +16,8 @@ class TicketFetcher:
         self.parse_tickets()
 
     def get_keys(self):
-        self.cert_path = "osemyono.crt"
-        self.key_path = "osemyono.key"
+        self.cert_path = cert_path
+        self.key_path = key_path
 
     # def get_keys(self):
     #     cert = get_az_secret.get_az_secret(cert_name)
@@ -36,8 +36,8 @@ class TicketFetcher:
             jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
 
         if self.queue.lower() == "etp":
-            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee IS EMPTY and "Next Steps" ~ SecOps'
-
+            # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND status in ("Open", "In Progress") and "Next Steps" ~ SecOps'
+            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
         params = {"jql": jql_query, "maxResults": 100}
 
         self.req = requests.get(
@@ -69,11 +69,21 @@ class TicketFetcher:
                             first_name = full_name.split(" ")[0]
                             reporter = "[~{}]".format(user_name)
                         description = fields.get("description")
-                        if description:
-                            domains, urls = collect_entities(description, ticket_id)
                         summary = fields.get("summary")
+                        if description:
+                            domains, urls = collect_entities(summary, description, ticket_id)
                         if summary:
-                            ticket_type = get_ticket_type(summary, description)
+                            components = fields.get("components")
+                            if components:
+                                component = components[0].get("name")
+                            else:
+                                component = ''
+                            if 'SecOps False Negative' in component:
+                                ticket_type = 'FN'
+                            elif 'SecOps False Positive' in component:
+                                ticket_type = "FP"
+                            else:
+                                ticket_type = get_ticket_type(summary, description)
                         self.tickets[ticket_id] = {
                             "ticket_type": ticket_type,
                             "summary": fields.get("summary"),
@@ -119,9 +129,12 @@ def collect_domains(decsription):
     return domains
 
 
-def collect_entities(desc, ticket):
+def collect_entities(summary, desc, ticket):
+    summary = summary.lower()
+    desc = desc.lower()
+    text = summary + " " + desc
     logger.info("Extracting entities from tickets")
-    desc = clean_description(desc)
+    desc = clean_description(text)
     desc, urls = collect_urls(desc)
     domains = collect_domains(desc)
     logger.info(
@@ -146,9 +159,10 @@ def clean_description(description):
 
 def get_ticket_type(summary, description):
     summary = summary.lower()
-    if "fn" in summary or "false negative" in description:
+    description = description.lower()
+    if any(substring in text for text in (summary, description) for substring in ("fn", "false negative")):
         return "FN"
-    elif "fp" in summary or "false positive" in description:
+    elif any(substring in text for text in (summary, description) for substring in ("fp", "false positive")):
         return "FP"
     else:
         return "None"

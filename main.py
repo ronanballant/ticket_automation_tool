@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default='sps',
+        default='etp',
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -39,7 +39,7 @@ def parse_args():
 
 def run_sps_process():
     start_time = time.time()
-    print("SPS Process In Progress...")
+    print("SPS Ticket Automation In Progress...")
     logger.info("SPS Process In Progress...")
 
     print("Processing Tickets")
@@ -121,7 +121,7 @@ def run_etp_process():
     logger.info("Loading Rule-Set")
     rule_set = RuleFetcher()
     for entity in Entity.entity_list:
-        print(f"Processing {entity}")
+        print(f"Processing {entity.entity}")
         VirusTotalFetcher(entity)
         TicketResolver(entity, rule_set.rules, file_time)
         ResponseCreator(entity)

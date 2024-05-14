@@ -9,7 +9,7 @@ class RuleFetcher:
         self.create_rule_table()
 
     def open_file(self):
-        with open(sps_rule_path, "r", newline="", encoding="utf-8") as csv_file:
+        with open(rule_table_path, "r", newline="", encoding="utf-8") as csv_file:
             file = csv.DictReader(csv_file, delimiter="\t")
             self.file = [row for row in file]
 
