@@ -1,0 +1,53 @@
+group	type	is_in_intel	is_filtered	category_strength	age	min_positives	max_positives	min_confidence	max_confidence	verdict	response	rule description
+SPS	FP	TRUE	-	-	old	0	1	1	5	Allow	Following a thorough investigation, no active threat has been identified. \nTherefore the domain will be removed from the intel.	old fp domain with low detection
+SPS	FP	TRUE	-	-	old	2	5	1	5	In Progress		old fp domain with medium detection
+SPS	FP	TRUE	-	-	old	6	100	1	5	Closed	Following a thorough investigation, several malicious indications were found. \nTherefore the domain will remain in the intel.	old fp domain with high detections
+SPS	FP	TRUE	-	-	new	0	3	1	5	In Progress		new fp domain with low detections
+SPS	FP	TRUE	-	-	new	4	100	1	5	Closed	Following a thorough investigation, several malicious indications were found. \nTherefore the domain will remain in the intel.	new fp domain with high detections
+SPS	FN	TRUE	-	-	old	0	100	5	5	Closed	Following an investigation, we found the reported domain already exists in the intel at a high confidence level.	old or new fn domain already in level 5 TI
+SPS	FN	TRUE	-	-	new	0	100	5	5	Closed	Following an investigation, we found the reported domain already exists in the intel at a high confidence level.	old or new fn domain already in level 5 TI
+SPS	FN	TRUE	-	-	old	5	100	1	4	Block	Following a thorough investigation, several malicious indications were found. \nThe domain is currently listed in the intel at a lower confidence level. \nTherefore we will increase the confidence level of the domain. 	old or new fn domain with high detections in lower level TI
+SPS	FN	TRUE	-	-	new	5	100	1	4	Block	Following a thorough investigation, several malicious indications were found. \nThe domain is currently listed in the intel at a lower confidence level. \nTherefore we will increase the confidence level of the domain. 	old or new fn domain with high detections in lower level TI
+SPS	FN	FALSE	-	-	old	5	100	-	-	Block	Following a thorough investigation, several malicious indications were found. \nTherefore we will add the domain to the intel.	old or new fn domain with higher detections not in TI
+SPS	FN	FALSE	-	-	new	5	100	-	-	Block	Following a thorough investigation, several malicious indications were found. \nTherefore we will add the domain to the intel.	old or new fn domain with higher detections not in TI
+SPS	FN	TRUE	-	-	old	0	4	3	4	Closed	Following an investigation,  we found the domain already exists in the Intel.	old fn domain with lower detections in lower level TI
+SPS	FN	FALSE	-	-	old	0	4	-	-	In Progress		old fn domain with lower detections not in TI
+SPS	FN	TRUE	-	-	new	3	4	1	4	Block	Following a thorough investigation, several malicious indications were found.  \nThe domain is currently listed in the intel at a lower confidence level. \nTherefore we will update the intel, adding the domain to a high confidence level. 	new fn domain with medium detections and already in lower TI
+SPS	FN	FALSE	-	-	new	4	4	-	-	Block	Following a thorough investigation, several malicious indications were found.  \nTherefore we will add the domain to the intel.	new fn domain with medium detections and not in TI
+SPS	FN	FALSE	-	-	new	0	3	-	-	In Progress		new fn domain with low detections and not in TI
+SPS	FP	FALSE	-	-	old	0	100	-	-	Closed	Following an investigation,  we found the domain does not exist in the Intel.	old FP not in intel - close ticket
+SPS	FP	FALSE	-	-	new	0	100	-	-	Closed	Following an investigation,  we found the domain does not exist in the Intel.	new FP not in intel - close ticket
+ETP	FP	TRUE	FALSE	strong	old	0	1	-	-	Allow	Following a thorough investigation, no active threat has been identified. \nTherefore the domain will be removed from the intel.	old fp domain with low detection
+ETP	FP	TRUE	FALSE	strong	old	2	5	-	-	In Progress		old fp domain with medium detection
+ETP	FP	TRUE	FALSE	strong	old	6	100	-	-	Closed	Following a thorough investigation, several malicious indications were found. \nIn such cases, we believe the best course of action is for the customer to use custom lists to remove the domain and not to remove it from the intel.	old fp domain with high detections - keep
+ETP	FP	TRUE	FALSE	strong	new	0	3	-	-	In Progress		new fp domain with low detections - inspect
+ETP	FP	TRUE	FALSE	strong	new	4	100	-	-	Closed	Following a thorough investigation, several malicious indications were found. \nIn such cases, we believe the best course of action is for the action is for the customer to remove the domain using their custom list and not to remove it from the intel.	new fp domain with high detections - keep
+ETP	FP	TRUE	FALSE	weak	old	0	0	-	-	Allow	Following a thorough investigation, no active threat has been identified. \nTherefore the domain will be removed from the intel.	old, weak Fp domain with no detections - whitelist 
+ETP	FP	TRUE	FALSE	weak	new	0	100	-	-	Closed	Following a thorough investigation, we found that the domain is categorised as a Partially malicious domain. \nWhile there is a suspicion of malicious content, the domains under this category are not currently blocked. \nIn such cases, we recommend manual filtering for domains in this category instead of a blanket block. 	new FP domain is PMD and the customer can decide to block or not
+ETP	FP	TRUE	FALSE	weak	old	1	100	-	-	Closed	Following a thorough investigation, we found that the domain is categorised as a Partially malicious domain. \nWhile there is a suspicion of malicious content, the domains under this category are not currently blocked. \nIn such cases, we recommend manual filtering for domains in this category instead of a blanket block. 	FP Domain is PMD 
+ETP	FN	TRUE	FALSE	strong	old	0	100	-	-	Closed	Following an investigation,  we found the domain already exists in the Intel.	old FN already in strong intel
+ETP	FN	TRUE	FALSE	strong	new	0	100	-	-	Closed	Following an investigation,  we found the domain already exists in the Intel.	new FN already in strong intel
+ETP	FN	TRUE	FALSE	weak	old	0	0	-	-	Closed	Following a thorough investigation, we found that the domain is categorised as a Partially malicious domain. \nIn addition, we didn't find strong evidence of malicious indications to classify the domain as malicious. \nIn such cases, we believe the best course of action is for the customer to add the domain to their custom list and not to add it to the intel.	old FN already in weak intel
+ETP	FN	TRUE	FALSE	weak	new	0	0	-	-	In Progress	Following a thorough investigation, we found that the domain is categorised as a Partially malicious domain. \nIn addition, we didn't find strong evidence of malicious indications to classify the domain as malicious. \nIn such cases, we believe the best course of action is for the customer to add the domain to their custom list and not to add it to the intel.	new FN already in weak intel
+ETP	FN	TRUE	FALSE	weak	old	1	100	-	-	In Progress		new weak FN with detections - open
+ETP	FN	FALSE	FALSE	-	new	0	0	-	-	Closed	Following a thorough investigation, we didn't find strong evidence of malicious indications. \nIn such cases, we believe the best course of action is for the customer to add the domain to their custom list and not to add it to the intel.	new FN with no detections - Don't add
+ETP	FN	TRUE	FALSE	weak	new	1	100	-	-	In Progress		old weak FN with detections - open
+ETP	FN	FALSE	FALSE	-	old	0	0	-	-	Closed	Following a thorough investigation, we didn't find strong evidence of malicious indications. \nIn such cases, we believe the best course of action is for the customer to add the domain to their custom list and not to add it to the intel.	old FN with no detections - Don't add
+ETP	FN	FALSE	FALSE	-	old	1	100	-	-	In Progress		old FN with 1 or more detections - Check impact (add based on the impact < 7)
+ETP	FN	FALSE	FALSE	-	new	1	100	-	-	In Progress		new FN with 1 or more detections - Check impact (add based on the impact < 7)
+ETP	FP	FALSE	FALSE	-	old	0	100	-	-	Closed	Following an investigation,  we found the domain does not exist in the Intel.	FP not in intel - close ticket
+ETP	FP	FALSE	FALSE	-	-	0	100	-	-	Closed	Following an investigation,  we found the domain does not exist in the Intel.	FP not in intel - close ticket
+ETP	FP	TRUE	TRUE	-	-	-	-	-	-	Closed	Following an investigation, we found the domain is already filtered out from the intel.	FP filtered
+ETP	FN	TRUE	TRUE	strong	old	0	100	-	-	In Progress		old, strong, Filtered FN, - open
+ETP	FN	TRUE	TRUE	strong	new	0	100	-	-	In Progress		new, strong, Filtered FN, - open
+ETP	FN	TRUE	TRUE	weak	old	0	100	-	-	In Progress		old, weak, Filtered FN - open
+SPS	FP	TRUE	FALSE	-	-	-	-	1	5	In Progress		FP with no VT data - Open ticket
+SPS	FN	TRUE	FALSE	-	-	-	-	1	5	Closed	Following an investigation,  we found the domain already exists in the Intel.	old or new fn domain, with no data, already in the TI
+SPS	FN	FALSE	FALSE	-	-	-	-	-	-	Closed	Following an investigation,  we found the domain already exists in the Intel.	FN domain, with no data, not in the TI
+ETP	FN	TRUE	TRUE	weak	new	0	100	-	-	In Progress		new, weak, Filtered FN - open
+ETP	FN	TRUE	TRUE	strong	-	-	-	-	-	In Progress		strong Filtered FN with no VT data - open
+ETP	FN	TRUE	TRUE	weak	-	-	-	-	-	In Progress		weak Filtered FN with no VT data - open
+ETP	FN	TRUE	FALSE	strong	-	-	-	-	-	Closed	Following an investigation,  we found the domain already exists in the Intel.	FN, with no VT data, already in strong intel
+ETP	FN	TRUE	FALSE	weak	-	-	-	-	-	Closed	Following a thorough investigation, we found that the domain is categorised as a Partially malicious domain. \nIn addition, we didn't find evidence of strong malicious indications to classify the domain as malicious. \nIn such cases, we believe the best course of action is for the customer to add the domain to their custom list and not to add it to the intel.	FN, with no VT data, already in weak intel
+ETP	FN	FALSE	FALSE	-	-	-	-	-	-	In Progress		FN with no VT data
+ETP	FP	FALSE	FALSE	-	new	0	100	-	-	Closed	Following an investigation,  we found the domain does not exist in the Intel.	FP not in intel - close ticket

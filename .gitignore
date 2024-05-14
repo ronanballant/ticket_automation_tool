@@ -30,7 +30,11 @@ test.py
 main_temp.py
 
 # Ignore data files
-*.csv
+etp_intel_file.csv
+etp_automation_results_data.csv
+sps_automation_results_data.csv
+sps_intel_file.csv
+intel_file.csv
 *.tsv
 *.txt
 *.gz
