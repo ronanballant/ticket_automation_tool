@@ -10,10 +10,10 @@ from config import (destination_ip, destination_username, intel_fetcher_path,
 class SpsIntelFetcher:
     def __init__(self, entities) -> None:
         self.entities = entities
-        # self.fetch_intel()
-        # self.assign_results()
-        # self.write_intel_file()
-        self.open_intel()
+        self.fetch_intel()
+        self.assign_results()
+        self.write_intel_file()
+        # self.open_intel()
 
     def fetch_intel(self):
         domain_list = [entity.domain for entity in self.entities]
