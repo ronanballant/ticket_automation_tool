@@ -18,6 +18,8 @@ class TicketResponder:
     def __init__(self, entities):
         self.entities = entities
         self.time = time.time()
+        self.cert_path = "processed_cert.crt"
+        self.key_path = "processed_key.key"
         self.unresolved_file_path = results_file_path + f"{self.time}_domains_to_analyse.csv"
         self.response_file_path = results_file_path + f"{self.time}_result_comments.csv"
         self.get_username()
