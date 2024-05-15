@@ -10,7 +10,7 @@ class TicketResolver:
     def __init__(self, entity, rules, file_time) -> None:
         self.entity = entity
         self.rules = rules
-        self.file_path = results_file_path + f"{file_time}_results.csv"
+        self.file_path = os.path.join(results_file_path, f"{file_time}_results.csv")
         self.prepare_fp_rule_query()
         self.match_rule()
         self.write_resolutions()
