@@ -328,18 +328,25 @@ class TicketResponder:
             ticket_in_progress = "4"
             ticket_resolved = "5"
             transitions = [ticket_in_progress, ticket_resolved]
+
+            logger.info(f"Resolving {ticket}")
+            if resolved is True:
+                self.transition_ticket(ticket, transitions)
+            else:
+                self.transition_ticket(ticket, transitions[:-1])
+
         else:
             ticket_triaged = "31"
             ticket_in_progress = "221"
-            ticket_resolved = "141"
-            transitions = [ticket_triaged, ticket_in_progress, ticket_resolved]
-            
-        logger.info(f"Resolving {ticket}")
-        if resolved is True:
-            self.add_service_type(ticket, ticket_type, source)
-            self.transition_ticket(ticket, transitions)
-        else:
-            self.transition_ticket(ticket, transitions[:-1])
+            # ticket_resolved = "141"
+            transitions = [ticket_triaged, ticket_in_progress]
+
+            logger.info(f"Resolving {ticket}")
+            if resolved is True:
+                self.add_service_type(ticket, ticket_type, source)
+                self.transition_ticket(ticket, transitions)
+            else:
+                self.transition_ticket(ticket, transitions)
 
 
     def add_service_type(self, ticket, ticket_type, source):
