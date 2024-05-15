@@ -52,6 +52,7 @@ class VirusTotalFetcher:
 
     def get_external_data(self):
         today = datetime.today()
+        self.entity.vt_link = f"https://www.virustotal.com/gui/domain/{self.entity.domain}/detection"
         if VirusTotalFetcher.vt_request_count <= VirusTotalFetcher.vt_api_threshold:
             domain = self.entity.domain
 
@@ -78,6 +79,8 @@ class VirusTotalFetcher:
                     self.entity.last_seen = filtered_response.get(
                         "last_analysis_date", ""
                     )
+                    if not self.entity.last_seen:
+                        self.entity.last_seen = "-"
                     self.entity.categories = filtered_response.get("categories", {})
                     self.entity.dns_records = filtered_response.get("last_dns_records")
                     self.entity.analysis_results = filtered_response.get(
@@ -97,7 +100,7 @@ class VirusTotalFetcher:
                     else:
                         self.entity.days_since_creation = 100
 
-                    if self.entity.last_seen:
+                    if self.entity.last_seen != "-":
                         last_seen_datetime = datetime.utcfromtimestamp(
                             self.entity.last_seen
                         )

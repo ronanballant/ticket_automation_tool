@@ -49,8 +49,8 @@ class TicketFetcher:
             jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
 
         if self.queue.lower() == "etp":
-            # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND status in ("Open", "In Progress") and "Next Steps" ~ SecOps'
-            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
+            # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
+            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = ENTESC-11120'
         params = {"jql": jql_query, "maxResults": 100}
 
         self.req = requests.get(
@@ -83,8 +83,10 @@ class TicketFetcher:
                             reporter = "[~{}]".format(user_name)
                         description = fields.get("description")
                         summary = fields.get("summary")
+                        customer = fields.get("customfield_12703")
                         if description:
                             domains, urls = collect_entities(summary, description, ticket_id)
+                            is_guardicor_ticket = is_guardicore(customer, description)
                         if summary:
                             components = fields.get("components")
                             if components:
@@ -107,12 +109,18 @@ class TicketFetcher:
                             "urls": list(urls),
                             "entity_type": "DOMAIN",
                             "components": fields.get("components"),
-                            "labels": entry.get("labels"),
+                            "labels": fields.get("labels"),
+                            "is_guardicore_ticket": is_guardicor_ticket,
                         }
         else:
             print(f"Error Fetching Tickets - Status code: {self.req.status_code}")
             logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
 
+
+def is_guardicore(customer, description):
+    text = customer + description
+    return True if "guardicore" in text.lower() else False
+    
 
 def collect_urls(description):
     pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")

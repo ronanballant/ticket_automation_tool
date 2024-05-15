@@ -6,7 +6,7 @@ import re
 class Entity:
     entity_list = []
 
-    def __init__(self, queue, domain, entity_type, urls, ticket, ticket_type, reporter) -> None:
+    def __init__(self, queue, domain, entity_type, urls, ticket, ticket_type, reporter, is_guardicore_ticket) -> None:
         self.queue = queue
         self.entity = domain
         self.urls = urls
@@ -14,6 +14,7 @@ class Entity:
         self.ticket_id = ticket
         self.ticket_type = ticket_type
         self.reporter = reporter
+        self.is_guardicore_ticket = is_guardicore_ticket
         self.clean_domain()
         self.get_core_domain()
         self.append_entity()

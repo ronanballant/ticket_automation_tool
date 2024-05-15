@@ -51,12 +51,13 @@ def run_sps_process():
         ticket_type = values.get("ticket_type")
         reporter = values.get("reporter")
         entity_type = values.get("entity_type")
+        is_guardicore_ticket = False
 
         if ticket_type == "FN" or ticket_type == "FP":
             logger.info("Creating Entity Instances")
             for domain in domains:
                 Entity(
-                    "SPS", domain, entity_type, urls, ticket_id, ticket_type, reporter
+                    "SPS", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket
                 )
 
     print("Querying SPS intel")
@@ -104,12 +105,13 @@ def run_etp_process():
         ticket_type = values.get("ticket_type")
         reporter = values.get("reporter")
         entity_type = values.get("entity_type")
+        is_guardicore_ticket = values.get("is_guardicore_ticket")
 
         if ticket_type == "FN" or ticket_type == "FP":
             logger.info("Creating Entity Instances")
             for domain in domains:
                 Entity(
-                    "ETP", domain, entity_type, urls, ticket_id, ticket_type, reporter
+                    "ETP", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket
                 )
 
     print("Querying ETP intel")

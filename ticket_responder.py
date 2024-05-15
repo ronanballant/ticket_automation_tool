@@ -17,7 +17,7 @@ class TicketResponder:
 
     def __init__(self, entities):
         self.entities = entities
-        self.time = time.time()
+        self.time = int(time.time())
         self.cert_path = "processed_cert.crt"
         self.key_path = "processed_key.key"
         self.unresolved_file_path = results_file_path + f"{self.time}_domains_to_analyse.csv"
@@ -68,7 +68,8 @@ class TicketResponder:
                     "responses": [],
                     "reporter": entity.reporter,
                     "is_resolved": [],
-                    "source": entity.intel_source 
+                    "is_internal": entity.is_internal,
+                    "is_guardicore": entity.is_guardicore_ticket,
                 }
             else:
                 pass
@@ -86,20 +87,20 @@ class TicketResponder:
         allow_list_entries = []
         block_list_entries = []
         closed_list = [
-            "||status||ticket_id||ticket_type||entity||subdomains||malicious reports||last_seen||categories||feed||source||confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||malicious reports||subdomains||last_analysed||categories||feed||source||confidence||resolution||response||vt_link||"
         ]
         open_list = [
-            "||status||ticket_id||ticket_type||entity||subdomains||malicious reports||last_seen||categories||feed||source||confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||malicious reports||subdomains||last_analysed||categories||feed||source||confidence||resolution||response||vt_link||"
         ]
         sorted_entities = sorted(
             self.entities, key=lambda x: x.ticket_id, reverse=False
         )
         for entity in sorted_entities:
             if entity.resolution.lower() == "in progress":
-                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.source_response} {entity.response}|"
+                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.subdomain_count}|{entity.days_since_last_seen} days ago|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.source_response} {entity.response}|[Virus Total Link|{entity.vt_link}]|"
                 open_list.append(line)
             else:
-                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.source_response} {entity.response}|"
+                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.subdomain_count}|{entity.days_since_last_seen} days ago|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.source_response} {entity.response}|[Virus Total Link|{entity.vt_link}]|"
                 closed_list.append(line)
 
             if entity.resolution.lower() == "allow":
@@ -166,28 +167,31 @@ class TicketResponder:
         print("\nCreating ETP ticket")
         logger.info("Creating ETP ticket")
         allow_list_entries = []
+        remove_list_entries = []
         block_list_entries = []
         closed_list = [
-            "||status||ticket_id||ticket_type||entity||subdomains||malicious_reports||last_seen||categories||feed||source||filtered||cat_strength||confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||malicious reports||subdomains||last_analysed||categories||feed||source||filtered||cat_strength||confidence||resolution||response||vt_link||"
         ]
         open_list = [
-            "||status||ticket_id||ticket_type||entity||subdomains||malicious_reports||last_seen||categories||feed||source||filtered||cat_strength||confidence||resolution||response||"
+            "||status||ticket_id||ticket_type||entity||malicious reports||subdomains||last_analysed||categories||feed||source||filtered||cat_strength||confidence||resolution||response||vt_link||"
         ]
         sorted_entities = sorted(
             self.entities, key=lambda x: x.ticket_id, reverse=False
         )
         for entity in sorted_entities:
             if entity.resolution.lower() == "in progress":
-                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.is_filtered}|{entity.intel_category_strength}|{entity.resolution}|{entity.response}|"
+                line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.subdomain_count}|{entity.days_since_last_seen} days ago|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.is_filtered}|{entity.intel_category_strength}|{entity.resolution}|{entity.response}|[Virus Total Link|{entity.vt_link}]|"
                 open_list.append(line)
             else:
-                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.subdomain_count}|{entity.positives}|{entity.last_seen}|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.is_filtered}|{entity.intel_category_strength}|{entity.resolution}|{entity.response}|"
+                line = f"|Closed|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.subdomain_count}|{entity.days_since_last_seen} days ago|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.is_filtered}|{entity.intel_category_strength}|{entity.resolution}|{entity.response}|[Virus Total Link|{entity.vt_link}]|"
                 closed_list.append(line)
 
             if entity.resolution.lower() == "allow":
                 allow_list_entries.append(
                     f"{entity.etp_domain},{entity.entity_type},ALL_TYPES_BEST_MATCH,no malicious indications,{self.time},Added by {self.username},{entity.intel_source}"
                 )
+                if entity.is_in_man_bl is True:
+                    remove_list_entries.append(entity.etp_domain)
             if entity.resolution.lower() == "block":
                 block_list_entries.append(
                     f"{entity.etp_domain},{entity.entity_type},{entity.attribution},Known,{entity.attribution_id},{entity.attribution_description},etp-manual,{self.time},added by {self.username}"
@@ -196,16 +200,23 @@ class TicketResponder:
         open_table = "\n".join(open_list)
         closed_table = "\n".join(closed_list)
         allow_strings = "\n".join(allow_list_entries)
+        remove_strings = "\n".join(remove_list_entries)
         block_strings = "\n".join(block_list_entries)
-        description = (
-            " \n+{color:#de350b}*Please see the comment section to view open and closed cases.*{color}+\n\n\n"
-            + "*Allow List*\n{code:java}\n"
-            + allow_strings
-            + "{code}"
-            + "\n\n*Block List*\n{code:java}\n"
-            + block_strings
-            + "{code}"
-        )
+        description_list = ["\n+{color:#de350b}*Please see the comment section to view open and closed cases.*{color}+\n\n\n"]
+        if allow_list_entries:
+            description_list.append("*Allow List*\n{code:java}")
+            description_list.append(allow_strings)
+            description_list.append("{code}")
+        if remove_list_entries:
+            description_list.append("\n*Remove from Manual Blacklist*\n{code:java}")
+            description_list.append(remove_strings)
+            description_list.append("{code}")
+        if block_list_entries:
+            description_list.append("\n*Block List*\n{code:java}")
+            description_list.append(block_strings)
+            description_list.append("{code}")
+        
+        description = "\n".join(description_list)
 
         headers = {"Content-Type": "application/json"}
         epoch = int(time.time())
@@ -226,7 +237,6 @@ class TicketResponder:
         comment = (
             "*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table
         )
-
         json_object = json.dumps(tmp_dict, indent=4)
         try:
             response = requests.post(
@@ -257,7 +267,8 @@ class TicketResponder:
         self.resolved_tickets = []
         for ticket, values in self.responses.items():
             queue = values.get("queue")
-            source = values.get("source")
+            is_internal = values.get("is_internal")
+            is_guardicore = values.get("is_gurdicore")
             ticket_type = values.get("ticket_type")
             reporter = values.get("reporter")
             greeting = f"Hi {reporter}\n\n"
@@ -286,7 +297,7 @@ class TicketResponder:
             if ticket_resolved is True:
                 self.resolved_tickets.append(ticket)
 
-            self.close_ticket(queue, ticket, ticket_type, source, resolved)
+            self.close_ticket(queue, ticket, ticket_type, is_internal, resolved, is_guardicore)
 
         # os.remove(cert_path)
         # os.remove(key_path)
@@ -323,7 +334,7 @@ class TicketResponder:
         )
 
 
-    def close_ticket(self, queue, ticket, ticket_type, source, resolved):
+    def close_ticket(self, queue, ticket, ticket_type, is_internal, resolved, is_guardicore):
         if queue == 'SPS':
             ticket_in_progress = "4"
             ticket_resolved = "5"
@@ -343,20 +354,26 @@ class TicketResponder:
 
             logger.info(f"Resolving {ticket}")
             if resolved is True:
-                self.add_service_type(ticket, ticket_type, source)
+                self.add_service_type(ticket, ticket_type, is_internal, is_guardicore)
                 self.transition_ticket(ticket, transitions)
             else:
                 self.transition_ticket(ticket, transitions)
 
 
-    def add_service_type(self, ticket, ticket_type, source):
+    def add_service_type(self, ticket, ticket_type, is_internal, is_guardicore):
         if ticket not in TicketResponder.service_type_sent:
             if ticket_type == 'FP':
-                if any(substring in source.lower() for substring in ["nominum", "etp"]):
-                    service_type = "ESCR_TRUE_POSITIVE_INT_FEED"
+                if is_guardicore is True:
+                        service_type = "GC_TRUE_POSITIVE_DOMAIN"
                 else:
-                    service_type = "ESCR_TRUE_POSITIVE_THIRD_PARTY"
+                    if is_internal is True:
+                        service_type = "ESCR_TRUE_POSITIVE_INT_FEED"
+                    else:
+                        service_type = "ESCR_TRUE_POSITIVE_THIRD_PARTY"
             if ticket_type == 'FN':
+                if is_guardicore is True:
+                    service_type = "GC_TRUE_NEGATIVE_DOMAIN"
+                else:
                     service_type = "ESCR_TRUE_NEGATIVE_GENERIC"
 
             url = jira_ticket_api + f"{ticket}"

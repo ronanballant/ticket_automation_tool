@@ -60,10 +60,12 @@ class EtpIntelFetcher:
 
     def assign_results(self):
         for entity in self.entities:
+            sources = []
             etp_domain_status_list = []
             logger.info(f"Attributing intel to {entity.entity}")
             if entity.mongo_results:
                 for record in entity.mongo_results:
+                    sources.append(", ".join(record.get("source_feed", [])))
                     etp_domain_status = {
                         "category": record.get("category", ""),
                         "source_feed": ", ".join(record.get("source_feed", [])),
@@ -92,6 +94,8 @@ class EtpIntelFetcher:
 
                     entity.intel_category = strongest_result.get("category", "-")
                     entity.intel_source = strongest_result.get("source_feed", "-")
+                    entity.is_internal = is_internal_source(entity.intel_source)
+                    entity.is_in_man_bl = is_in_man_bl(", ".join(sources))
                     entity.intel_description = strongest_result.get("description", "-")
                     entity.is_filtered = str_to_bool(strongest_result.get("filtered", "-"))
                     entity.filter_reason = strongest_result.get("filter_reason", "-")
@@ -121,6 +125,7 @@ class EtpIntelFetcher:
         entity.is_in_intel = False
         entity.subdomain_count = 0
         entity.subdomain_only = False
+        entity.is_internal = False
 
     def write_intel_file(self):
         with open(etp_intel_file_path, mode="w", newline="") as file:
@@ -198,3 +203,17 @@ def str_to_bool(string):
         return True if string.lower() == "true" else False
     else:
         return string
+
+
+def is_internal_source(source):
+    if any(substring in source.lower() for substring in ["nom", "etp", "man"]):
+        return True
+    else:
+        return False
+
+
+def is_in_man_bl(source):
+    if "manual" in source.lower():
+        return True
+    else:
+        return False
