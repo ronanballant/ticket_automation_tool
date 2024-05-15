@@ -29,8 +29,19 @@ class TicketResponder:
         self.username = os.getenv("USER") or os.getenv("USERNAME")
 
     def get_keys(self):
-        self.cert_path = cert_path
-        self.key_path = key_path
+        with open(cert_path, "r") as f:
+            cert = f.readlines()
+
+        with open(self.cert_path, "w") as f:
+            for line in cert:
+                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
+
+        with open(key_path, "r") as f:
+            key = f.readlines()
+
+        with open(self.key_path, "w") as f:
+            for line in key:
+                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
 
     # def get_keys(self):
     #     cert = get_az_secret.get_az_secret(cert_name)

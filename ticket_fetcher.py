@@ -11,13 +11,26 @@ from config import cert_name, cert_path, jira_search_api, key_name, key_path, lo
 class TicketFetcher:
     def __init__(self, queue="sps") -> None:
         self.queue = queue
+        self.cert_path = "processed_cert.crt"
+        self.key_path = "processed_key.key"
         self.get_keys()
         self.get_tickets()
         self.parse_tickets()
 
     def get_keys(self):
-        self.cert_path = cert_path
-        self.key_path = key_path
+        with open(cert_path, "r") as f:
+            cert = f.readlines()
+
+        with open(self.cert_path, "w") as f:
+            for line in cert:
+                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
+
+        with open(key_path, "r") as f:
+            key = f.readlines()
+
+        with open(self.key_path, "w") as f:
+            for line in key:
+                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
 
     # def get_keys(self):
     #     cert = get_az_secret.get_az_secret(cert_name)
@@ -99,9 +112,6 @@ class TicketFetcher:
         else:
             print(f"Error Fetching Tickets - Status code: {self.req.status_code}")
             logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
-
-        # os.remove(cert_path)
-        # os.remove(key_path)
 
 
 def collect_urls(description):
