@@ -49,8 +49,7 @@ class TicketFetcher:
             jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
 
         if self.queue.lower() == "etp":
-            # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = ENTESC-11120'
+            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
         params = {"jql": jql_query, "maxResults": 100}
 
         self.req = requests.get(
