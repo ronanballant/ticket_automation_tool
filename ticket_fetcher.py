@@ -85,7 +85,7 @@ class TicketFetcher:
                         summary = fields.get("summary")
                         customer = fields.get("customfield_12703")
                         if description:
-                            domains, urls = collect_entities(summary, description, ticket_id)
+                            domains, urls, ips = collect_entities(summary, description, ticket_id)
                             is_guardicor_ticket = is_guardicore(customer, description)
                         if summary:
                             components = fields.get("components")
@@ -107,6 +107,7 @@ class TicketFetcher:
                             "description": description,
                             "domains": list(domains),
                             "urls": list(urls),
+                            "ips": list(ips),
                             "entity_type": "DOMAIN",
                             "components": fields.get("components"),
                             "labels": fields.get("labels"),
@@ -121,6 +122,20 @@ def is_guardicore(customer, description):
     text = customer + description
     return True if "guardicore" in text.lower() else False
     
+
+def clean_description(description):
+    logger.info("Cleaning description")
+    pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
+    description = re.sub(pattern, " ", description)
+    characters_to_remove = ["[", "]", "*", '"', "'", "{", "}", ";", "\\", "(", ")", ","]
+    desc = "".join(
+        char for char in description if char not in characters_to_remove
+    ).strip()
+    if "Carrier Support team" in desc:
+        desc = desc.split("Carrier Support team")[0]
+    logger.info("Description cleaned")
+    return desc
+
 
 def collect_urls(description):
     pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
@@ -147,6 +162,10 @@ def collect_domains(decsription):
     return domains
 
 
+def collect_ips(description):
+    ipv4_pattern = r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
+    return re.findall(ipv4_pattern, description)
+
 def collect_entities(summary, desc, ticket):
     summary = summary.lower()
     desc = desc.lower()
@@ -155,24 +174,11 @@ def collect_entities(summary, desc, ticket):
     desc = clean_description(text)
     desc, urls = collect_urls(desc)
     domains = collect_domains(desc)
+    ips = collect_ips(desc)
     logger.info(
         f"Extracted {len(set(domains))} domains and {len(set(urls))} urls from {ticket}"
     )
-    return set(domains), set(urls)
-
-
-def clean_description(description):
-    logger.info("Cleaning description")
-    pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
-    description = re.sub(pattern, " ", description)
-    characters_to_remove = ["[", "]", "*", '"', "'", "{", "}", ";", "\\", "(", ")", ","]
-    desc = "".join(
-        char for char in description if char not in characters_to_remove
-    ).strip()
-    if "Carrier Support team" in desc:
-        desc = desc.split("Carrier Support team")[0]
-    logger.info("Description cleaned")
-    return desc
+    return set(domains), set(urls), set(ips)
 
 
 def get_ticket_type(summary, description):

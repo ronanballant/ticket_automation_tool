@@ -60,7 +60,6 @@ class TicketResponder:
         tickets = {}
         open_tickets = []
         for entity in self.entities:
-            self.queue = entity.queue
             if entity.ticket_id not in tickets.keys():
                 tickets[entity.ticket_id] = {
                     "queue": entity.queue,
@@ -156,7 +155,7 @@ class TicketResponder:
                 print(f"\nSPS ticket {issue} created succesfully\n")
 
                 comment = ("*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table)
-                self.add_comment(self.queue, issue, comment, self.username)
+                self.add_comment("SPS", issue, comment, self.username)
             else:
                 logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
                 print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
@@ -257,7 +256,7 @@ class TicketResponder:
             if status.startswith("2"):
                 logger.info(f"ETP ticket {issue} created succesfully")
                 print(f"\nETP ticket {issue} created succesfully\n")
-                self.add_comment(self.queue, issue, comment, self.username)
+                self.add_comment("ETP", issue, comment, self.username)
             else:
                 logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
                 print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
@@ -284,7 +283,7 @@ class TicketResponder:
 
             if send_comment is True:
                 print(f"Responding to {ticket}")
-                self.add_comment(self.queue, ticket, comment, self.username)
+                self.add_comment(queue, ticket, comment, self.username)
             else:
                 print(f"No response to {ticket} - Open to analyse")
 

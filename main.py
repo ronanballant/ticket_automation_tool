@@ -99,6 +99,7 @@ def run_etp_process():
     print("Processing Tickets")
     tickets = TicketFetcher("etp").tickets
     for ticket, values in tickets.items():
+        ips = values.get("ips")
         ticket_id = ticket
         domains = values.get("domains")
         urls = values.get("urls")
@@ -111,7 +112,7 @@ def run_etp_process():
             logger.info("Creating Entity Instances")
             for domain in domains:
                 Entity(
-                    "ETP", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket
+                    "ETP", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket, ips
                 )
 
     print("Querying ETP intel")
