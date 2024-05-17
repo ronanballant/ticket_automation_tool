@@ -130,8 +130,8 @@ def clean_description(description):
     desc = "".join(
         char for char in description if char not in characters_to_remove
     ).strip()
-    if "Carrier Support team" in desc:
-        desc = desc.split("Carrier Support team")[0]
+    if "carrier support team" in desc:
+        desc = desc.split("carrier support team")[0]
     logger.info("Description cleaned")
     return desc
 
