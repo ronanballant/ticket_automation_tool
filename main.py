@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        # default='sps',
+        default='sps',
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -45,6 +45,7 @@ def run_sps_process():
     print("Processing Tickets")
     tickets = TicketFetcher("sps").tickets
     for ticket, values in tickets.items():
+        ips = values.get('ips')
         ticket_id = ticket
         domains = values.get("domains")
         urls = values.get("urls")
@@ -57,7 +58,7 @@ def run_sps_process():
             logger.info("Creating Entity Instances")
             for domain in domains:
                 Entity(
-                    "SPS", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket
+                    "SPS", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket, ips
                 )
 
     print("Querying SPS intel")
@@ -76,7 +77,7 @@ def run_sps_process():
 
     responder = TicketResponder(Entity.entity_list)
     print("\nCreating SPS Results Ticket")
-    # responder.create_sps_ticket()
+    responder.create_sps_ticket()
     print("\nResponding to Tickets")
     responder.update_tickets()
 
@@ -153,11 +154,12 @@ if __name__ == "__main__":
         print("Please enter sps or etp to choose a queue!")
         exit(1)
 
-    try:
-        if args.queue.lower() == "sps":
-            run_sps_process()
-        else:
-            run_etp_process()
-    except Exception as e:
-        print(f"Process Failed!... \nError: {e}")
-        logger.error(f"Process Failed!... Error: {e}")
+    # try:
+    #     if args.queue.lower() == "sps":
+    run_sps_process()
+    #     else:
+    #         run_etp_process()
+    # except Exception as e:
+    #     print(f"Process Failed!... \nError: {e}")
+    #     logger.error(f"Process Failed!... Error: {e}")
+

@@ -106,7 +106,7 @@ class TicketResponder:
                 allow_list_entries.append(f"{entity.entity},{entity.ticket_id}")
             if entity.resolution.lower() == "block":
                 block_list_entries.append(
-                    f"{entity.entity},{entity.ticket_id},{entity.attribute}"
+                    f"{entity.entity},{entity.ticket_id},{entity.attribution}"
                 )
 
         open_table = "\n".join(open_list)
@@ -160,7 +160,7 @@ class TicketResponder:
                 logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
                 print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
 
-        self.add_comment("SPS", issue, comment, self.username)
+        # self.add_comment("SPS", issue, comment, self.username)
 
     def create_etp_ticket(self):
         print("\nCreating ETP ticket")

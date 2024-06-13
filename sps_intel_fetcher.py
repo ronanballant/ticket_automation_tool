@@ -45,6 +45,7 @@ class SpsIntelFetcher:
             if result:
                 entity.is_in_intel = str_to_bool(result.get("is_in_intel", "-"))
                 entity.subdomain_only = str_to_bool(result.get("subdomain_only"))
+                entity.is_internal = False
                 if entity.is_in_intel is True:
                     entity.intel_feed = result.get("intel_feed", "-")
                     entity.intel_confidence = result.get("intel_confidence", "-")
@@ -70,6 +71,7 @@ class SpsIntelFetcher:
         entity.is_in_intel = False
         entity.e_list_entry = False
         entity.subdomain_only = False
+        entity.is_internal = False
 
     def write_intel_file(self):
         with open(sps_intel_file_path, mode="w", newline="") as file:

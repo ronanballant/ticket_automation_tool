@@ -118,7 +118,10 @@ class TicketFetcher:
 
 
 def is_guardicore(customer, description):
-    text = customer + description
+    if customer:
+        text = customer + description
+    else:
+        text = description
     return True if "guardicore" in text.lower() else False
     
 
