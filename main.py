@@ -319,13 +319,9 @@ if __name__ == "__main__":
         print("Please enter sps or etp to choose a queue!")
         exit(1)
 
-    # try:
-    #     if args.queue.lower() == "sps":
-    # run_sps_process()
-    run_etp_process()
-    #     else:
-    #         run_etp_process()
-    # except Exception as e:
-    #     print(f"Process Failed!... \nError: {e}")
-    #     logger.error(f"Process Failed!... Error: {e}")
+
+    if args.queue.lower() == "sps":
+        run_sps_process()
+    else:
+        run_etp_process()
 

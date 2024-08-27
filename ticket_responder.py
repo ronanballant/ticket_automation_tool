@@ -8,7 +8,7 @@ import requests
 
 import get_az_secret
 from config import (cert_name, cert_path, jira_ticket_api, key_name, key_path,
-                    logger, results_file_path, secops_member)
+                    logger, results_file_path, secops_member, previous_ticket_resolutions_path)
 from entity import Entity
 
 
@@ -110,7 +110,7 @@ class TicketResponder:
         # os.remove(key_path)
 
     def save_entity_details(self, entity):
-        with open("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv", "a") as f:
+        with open(previous_ticket_resolutions_path, "a") as f:
             file = csv.writer(f)
             file.writerow([
                 entity.queue,
@@ -137,11 +137,11 @@ class TicketResponder:
             ])
         
     def delete_entity_details(self):
-        os.remove("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv")
+        os.remove(previous_ticket_resolutions_path)
     
     def read_previous_entities(self):
-        if os.path.exists("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv"):
-            with open("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv", "r") as f:
+        if os.path.exists(previous_ticket_resolutions_path):
+            with open(previous_ticket_resolutions_path, "r") as f:
                 file = csv.reader(f)
 
                 for row in file:
@@ -183,7 +183,7 @@ class TicketResponder:
                     entity.attribution = attribution
                     TicketResponder.entities.append(entity)
         else:
-            with open("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv", "w") as f:
+            with open(previous_ticket_resolutions_path, "w") as f:
                 f.write("")
             
             self.read_previous_entities()

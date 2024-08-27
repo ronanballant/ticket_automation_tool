@@ -1,6 +1,6 @@
 import csv
 
-from config import logger, rule_table_path, sps_rule_path
+from config import logger, rule_table_path
 
 
 class RuleFetcher:
