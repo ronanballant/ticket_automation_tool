@@ -2,21 +2,25 @@ import csv
 import json
 import os
 import time
-import traceback
+
 
 import requests
 
 import get_az_secret
 from config import (cert_name, cert_path, jira_ticket_api, key_name, key_path,
-                    logger, results_file_path)
+                    logger, results_file_path, secops_member)
+from entity import Entity
 
 
 class TicketResponder:
     requests.packages.urllib3.disable_warnings(requests.urllib3.exceptions.InsecureRequestWarning)
+    entities = []
     service_type_sent = []
+    resolved_tickets = []
 
-    def __init__(self, entities):
-        self.entities = entities
+    def __init__(self):
+        self.assignee = secops_member
+        self.label = ''
         self.time = int(time.time())
         self.cert_path = "processed_cert.crt"
         self.key_path = "processed_key.key"
@@ -24,8 +28,10 @@ class TicketResponder:
         self.response_file_path = results_file_path + f"{self.time}_result_comments.csv"
         self.get_username()
         self.get_keys()
-        self.group_tickets()
 
+    def update_responder(self, ticket, entities):
+        self.ticket = ticket
+        self.entities = entities
 
     def get_username(self):
         self.username = os.getenv("USER") or os.getenv("USERNAME")
@@ -55,30 +61,133 @@ class TicketResponder:
     #     with open(self.key_path, "w") as f:
     #         f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
 
-    def group_tickets(self):
-        logger.info("Grouping by ticket")
-        tickets = {}
-        open_tickets = []
+    def update_ticket(self):
+        send_comment = False
+        self.ticket_resolved = True
+        self.queue = self.entities[0].queue
+        self.is_guardicore = self.entities[0].is_guardicore_ticket
+        self.ticket_type = self.entities[0].ticket_type
+        self.reporter = self.entities[0].reporter
+        greeting = f"Hi {self.reporter}\n\n"
+        end = "\n\nIf there are any further questions we will be happy to respond.\nSecOPs Team"
+        ticket_responses = ''
         for entity in self.entities:
-            if entity.ticket_id not in tickets.keys():
-                tickets[entity.ticket_id] = {
-                    "queue": entity.queue,
-                    "ticket_type": entity.ticket_type,
-                    "responses": [],
-                    "reporter": entity.reporter,
-                    "is_resolved": [],
-                    "is_internal": entity.is_internal,
-                    "is_guardicore": entity.is_guardicore_ticket,
-                }
+            self.save_entity_details(entity)
+            self.is_internal = entity.is_internal
+            if entity.comment:
+                ticket_responses = ticket_responses + f"\n\n{entity.comment}"
+                if "is currently under investigation" in ticket_responses:
+                    self.ticket_resolved = False
+                else:
+                    send_comment = True
             else:
-                pass
+                self.ticket_resolved = False
 
-            tickets[entity.ticket_id]["responses"].append((entity.comment))
-            tickets[entity.ticket_id]["is_resolved"].append(entity.is_resolved)
-            open_tickets.append((entity.domain, entity.ticket_id, entity.comment))
+            TicketResponder.entities.append(entity)
 
-        self.responses = tickets
-        self.unresolved_entities = open_tickets
+        self.comment = greeting + ticket_responses + end
+        if send_comment is True:
+            try:
+                self.add_comment()
+                print(f"Responded to {self.ticket}")
+                logger.info(f"Responded to {self.ticket}")
+            except Exception as e:
+                self.comment_sent = False
+                self.comment_failed = True
+                print(f"Failed to respond to {self.ticket}: {e}")
+                logger.info(f"Failed to respond to {self.ticket}: {e}")     
+            pass
+        else:
+            print(f"No resolution for {self.ticket} - Open to analyse")
+            logger.info(f"No resolution for {self.ticket} - Open to analyse")
+
+        if self.ticket_resolved is True:
+            TicketResponder.resolved_tickets.append(self.ticket)
+
+        self.close_ticket()
+
+        # os.remove(cert_path)
+        # os.remove(key_path)
+
+    def save_entity_details(self, entity):
+        with open("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv", "a") as f:
+            file = csv.writer(f)
+            file.writerow([
+                entity.queue,
+                entity.domain,
+                entity.entity_type,
+                entity.urls,
+                entity.ticket_id,
+                entity.ticket_type,
+                entity.reporter,
+                entity.entity,
+                entity.positives,
+                entity.subdomain_count,
+                entity.days_since_last_seen,
+                entity.categories,
+                entity.intel_feed,
+                entity.intel_source,
+                entity.intel_confidence,
+                entity.resolution,
+                entity.source_response,
+                entity.response,
+                entity.vt_link,
+                entity.resolution,
+                entity.attribution,
+            ])
+        
+    def delete_entity_details(self):
+        os.remove("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv")
+    
+    def read_previous_entities(self):
+        if os.path.exists("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv"):
+            with open("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv", "r") as f:
+                file = csv.reader(f)
+
+                for row in file:
+                    queue = row[0]
+                    domain = row[1] 
+                    entity_type = row[2] 
+                    urls = list(row[3])
+                    ticket = row[4] 
+                    ticket_type = row[5] 
+                    reporter = row[6]
+                    entity = row[7]
+                    positives = row[8]
+                    subdomain_count = row[9]
+                    days_since_last_seen = row[10]
+                    categories = row[11]
+                    intel_feed = row[12]
+                    intel_source = row[13]
+                    intel_confidence = row[14]
+                    resolution = row[15]
+                    source_response = row[16]
+                    response = row[17]
+                    vt_link = row[18]
+                    resolution = row[19]
+                    attribution = row[20]
+
+                    entity = Entity(queue, domain, entity_type, urls, ticket, ticket_type, reporter, False, None)
+                    entity.positives = positives
+                    entity.subdomain_count = subdomain_count
+                    entity.days_since_last_seen = days_since_last_seen
+                    entity.categories = categories
+                    entity.intel_feed = intel_feed
+                    entity.intel_source = intel_source
+                    entity.intel_confidence = intel_confidence
+                    entity.resolution = resolution
+                    entity.source_response = source_response
+                    entity.response = response
+                    entity.vt_link = vt_link
+                    entity.resolution = resolution
+                    entity.attribution = attribution
+                    TicketResponder.entities.append(entity)
+        else:
+            with open("/Users/rballant/coding/projects/jira_ticket_process update/results/previous_entites.csv", "w") as f:
+                f.write("")
+            
+            self.read_previous_entities()
+                    
 
     def create_sps_ticket(self):
         print("\nCreating SPS ticket")
@@ -91,10 +200,11 @@ class TicketResponder:
         open_list = [
             "||status||ticket_id||ticket_type||entity||malicious reports||subdomains||last_analysed||categories||feed||source||confidence||resolution||response||vt_link||"
         ]
-        sorted_entities = sorted(
-            self.entities, key=lambda x: x.ticket_id, reverse=False
+        self.sorted_entities = sorted(
+            TicketResponder.entities, key=lambda x: x.ticket_id, reverse=False
         )
-        for entity in sorted_entities:
+        for entity in self.sorted_entities:
+            self.queue = entity.queue
             if entity.resolution.lower() == "in progress":
                 line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.subdomain_count}|{entity.days_since_last_seen} days ago|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.intel_confidence}|{entity.resolution}|{entity.source_response} {entity.response}|[Virus Total Link|{entity.vt_link}]|"
                 open_list.append(line)
@@ -148,20 +258,23 @@ class TicketResponder:
         else:
             issue_decoded = response.content.decode("utf-8")
             issue_json = json.loads(issue_decoded)
-            issue = issue_json.get("key")
+            self.ticket = issue_json.get("key")
             status = str(response.status_code)
             if status.startswith("2"):
-                logger.info(f"SPS ticket {issue} created succesfully")
-                print(f"\nSPS ticket {issue} created succesfully\n")
-
-                comment = ("*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table)
-                self.add_comment("SPS", issue, comment, self.username)
+                logger.info(f"SPS ticket {self.ticket} created succesfully")
+                print(f"\nSPS ticket {self.ticket} created succesfully\n")
             else:
-                logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
-                print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
-
-        # self.add_comment("SPS", issue, comment, self.username)
-
+                logger.info(f"Failed to create ETP ticket {self.ticket}. Status code: {status}")
+                print(f"\nFailed to create ETP ticket {self.ticket}. Status code: {status}\n")
+                
+            self.comment = ("*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table)
+            try:
+                self.add_comment()
+            except Exception as e:
+                logger.info(f"Failed to add result comments to {self.ticket}: {e}")
+                print(f"\nFailed to add result comments to {self.ticket}: {e}")
+            self.delete_entity_details()
+            
     def create_etp_ticket(self):
         print("\nCreating ETP ticket")
         logger.info("Creating ETP ticket")
@@ -174,10 +287,11 @@ class TicketResponder:
         open_list = [
             "||status||ticket_id||ticket_type||entity||malicious reports||subdomains||last_analysed||categories||feed||source||filtered||cat_strength||confidence||resolution||response||vt_link||"
         ]
-        sorted_entities = sorted(
-            self.entities, key=lambda x: x.ticket_id, reverse=False
+        self.sorted_entities = sorted(
+            TicketResponder.entities, key=lambda x: x.ticket_id, reverse=False
         )
-        for entity in sorted_entities:
+        for entity in self.sorted_entities:
+            self.queue = entity.queue
             if entity.resolution.lower() == "in progress":
                 line = f"|In Progress|{entity.ticket_id}|{entity.ticket_type}|{entity.entity}|{entity.positives}|{entity.subdomain_count}|{entity.days_since_last_seen} days ago|{entity.categories}|{entity.intel_feed}|{entity.intel_source}|{entity.is_filtered}|{entity.intel_category_strength}|{entity.resolution}|{entity.response}|[Virus Total Link|{entity.vt_link}]|"
                 open_list.append(line)
@@ -233,7 +347,7 @@ class TicketResponder:
         tmp_dict["fields"]["customfield_12703"] = "Internal"
         tmp_dict["fields"]["labels"] = ["ENT_SECOPS_OPERATIONS"]
 
-        comment = (
+        self.comment = (
             "*Open Cases*\n" + open_table + "\n\n\n*Closed Cases*\n" + closed_table
         )
         json_object = json.dumps(tmp_dict, indent=4)
@@ -251,75 +365,41 @@ class TicketResponder:
         else:
             issue_decoded = response.content.decode("utf-8")
             issue_json = json.loads(issue_decoded)
-            issue = issue_json.get("key")
+            self.ticket = issue_json.get("key")
             status = str(response.status_code)
             if status.startswith("2"):
-                logger.info(f"ETP ticket {issue} created succesfully")
-                print(f"\nETP ticket {issue} created succesfully\n")
-                self.add_comment("ETP", issue, comment, self.username)
+                print(f"\nETP ticket {self.ticket} created succesfully\n")
+                logger.info(f"ETP ticket {self.ticket} created succesfully")
             else:
-                logger.info(f"Failed to create ETP ticket {issue}. Status code: {status}")
-                print(f"\nFailed to create ETP ticket {issue}. Status code: {status}\n")
+                logger.info(f"Failed to create ETP ticket {self.ticket}. Status code: {status}")
+                print(f"\nFailed to create ETP ticket {self.ticket}. Status code: {status}\n")
+            try:
+                self.add_comment()
+            except Exception as e:
+                logger.info(f"Failed to add result comments to {self.ticket}: {e}")
+                print(f"\nFailed to add result comments to {self.ticket}: {e}")
+            
+            self.delete_entity_details()
 
-
-    def update_tickets(self):
-        self.resolved_tickets = []
-        for ticket, values in self.responses.items():
-            queue = values.get("queue")
-            is_internal = values.get("is_internal")
-            is_guardicore = values.get("is_gurdicore")
-            ticket_type = values.get("ticket_type")
-            reporter = values.get("reporter")
-            greeting = f"Hi {reporter}\n\n"
-            end = "\n\nIf there are any further questions we will be happy to respond.\nSecOPs Team"
-            comment = greeting + "\n\n".join(values.get("responses")) + end
-            send_comment = False
-            resolved = True
-            for response in values.get("responses"):
-                if "is currently under investigation" in response:
-                    resolved = False
-                else:
-                    send_comment = True
-
-            if send_comment is True:
-                print(f"Responding to {ticket}")
-                self.add_comment(queue, ticket, comment, self.username)
-            else:
-                print(f"No response to {ticket} - Open to analyse")
-
-            entity_resolutions = values.get("is_resolved")
-            ticket_resolved = True
-            for resolution in entity_resolutions:
-                if resolution is False:
-                    ticket_resolved = False
-
-            if ticket_resolved is True:
-                self.resolved_tickets.append(ticket)
-
-            self.close_ticket(queue, ticket, ticket_type, is_internal, resolved, is_guardicore)
-
-        # os.remove(cert_path)
-        # os.remove(key_path)
-
-    def add_comment(self, queue, ticket, comment, assignee="rballant", label=""):
-        logger.info(f"Adding comment to {ticket}")
-        url = jira_ticket_api + ticket
+    def add_comment(self):
+        logger.info(f"Adding comment to {self.ticket}")
+        url = jira_ticket_api + self.ticket
 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
-        if queue.lower() == "sps":
+        if self.queue.lower() == "sps":
             payload = {
                 "update": {
-                    "comment": [{"add": {"body": comment}}],
-                    "assignee": [{"set": {"name": assignee}}],
+                    "comment": [{"add": {"body": self.comment}}],
+                    "assignee": [{"set": {"name": self.assignee}}],
                 }
             }
         else:
             payload = {
                 "update": {
-                    "comment": [{"add": {"body": comment}}],
-                    "assignee": [{"set": {"name": assignee}}],
-                    "labels": [{"add": label}],
+                    "comment": [{"add": {"body": self.comment}}],
+                    "assignee": [{"set": {"name": self.assignee}}],
+                    "labels": [{"add": self.label}],
                 }
             }
 
@@ -332,57 +412,78 @@ class TicketResponder:
             verify=False,
         )
 
-
-    def close_ticket(self, queue, ticket, ticket_type, is_internal, resolved, is_guardicore):
-        if queue == 'SPS':
+    def close_ticket(self):
+        if self.queue == 'SPS':
             ticket_in_progress = "4"
             ticket_resolved = "5"
             transitions = [ticket_in_progress, ticket_resolved]
 
-            logger.info(f"Resolving {ticket}")
-            if resolved is True:
-                self.transition_ticket(ticket, transitions)
+            if self.ticket_resolved is True:
+                print(f"Closing {self.ticket}")
+                logger.info(f"Closing {self.ticket}")
+                try:
+                    self.transition_ticket(transitions)
+                except Exception as e:
+                    print(f"Failed to close {self.ticket}: {e}")
+                    logger.info(f"Failed to close {self.ticket}: {e}")
             else:
-                self.transition_ticket(ticket, transitions[:-1])
-
+                print(f"Updating {self.ticket} status to 'In Progress'")
+                logger.info(f"Updating {self.ticket} status to 'In Progress'")
+                try:
+                    self.transition_ticket(transitions[:-1])
+                except Exception as e:
+                    print(f"Failed to update {self.ticket} status: {e}")
+                    logger.info(f"Failed to update {self.ticket} status: {e}")
         else:
             ticket_triaged = "31"
             ticket_in_progress = "221"
             # ticket_resolved = "141"
             transitions = [ticket_triaged, ticket_in_progress]
 
-            logger.info(f"Resolving {ticket}")
-            if resolved is True:
-                self.add_service_type(ticket, ticket_type, is_internal, is_guardicore)
-                self.transition_ticket(ticket, transitions)
+            if self.ticket_resolved is True:
+                self.add_service_type()
+                try:
+                    print(f"Updating {self.ticket} status to 'In Progress'")
+                    logger.info(f"Updating {self.ticket} status to 'In Progress'")
+                    self.transition_ticket(transitions)
+                except Exception as e:
+                    print(f"Failed to update {self.ticket} status: {e}")
+                    logger.info(f"Failed to update {self.ticket} status: {e}")
             else:
-                self.transition_ticket(ticket, transitions)
+                try:
+                    print(f"Updating {self.ticket} status to 'In Progress'")
+                    logger.info(f"Updating {self.ticket} status to 'In Progress'")
+                    self.transition_ticket(transitions)
+                except Exception as e:
+                    print(f"Failed to update {self.ticket} status: {e}")
+                    logger.info(f"Failed to update {self.ticket} status: {e}")
 
-
-    def add_service_type(self, ticket, ticket_type, is_internal, is_guardicore):
-        if ticket not in TicketResponder.service_type_sent:
-            if ticket_type == 'FP':
-                if is_guardicore is True:
-                        service_type = "GC_TRUE_POSITIVE_DOMAIN"
+    def add_service_type(self):
+        if self.ticket_id not in TicketResponder.service_type_sent:
+            if self.ticket_type == 'FP':
+                if self.is_guardicore is True:
+                        self.service_type = "GC_TRUE_POSITIVE_DOMAIN"
                 else:
-                    if is_internal is True:
-                        service_type = "ESCR_TRUE_POSITIVE_INT_FEED"
+                    if self.is_internal is True:
+                        self.service_type = "ESCR_TRUE_POSITIVE_INT_FEED"
                     else:
-                        service_type = "ESCR_TRUE_POSITIVE_THIRD_PARTY"
-            if ticket_type == 'FN':
-                if is_guardicore is True:
-                    service_type = "GC_TRUE_NEGATIVE_DOMAIN"
+                        self.service_type = "ESCR_TRUE_POSITIVE_THIRD_PARTY"
+            if self.ticket_type == 'FN':
+                if self.is_guardicore is True:
+                    self.service_type = "GC_TRUE_NEGATIVE_DOMAIN"
                 else:
-                    service_type = "ESCR_TRUE_NEGATIVE_GENERIC"
+                    self.service_type = "ESCR_TRUE_NEGATIVE_GENERIC"
 
-            url = jira_ticket_api + f"{ticket}"
+            url = jira_ticket_api + f"{self.ticket}"
             headers = {"Content-Type": "application/json"}
             payload = {
                 "update": {
-                    "customfield_17300": [{"set": {"value":service_type}}]
+                    "customfield_17300": [{"set": {"value":self.service_type}}]
                     }
                 }
 
+            print(f"Adding service type")
+            logger.info(f"Adding service type {self.ticket}")
             try:
                 response = requests.put(
                     url,
@@ -393,17 +494,18 @@ class TicketResponder:
                 )
                 pass
             except Exception as e:
-                print(f"\nFailed to add service type to {ticket} status - Error: {e}\n")
+                print(f"Failed to add service type: {e}")
+                logger.info(f"Failed to add service type: {e}")
             else:
                 status = str(response.status_code)
                 if status.startswith("2"):
-                    TicketResponder.service_type_sent.append(ticket)
-                    print(f"Added service type to {ticket}")
+                    TicketResponder.service_type_sent.append(self.ticket)
                 else:
-                    print(f"\nFailed to add service type to {ticket}. Status code: {status}\n")
+                    print(f"\nFailed to add service type to {self.ticket}. Status code: {status}")
+                    logger.error(f"Failed to add service type to {self.ticket}. Status code: {status}")
 
-    def transition_ticket(self, ticket, transitions):
-        url = jira_ticket_api + f"{ticket}/transitions"
+    def transition_ticket(self, transitions):
+        url = jira_ticket_api + f"{self.ticket}/transitions"
         headers = {"Content-Type": "application/json"}
         for transition in transitions:
             payload = {"transition": {"id": transition}}
@@ -417,15 +519,15 @@ class TicketResponder:
                 )
                 pass
             except Exception as e:
-                logger.error(f"Failed to transition {ticket} status - Error: {e}")
-                print(f"\nFailed to update {ticket} status - Error: {e}\n")
+                logger.error(f"Failed to transition {self.ticket} status - Error: {e}")
+                print(f"\nFailed to update {self.ticket} status - Error: {e}\n")
                 break
             else:
                 status = str(response.status_code)
                 if status.startswith("2"):
-                    logger.info(f"Closed ticket {ticket}")
-                    print(f"Closed ticket {ticket}")
+                    logger.info(f"Status updated succesfully")
+                    print(f"Status updated succesfully")
                 else:
-                    logger.info(f"Failed to update {ticket} status. Status code: {status}")
-                    print(f"\nFailed to update {ticket} status. Status code: {status}\n")
+                    logger.info(f"Failed to update status {self.ticket}. Status code: {status}")
+                    print(f"\nFailed to update status {self.ticket}. Status code: {status}\n")
                     break

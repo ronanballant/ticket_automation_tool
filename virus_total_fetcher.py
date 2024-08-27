@@ -7,10 +7,11 @@ from datetime import datetime
 
 import requests
 
-from config import interal_vt_api, logger, vt_api_key
+from config import logger, vt_api_key
 
 
 class VirusTotalFetcher:
+    previous_queries = {}
     vt_request_count = 0
     vt_api_threshold = 200
 
@@ -50,80 +51,103 @@ class VirusTotalFetcher:
         else:
             self.entity.vt_url = None
 
+    def get_previous_query(self):
+        try:
+            self.previous_query = VirusTotalFetcher.previous_queries.get(self.entity.domain)
+        except Exception as e:
+            print(f"Failed to read previous VT query: {e}")
+            logger.error(f"Failed to read previous VT query: {e}")
+            raise
     def get_external_data(self):
-        today = datetime.today()
-        self.entity.vt_link = f"https://www.virustotal.com/gui/domain/{self.entity.domain}/detection"
-        if VirusTotalFetcher.vt_request_count <= VirusTotalFetcher.vt_api_threshold:
-            domain = self.entity.domain
+        self.get_previous_query()
 
-            request_headers = {
-                "Accept": "application/json",
-                "x-apikey": vt_api_key,
-            }
-
-            domain_vt_api = f"https://www.virustotal.com/api/v3/domains/{domain}"
-            try:
-                logger.info(f"{domain}: Fetching VT data")
-                response = requests.get(domain_vt_api, headers=request_headers)
-                if response.status_code == 200:
-                    decoded_response = json.loads(response.text)
-                    data_response = decoded_response.get("data", {})
-                    filtered_response = data_response.get("attributes", {})
-                    last_analysis_stats = filtered_response.get(
-                        "last_analysis_stats", ""
-                    )
-                    self.entity.positives = last_analysis_stats.get("malicious", "")
-                    self.entity.creation_date = filtered_response.get(
-                        "creation_date", ""
-                    )
-                    self.entity.last_seen = filtered_response.get(
-                        "last_analysis_date", ""
-                    )
-                    if not self.entity.last_seen:
-                        self.entity.last_seen = "-"
-                    self.entity.categories = filtered_response.get("categories", {})
-                    self.entity.dns_records = filtered_response.get("last_dns_records")
-                    self.entity.analysis_results = filtered_response.get(
-                        "last_analysis_results", ""
-                    )
-                    self.entity.tags = filtered_response.get("tags", "")
-                    self.entity.data_source = "External"
-                    self.entity.has_data = True
-
-                    if self.entity.creation_date:
-                        creation_datetime = datetime.utcfromtimestamp(
-                            self.entity.creation_date
-                        )
-                        self.entity.days_since_creation = (
-                            today - creation_datetime
-                        ).days
-                    else:
-                        self.entity.days_since_creation = 100
-
-                    if self.entity.last_seen != "-":
-                        last_seen_datetime = datetime.utcfromtimestamp(
-                            self.entity.last_seen
-                        )
-                        self.entity.days_since_last_seen = (
-                            today - last_seen_datetime
-                        ).days
-                    else:
-                        self.entity.days_since_last_seen = 365
-
-                    logger.info("%s: VT query successful", self.entity.domain)
-                else:
-                    self.no_data()
-                    print(f"Bad VT Response for {self.entity.domain}")
-                    logger.error("%s: VT Bad Response", self.entity.domain)
-            except:
-                self.no_data()
-                print(f"Error parsing VT data for {self.entity.domain}")
-                logger.error("%s: Error parsing VT data", self.entity.domain)
-            VirusTotalFetcher.vt_request_count += 1
+        if self.previous_query:
+            response = self.previous_query
+            if response.status_code == 200:
+                self.decoded_response = json.loads(response.text)
+            self.assign_results()
         else:
-            self.no_data()
-            print("%s: VT API Quota Reached", self.entity.domain)
-            logger.error("%s: VT Failed - API Quota Reached", self.entity.domain)
+            self.entity.vt_link = f"https://www.virustotal.com/gui/domain/{self.entity.domain}/detection"
+            if VirusTotalFetcher.vt_request_count <= VirusTotalFetcher.vt_api_threshold:
+                VirusTotalFetcher.vt_request_count += 1
+                domain = self.entity.domain
+                request_headers = {
+                    "Accept": "application/json",
+                    "x-apikey": vt_api_key,
+                }
+                domain_vt_api = f"https://www.virustotal.com/api/v3/domains/{domain}"
+                try:
+                    logger.info(f"{domain}: Fetching VT data")
+                    response = requests.get(domain_vt_api, headers=request_headers)
+                    VirusTotalFetcher.previous_queries[self.entity.domain] = response 
+                except Exception as e:
+                    self.no_data()
+                    print(f"Error querying VT API: {e}")
+                    logger.error(f"Error querying VT API: {e}")
+                    raise
+                else:
+                    if response.status_code == 200:
+                        self.decoded_response = json.loads(response.text)
+                        self.assign_results()
+                    else:
+                        self.no_data()
+                        print(f"Bad VT Response for: {response.status_code}")
+                        logger.error(f"Bad VT Response for: {response.status_code}")
+            else:
+                self.no_data()
+                print("VT query failed - API quota reached")
+                logger.error("VT query failed - API quota reached")
+
+    def assign_results(self):
+        try:
+            logger.info(f"Attributing VT data")
+            today = datetime.today()
+            data_response = self.decoded_response.get("data", {})
+            filtered_response = data_response.get("attributes", {})
+            last_analysis_stats = filtered_response.get(
+                "last_analysis_stats", ""
+            )
+            self.entity.positives = last_analysis_stats.get("malicious", "")
+            self.entity.creation_date = filtered_response.get(
+                "creation_date", ""
+            )
+            self.entity.last_seen = filtered_response.get(
+                "last_analysis_date", ""
+            )
+            if not self.entity.last_seen:
+                self.entity.last_seen = "-"
+            self.entity.categories = filtered_response.get("categories", {})
+            self.entity.dns_records = filtered_response.get("last_dns_records")
+            self.entity.analysis_results = filtered_response.get(
+                "last_analysis_results", ""
+            )
+            self.entity.tags = filtered_response.get("tags", "")
+            self.entity.data_source = "External"
+            self.entity.has_data = True
+
+            if self.entity.creation_date:
+                creation_datetime = datetime.utcfromtimestamp(
+                    self.entity.creation_date
+                )
+                self.entity.days_since_creation = (
+                    today - creation_datetime
+                ).days
+            else:
+                self.entity.days_since_creation = 100
+
+            if self.entity.last_seen != "-":
+                last_seen_datetime = datetime.utcfromtimestamp(
+                    self.entity.last_seen
+                )
+                self.entity.days_since_last_seen = (
+                    today - last_seen_datetime
+                ).days
+            else:
+                self.entity.days_since_last_seen = 365
+        except Exception as e:
+            print(f"Error attributing VT data to {self.entity.domain}: {e}")
+            logger.error(f"Error attributing VT data to {self.entity.domain}: {e}")
+            raise
 
     def no_data(self):
         logger.info(f"Assigning no data to {self.entity.domain}")
@@ -199,65 +223,3 @@ class VirusTotalFetcher:
             self.entity.attribution = "Phishing"
             self.entity.attribution_id = "5090"
             self.entity.attribution_description = "Phishing site"
-
-    # def get_internal_data(self):
-    #     domain = self.entity.domain
-    #     today = datetime.today()
-    #     internal_path = f"{interal_vt_api}{domain}{&domain_only=True}"
-
-    #     try:
-    #         response = requests.get(internal_path)
-
-    #         if response.status_code == 200:
-    #             response_json = response.json()
-    #             if (
-    #                 "VT-categories" in response_json
-    #                 and isinstance(response_json["VT-categories"], list)
-    #                 and response_json["VT-categories"]
-    #             ):
-    #                 results = response_json.get("VT-categories")[0]
-    #                 self.entity.data_source = 'Internal'
-    #                 self.entity.positives = results.get("positives", '')
-    #                 self.entity.resolution = results.get('resolution', '')
-    #                 self.entity.response_code = results.get('Response code', '')
-    #                 self.entity.detections = results.get('detections', {})
-    #                 self.entity.last_seen = results.get('last_seen', '')
-    #                 self.entity.first_seen = results.get('first_seen', '')
-    #                 self.entity.days_since_creation = 100
-    #                 self.entity.categories = {}
-    #                 for item in response_json.get("VT-categories", {}):
-    #                     for key, value in item.items():
-    #                         if "category" in key.lower() and value:
-    #                             self.entity.categories[key] = value
-    #                 response.close()
-
-    #                 if self.entity.last_seen:
-    #                     last_seen_datetime = datetime.strptime(self.entity.last_seen, "%Y-%m-%d %H:%M:%S")
-    #                     self.entity.days_since_last_seen = (today - last_seen_datetime).days
-    #                 else:
-    #                     self.entity.days_since_last_seen = 365
-
-    #                 if self.entity.days_since_last_seen >= 30:
-    #                     self.check_externally = True
-    #                     self.entity.has_data = False
-    #                     logger.info("%s: Internal data expired", self.entity.domain)
-    #                 else:
-    #                     self.check_externally = False
-    #                     self.entity.has_data = True
-    #                     self.entity.data_source = 'Internal'
-    #                     logger.info("%s: Internal scan, Positives: %s", self.entity.domain, self.entity.positives)
-    #             else:
-    #                 response.close()
-    #                 self.check_externally = True
-    #                 self.entity.has_data = False
-    #                 logger.info("%s: Internal scan has no results", self.entity.domain)
-    #         else:
-    #             response.close()
-    #             self.check_externally = True
-    #             self.entity.has_data = False
-    #             logger.info(
-    #                 "%s: Internal request failed with status code: %s", self.entity.domain, response.status_code
-    #             )
-    #     except Exception as e:
-    #         self.check_externally = True
-    #         logger.error("%s: Internal scan failed\n%s Error:", self.entity.domain, e)

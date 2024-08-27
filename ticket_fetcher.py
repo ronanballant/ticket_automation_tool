@@ -18,19 +18,24 @@ class TicketFetcher:
         self.parse_tickets()
 
     def get_keys(self):
-        with open(cert_path, "r") as f:
-            cert = f.readlines()
+        try:
+            with open(cert_path, "r") as f:
+                cert = f.readlines()
 
-        with open(self.cert_path, "w") as f:
-            for line in cert:
-                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
+            with open(self.cert_path, "w") as f:
+                for line in cert:
+                    f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
 
-        with open(key_path, "r") as f:
-            key = f.readlines()
+            with open(key_path, "r") as f:
+                key = f.readlines()
 
-        with open(self.key_path, "w") as f:
-            for line in key:
-                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
+            with open(self.key_path, "w") as f:
+                for line in key:
+                    f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
+        except Exception as e:
+            print(f"Failed to get keys: {e}")
+            logger.error(f"Failed to get keys: {e}")
+            raise
 
     # def get_keys(self):
     #     cert = get_az_secret.get_az_secret(cert_name)
@@ -43,79 +48,86 @@ class TicketFetcher:
     #         f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
 
     def get_tickets(self):
-        logger.info(f"Fetching tickets from {self.queue.lower()} queue")
+        try:
+            if self.queue.lower() == "sps":
+                jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
 
-        if self.queue.lower() == "sps":
-            jql_query = f'project="ReCat Sec Ops Requests" AND status in ("Open", "In Progress", "Reopened") AND assignee IS EMPTY'
+            if self.queue.lower() == "etp":
+                jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
+            params = {"jql": jql_query, "maxResults": 100}
 
-        if self.queue.lower() == "etp":
-            jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-        params = {"jql": jql_query, "maxResults": 100}
-
-        self.req = requests.get(
-            jira_search_api,
-            params=params,
-            cert=(self.cert_path, self.key_path),
-            verify=False,
-        )
+            self.req = requests.get(
+                jira_search_api,
+                params=params,
+                cert=(self.cert_path, self.key_path),
+                verify=False,
+            )
+        except Exception as e:
+            print(f"JIRA ticket API Failed: {e}")
+            logger.error(f"JIRA ticket API Failed: {e}")
+            raise
 
     def parse_tickets(self):
-        if self.req.status_code == 200:
-            logger.info("Tickets Retrieved")
-            logger.info("Parsing tickets")
-            result_dict = json.loads(self.req.text)
-            issues = result_dict.get("issues")
-            self.tickets = {}
-            if issues:
-                for entry in issues:
-                    ticket_id = entry.get("key")
-                    fields = entry.get("fields")
-                    if fields:
-                        reporter_data = fields.get("reporter")
-                        full_name = reporter_data.get("displayName")
-                        user_name = reporter_data.get("name")
-                        if full_name == "svcCarrierSupport":
-                            first_name = "support team"
-                            reporter = "support team"
-                        else:
-                            first_name = full_name.split(" ")[0]
-                            reporter = "[~{}]".format(user_name)
-                        description = fields.get("description")
-                        summary = fields.get("summary")
-                        customer = fields.get("customfield_12703")
-                        if description:
-                            domains, urls, ips = collect_entities(summary, description, ticket_id)
-                            is_guardicor_ticket = is_guardicore(customer, description)
-                        if summary:
-                            components = fields.get("components")
-                            if components:
-                                component = components[0].get("name")
+        try:
+            if self.req.status_code == 200:
+                logger.info("Tickets Retrieved")
+                logger.info("Parsing tickets")
+                result_dict = json.loads(self.req.text)
+                issues = result_dict.get("issues")
+                self.tickets = {}
+                if issues:
+                    for entry in issues:
+                        ticket_id = entry.get("key")
+                        fields = entry.get("fields")
+                        if fields:
+                            reporter_data = fields.get("reporter")
+                            full_name = reporter_data.get("displayName")
+                            user_name = reporter_data.get("name")
+                            if full_name == "svcCarrierSupport":
+                                first_name = "support team"
+                                reporter = "support team"
                             else:
-                                component = ''
-                            if 'SecOps False Negative' in component:
-                                ticket_type = 'FN'
-                            elif 'SecOps False Positive' in component:
-                                ticket_type = "FP"
-                            else:
-                                ticket_type = get_ticket_type(summary, description)
-                        self.tickets[ticket_id] = {
-                            "ticket_type": ticket_type,
-                            "summary": fields.get("summary"),
-                            "first_name": first_name,
-                            "reporter": reporter,
-                            "description": description,
-                            "domains": list(domains),
-                            "urls": list(urls),
-                            "ips": list(ips),
-                            "entity_type": "DOMAIN",
-                            "components": fields.get("components"),
-                            "labels": fields.get("labels"),
-                            "is_guardicore_ticket": is_guardicor_ticket,
-                        }
-        else:
-            print(f"Error Fetching Tickets - Status code: {self.req.status_code}")
-            logger.info(f"Tickets Not Retrieved - Error: {self.req.status_code}")
-
+                                first_name = full_name.split(" ")[0]
+                                reporter = "[~{}]".format(user_name)
+                            description = fields.get("description")
+                            summary = fields.get("summary")
+                            customer = fields.get("customfield_12703")
+                            if description:
+                                domains, urls, ips = collect_entities(summary, description, ticket_id)
+                                is_guardicor_ticket = is_guardicore(customer, description)
+                            if summary:
+                                components = fields.get("components")
+                                if components:
+                                    component = components[0].get("name")
+                                else:
+                                    component = ''
+                                if 'SecOps False Negative' in component:
+                                    ticket_type = 'FN'
+                                elif 'SecOps False Positive' in component:
+                                    ticket_type = "FP"
+                                else:
+                                    ticket_type = get_ticket_type(summary, description)
+                            self.tickets[ticket_id] = {
+                                "ticket_type": ticket_type,
+                                "summary": fields.get("summary"),
+                                "first_name": first_name,
+                                "reporter": reporter,
+                                "description": description,
+                                "domains": list(domains),
+                                "urls": list(urls),
+                                "ips": list(ips),
+                                "entity_type": "DOMAIN",
+                                "components": fields.get("components"),
+                                "labels": fields.get("labels"),
+                                "is_guardicore_ticket": is_guardicor_ticket,
+                            }
+            else:
+                print(f"Error Fetching Tickets - Bad Status code: {self.req.status_code}")
+                logger.info(f"Error Fetching Tickets - Bad Status code: {self.req.status_code}")
+        except Exception as e:
+            print(f"Failed to parse ticket response: {e}")
+            logger.error(f"Failed to parse ticket response: {e}")
+            raise
 
 def is_guardicore(customer, description):
     if customer:
@@ -186,9 +198,13 @@ def collect_entities(summary, desc, ticket):
 def get_ticket_type(summary, description):
     summary = summary.lower()
     description = description.lower()
-    if any(substring in text for text in (summary, description) for substring in ("fn", "false negative")):
+    if "fn" in summary or "false negative" in summary:
         return "FN"
-    elif any(substring in text for text in (summary, description) for substring in ("fp", "false positive")):
+    elif "fp" in summary or "false positive" in summary:
+        return "FP"
+    elif " fn " in description or "false negative" in description:
+        return "FP"
+    elif " fp " in description or "false positive" in description:
         return "FP"
     else:
         return "None"

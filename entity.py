@@ -1,24 +1,60 @@
 import tldextract as tld
 from config import logger
+from typing import List
 import re
 
 
 class Entity:
-    entity_list = []
+    def __init__(self, queue: str, domain: str, entity_type: str, urls: List[str], ticket: str, ticket_type: str, reporter: str, is_guardicore_ticket: bool, ips: List[str]) -> None:
+        self.queue: str = queue
+        self.entity: str = domain
+        self.urls: List[str] = urls
+        self.entity_type: str = entity_type
+        self.ticket_id: str = ticket
+        self.ticket_type: str = ticket_type
+        self.reporter: str = reporter
+        self.is_guardicore_ticket: bool = is_guardicore_ticket
+        self.ips: List[str] = ips
+        self.intel_feed: str = '-'
+        self.intel_confidence: str = '-'
+        self.intel_source: str = "-"
+        self.confidence_level: str = "-"
+        self.subdomain_count: int = 0
+        self.url_count: int = 0 
+        self.is_in_intel: bool = False
+        self.e_list_entry: bool = False
+        self.subdomain_only: bool = False
+        self.is_internal: bool = False
+        self.domain: str = ''
+        self.vt_url: str = ''
+        self.vt_link: str = ''
+        self.has_data: bool = False
+        self.positives: str = "-"
+        self.creation_date: str = "-"
+        self.last_seen: str = "-"
+        self.categories: str = "-"
+        self.response_code: str = "-"
+        self.analysis_results: str = "-"
+        self.tags: str = "-"
+        self.data_source: str = "-"
+        self.days_since_creation: str = "-"
+        self.days_since_last_seen: str = "-"
+        self.is_filtered: str = "-"
+        self.intel_category_strength: str = "-"
+        self.resolution: str = ''
+        self.response: str = ''
+        self.source_response: str = ''
+        self.is_resolved: bool = False
+        self.comment: str = ''
+        try:
+            self.clean_domain()
+            self.get_core_domain()
+            self.append_entity()
+        except Exception as e:
+            print(f"Failed to create entity instance: {e}")
+            logger.error(f"Failed to create entity instance: {e}")
+            raise
 
-    def __init__(self, queue, domain, entity_type, urls, ticket, ticket_type, reporter, is_guardicore_ticket, ips) -> None:
-        self.queue = queue
-        self.entity = domain
-        self.urls = urls
-        self.entity_type = entity_type
-        self.ticket_id = ticket
-        self.ticket_type = ticket_type
-        self.reporter = reporter
-        self.is_guardicore_ticket = is_guardicore_ticket
-        self.ips = ips
-        self.clean_domain()
-        self.get_core_domain()
-        self.append_entity()
 
     def append_entity(self):
         whitelist_domains = [
@@ -52,16 +88,27 @@ class Entity:
             "yahoo.com",
             "akamai1.com",
             "bp1.com",
-            "facebook.com"
+            "facebook.com",
+            "name-list.match",
         ]
-        if self.core_domain not in whitelist_domains:
-            if self.is_not_file_extension():
-                Entity.entity_list.append(self)
-                print(f"Entity Found: {self.entity}")
-                logger.info(f"{self.entity} entity instance created")
+        
+        self.append_entity = False
+        if self.core_domain:
+            if self.core_domain not in whitelist_domains:
+                if self.is_not_file_extension():
+                    self.append_entity = True
+                    print(f"Entity Found: {self.entity}")
+                    logger.info(f"{self.entity} entity instance created")
+                else:
+                    print(f"Skipping {self.entity} - file detected")
+                    logger.info(f"Skipping {self.entity} - file detected")
             else:
-                print(f"Skipping {self.entity} - file detected")
-                logger.info(f"Skipping {self.entity} - file detected")
+                print(f"Whitelisted domain Skipped - {self.entity}")
+                logger.info(f"Whitelisted domain Skipped - {self.entity}")
+        else:
+            print(f"Entity Skipped - {self.entity}")
+            logger.info(f"Entity Skipped - {self.entity}")
+
 
     def clean_domain(self):
         logger.info(f"Cleaning {self.entity}")
