@@ -130,7 +130,8 @@ class RuleFetcher:
             print(f"Unexpected error while generating rule table: {e}")
             logger.error(f"Unexpected error while generating rule table: {e}")
             raise
- 
+
+
 def str_to_bool(string):
     if type(string) == str:
         if string.lower() == "true":

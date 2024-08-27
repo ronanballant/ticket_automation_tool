@@ -1,11 +1,24 @@
-import tldextract as tld
-from config import logger
-from typing import List
 import re
+from typing import List
+
+import tldextract as tld
+
+from config import logger
 
 
 class Entity:
-    def __init__(self, queue: str, domain: str, entity_type: str, urls: List[str], ticket: str, ticket_type: str, reporter: str, is_guardicore_ticket: bool, ips: List[str]) -> None:
+    def __init__(
+        self,
+        queue: str,
+        domain: str,
+        entity_type: str,
+        urls: List[str],
+        ticket: str,
+        ticket_type: str,
+        reporter: str,
+        is_guardicore_ticket: bool,
+        ips: List[str],
+    ) -> None:
         self.queue: str = queue
         self.entity: str = domain
         self.urls: List[str] = urls
@@ -15,19 +28,19 @@ class Entity:
         self.reporter: str = reporter
         self.is_guardicore_ticket: bool = is_guardicore_ticket
         self.ips: List[str] = ips
-        self.intel_feed: str = '-'
-        self.intel_confidence: str = '-'
+        self.intel_feed: str = "-"
+        self.intel_confidence: str = "-"
         self.intel_source: str = "-"
         self.confidence_level: str = "-"
         self.subdomain_count: int = 0
-        self.url_count: int = 0 
+        self.url_count: int = 0
         self.is_in_intel: bool = False
         self.e_list_entry: bool = False
         self.subdomain_only: bool = False
         self.is_internal: bool = False
-        self.domain: str = ''
-        self.vt_url: str = ''
-        self.vt_link: str = ''
+        self.domain: str = ""
+        self.vt_url: str = ""
+        self.vt_link: str = ""
         self.has_data: bool = False
         self.positives: str = "-"
         self.creation_date: str = "-"
@@ -41,11 +54,11 @@ class Entity:
         self.days_since_last_seen: str = "-"
         self.is_filtered: str = "-"
         self.intel_category_strength: str = "-"
-        self.resolution: str = ''
-        self.response: str = ''
-        self.source_response: str = ''
+        self.resolution: str = ""
+        self.response: str = ""
+        self.source_response: str = ""
         self.is_resolved: bool = False
-        self.comment: str = ''
+        self.comment: str = ""
         try:
             self.clean_domain()
             self.get_core_domain()
@@ -54,7 +67,6 @@ class Entity:
             print(f"Failed to create entity instance: {e}")
             logger.error(f"Failed to create entity instance: {e}")
             raise
-
 
     def append_entity(self):
         whitelist_domains = [
@@ -91,7 +103,7 @@ class Entity:
             "facebook.com",
             "name-list.match",
         ]
-        
+
         self.append_entity = False
         if self.core_domain:
             if self.core_domain not in whitelist_domains:
@@ -108,7 +120,6 @@ class Entity:
         else:
             print(f"Entity Skipped - {self.entity}")
             logger.info(f"Entity Skipped - {self.entity}")
-
 
     def clean_domain(self):
         logger.info(f"Cleaning {self.entity}")
@@ -133,7 +144,7 @@ class Entity:
         ).strip()
 
     def is_not_file_extension(self):
-        file_extension_pattern = r'\.(txt|.exc|tsv|csv|py|json|ext)$'
+        file_extension_pattern = r"\.(txt|.exc|tsv|csv|py|json|ext)$"
         return not re.match(file_extension_pattern, self.core_domain)
 
     def get_core_domain(self):

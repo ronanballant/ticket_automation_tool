@@ -1,8 +1,10 @@
-from config import logger
+import csv
+
+from config import etp_intel_file_path, logger
+
 # from mongo_craden import blacklist
 
-from config import etp_intel_file_path
-import csv
+
 
 class EtpIntelFetcher:
     previous_queries = {}
@@ -17,7 +19,9 @@ class EtpIntelFetcher:
 
     def read_previous_queries(self):
         try:
-            self.previous_intel = EtpIntelFetcher.previous_queries.get(self.entity.domain)
+            self.previous_intel = EtpIntelFetcher.previous_queries.get(
+                self.entity.domain
+            )
         except Exception as e:
             print(f"Failed to read previous Intel query: {e}")
             logger.error(f"Failed to read previous Intel query: {e}")
@@ -36,21 +40,28 @@ class EtpIntelFetcher:
                 self.entity.domain = self.entity.domain[:-1]
             else:
                 self.entity.etp_domain = self.entity.domain + "."
-                
+
             try:
-                cursor = self.mongo_connection.blacklist.find({"etp_record": self.entity.etp_domain})
+                cursor = self.mongo_connection.blacklist.find(
+                    {"etp_record": self.entity.etp_domain}
+                )
                 self.entity.mongo_results = [record for record in cursor]
-                
+
                 sudomain_pattern = f".*.{self.entity.etp_domain}"
-                cursor = self.mongo_connection.blacklist.find({"#data": {"$regex": sudomain_pattern}})
+                cursor = self.mongo_connection.blacklist.find(
+                    {"#data": {"$regex": sudomain_pattern}}
+                )
                 subdomain_results = [record for record in cursor]
                 self.entity.subdomain_count = len(subdomain_results)
 
-                if len(self.entity.mongo_results) == 0 and self.entity.subdomain_count > 0:
+                if (
+                    len(self.entity.mongo_results) == 0
+                    and self.entity.subdomain_count > 0
+                ):
                     self.entity.subdomain_only = True
                 else:
                     self.entity.subdomain_only = False
-                
+
                 EtpIntelFetcher.previous_queries[self.entity.domain] = {
                     "mongo_results": self.entity.mongo_results,
                     "subdomain_only": self.entity.subdomain_only,
@@ -59,9 +70,7 @@ class EtpIntelFetcher:
             except Exception as e:
                 print(f"Error querying ETP intel: {e}")
                 logger.error(f"Error querying ETP intel: {e}")
-                self.no_intel()   
-
-
+                self.no_intel()
 
     # def fetch_intel(self):
     #     logger.info("Generating ETP intel query")
@@ -117,16 +126,24 @@ class EtpIntelFetcher:
                 self.entity.is_internal = is_internal_source(self.entity.intel_source)
                 self.entity.is_in_man_bl = is_in_man_bl(", ".join(sources))
                 self.entity.intel_description = strongest_result.get("description", "-")
-                self.entity.is_filtered = str_to_bool(strongest_result.get("filtered", "-"))
+                self.entity.is_filtered = str_to_bool(
+                    strongest_result.get("filtered", "-")
+                )
                 self.entity.filter_reason = strongest_result.get("filter_reason", "-")
                 self.entity.intel_threat_id = strongest_result.get("threat_id", "-")
                 self.entity.intel_list_id = strongest_result.get("list_id", "-")
                 if self.entity.intel_list_id != "-":
-                    self.entity.intel_category_strength = "strong" if self.entity.intel_list_id in [1, 2, 3] else "weak"
+                    self.entity.intel_category_strength = (
+                        "strong" if self.entity.intel_list_id in [1, 2, 3] else "weak"
+                    )
                 else:
                     self.entity.intel_category_strength = "-"
-                self.entity.intel_threat_keywords = strongest_result.get("threat_keywords", "-")
-                self.entity.is_in_intel = True if self.entity.intel_category != "-" else False
+                self.entity.intel_threat_keywords = strongest_result.get(
+                    "threat_keywords", "-"
+                )
+                self.entity.is_in_intel = (
+                    True if self.entity.intel_category != "-" else False
+                )
             else:
                 self.no_intel()
         else:
@@ -205,7 +222,7 @@ class EtpIntelFetcher:
                 entity.mongo_results = []
                 entity.subdomain_count = 0
                 entity.etp_domain = entity.entity
-                entity.subdomain_only = 'False'
+                entity.subdomain_only = "False"
 
         self.assign_results()
 

@@ -8,6 +8,7 @@ from automation_logger import AutomationLogger
 from config import logger
 from entity import Entity
 from etp_intel_fetcher import EtpIntelFetcher
+from initialise_mongo import InitialiseMongo
 from intel_processor import IntelProcessor
 from jira_ticket_resolver import TicketResolver
 from response_creator import ResponseCreator
@@ -16,14 +17,14 @@ from sps_intel_fetcher import SpsIntelFetcher
 from ticket_fetcher import TicketFetcher
 from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
-from initialise_mongo import InitialiseMongo
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Ticket Automation Tool")
     parser.add_argument(
         "-q",
         "--queue",
-        default='sps',
+        default="sps",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -62,7 +63,7 @@ def run_sps_process():
     logger.info("Parsing tickets")
     try:
         for ticket, values in tickets.items():
-            ips = values.get('ips')
+            ips = values.get("ips")
             ticket_id = ticket
             domains = values.get("domains")
             urls = values.get("urls")
@@ -76,12 +77,20 @@ def run_sps_process():
                 for domain in domains:
                     try:
                         entity = Entity(
-                            "SPS", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket, ips
+                            "SPS",
+                            domain,
+                            entity_type,
+                            urls,
+                            ticket_id,
+                            ticket_type,
+                            reporter,
+                            is_guardicore_ticket,
+                            ips,
                         )
                     except Exception as e:
                         print(f"Failed to create entity for {domain}: {e}")
                         logger.error(f"Failed to create entity for {domain}: {e}")
-                        
+
                     if entity.append_entity is True:
                         if entity.ticket_id in ticket_dict:
                             ticket_dict[entity.ticket_id].append(entity)
@@ -92,9 +101,8 @@ def run_sps_process():
         logger.error(f"Failed to parse tickets: {e}")
         return
 
-
-    print(f'\nProcessing tickets\n')
-    logger.info(f'Processing tickets')
+    print(f"\nProcessing tickets\n")
+    logger.info(f"Processing tickets")
     file_time = time.time()
     responder = TicketResponder()
     responder.read_previous_entities()
@@ -102,9 +110,9 @@ def run_sps_process():
         for ticket, entities in ticket_dict.items():
             print(f"\nProcessing {ticket}")
             for entity in entities:
-                print(f'\nProcessing {entity.entity}')
-                logger.info(f'Processing {entity.entity}')
-                
+                print(f"\nProcessing {entity.entity}")
+                logger.info(f"Processing {entity.entity}")
+
                 try:
                     print("Querying SPS intel")
                     logger.info("Querying SPS intel")
@@ -127,8 +135,10 @@ def run_sps_process():
                     TicketResolver(entity, rule_set.rules, file_time)
                 except Exception as e:
                     print(f"Failed to find resolution for {entity.entity}: {e}")
-                    logger.error(f"Failed to finding resolution for {entity.entity}: {e}")
-                
+                    logger.error(
+                        f"Failed to finding resolution for {entity.entity}: {e}"
+                    )
+
                 try:
                     print(f"Generating entity specific response")
                     logger.info("Generating entity specific response")
@@ -136,8 +146,12 @@ def run_sps_process():
                     print(f"Response generated")
                     logger.info("Response generated")
                 except Exception as e:
-                    print(f"Failed to generating ticket response for {entity.entity}: {e}")
-                    logger.error(f"Failed to generating ticket response for {entity.entity}: {e}")
+                    print(
+                        f"Failed to generating ticket response for {entity.entity}: {e}"
+                    )
+                    logger.error(
+                        f"Failed to generating ticket response for {entity.entity}: {e}"
+                    )
 
             try:
                 print(f"Responding to {ticket}")
@@ -151,7 +165,7 @@ def run_sps_process():
         print(f"\nFailed to process entities: {e}")
         logger.error(f"Failed to process entities: {e}")
         return
-    
+
     try:
         print("\nCreating SPS Results Ticket")
         logger.info("Creating SPS Results Ticket")
@@ -171,12 +185,13 @@ def run_sps_process():
     logger.info("Process Finished...")
     logger.info("SPS ticket automation Finished")
 
+
 def run_etp_process():
     ticket_dict = {}
     start_time = time.time()
     print("\n\nETP Ticket Automation In Progress...")
     logger.info("ETP Ticket Automation In Progress...")
-    
+
     try:
         rule_set = RuleFetcher()
     except Exception as e:
@@ -219,12 +234,20 @@ def run_etp_process():
                 for domain in domains:
                     try:
                         entity = Entity(
-                            "ETP", domain, entity_type, urls, ticket_id, ticket_type, reporter, is_guardicore_ticket, ips
+                            "ETP",
+                            domain,
+                            entity_type,
+                            urls,
+                            ticket_id,
+                            ticket_type,
+                            reporter,
+                            is_guardicore_ticket,
+                            ips,
                         )
                     except Exception as e:
                         print(f"Failed to create entity for {domain}: {e}")
                         logger.error(f"Failed to create entity for {domain}: {e}")
-                        
+
                     if entity.append_entity is True:
                         if entity.ticket_id in ticket_dict:
                             ticket_dict[entity.ticket_id].append(entity)
@@ -235,8 +258,8 @@ def run_etp_process():
         logger.error(f"Failed to parse tickets: {e}")
         return
 
-    print(f'\nProcessing tickets\n')
-    logger.info(f'Processing tickets')
+    print(f"\nProcessing tickets\n")
+    logger.info(f"Processing tickets")
     file_time = time.time()
     responder = TicketResponder()
     responder.read_previous_entities()
@@ -244,9 +267,9 @@ def run_etp_process():
         for ticket, entities in ticket_dict.items():
             print(f"\nProcessing {ticket}")
             for entity in entities:
-                print(f'\nProcessing {entity.entity}')
-                logger.info(f'Processing {entity.entity}')
-                
+                print(f"\nProcessing {entity.entity}")
+                logger.info(f"Processing {entity.entity}")
+
                 try:
                     print("Querying ETP intel")
                     logger.info("Querying ETP intel")
@@ -269,8 +292,10 @@ def run_etp_process():
                     TicketResolver(entity, rule_set.rules, file_time)
                 except Exception as e:
                     print(f"Failed to find resolution for {entity.entity}: {e}")
-                    logger.error(f"Failed to finding resolution for {entity.entity}: {e}")
-                
+                    logger.error(
+                        f"Failed to finding resolution for {entity.entity}: {e}"
+                    )
+
                 try:
                     print(f"Generating entity specific response")
                     logger.info("Generating entity specific response")
@@ -278,8 +303,12 @@ def run_etp_process():
                     print(f"Response generated")
                     logger.info("Response generated")
                 except Exception as e:
-                    print(f"Failed to generating ticket response for {entity.entity}: {e}")
-                    logger.error(f"Failed to generating ticket response for {entity.entity}: {e}")
+                    print(
+                        f"Failed to generating ticket response for {entity.entity}: {e}"
+                    )
+                    logger.error(
+                        f"Failed to generating ticket response for {entity.entity}: {e}"
+                    )
             try:
                 print(f"Responding to {ticket}")
                 logger.info(f"Responding to {ticket}")
@@ -292,7 +321,7 @@ def run_etp_process():
         print(f"Failed to process entities: {e}")
         logger.error(f"Failed to process entities: {e}")
         return
-    
+
     try:
         print("\nCreating ETP Results Ticket")
         logger.info("Creating ETP Results Ticket")
@@ -300,7 +329,7 @@ def run_etp_process():
     except Exception as e:
         print(f"\nFailed to create ETP automation results ticket: {e}")
         logger.error(f"Failed to create ETP automation results ticket: {e}")
-    
+
     end_time = time.time()
     runtime = datetime.timedelta(seconds=end_time - start_time)
     # automation_logger = AutomationLogger(
@@ -319,9 +348,7 @@ if __name__ == "__main__":
         print("Please enter sps or etp to choose a queue!")
         exit(1)
 
-
     if args.queue.lower() == "sps":
         run_sps_process()
     else:
         run_etp_process()
-

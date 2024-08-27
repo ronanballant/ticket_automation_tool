@@ -90,19 +90,19 @@ class Intel:
                 "tpsvc_spam_lv4_i",
                 "tpsvc_spam_lv3_i",
             ],
-        stdout=subprocess.PIPE,
+            stdout=subprocess.PIPE,
         )
         subdomain_process = subprocess.Popen(
             ["grep", pattern],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
-        grep_all_decoded = subdomain_process.communicate(input=cat_feed_process.stdout.read())[0]
-        
+        grep_all_decoded = subdomain_process.communicate(
+            input=cat_feed_process.stdout.read()
+        )[0]
+
         wc_process = subprocess.run(
-            ["wc", "-l"], 
-            input=grep_all_decoded, 
-            stdout=subprocess.PIPE
+            ["wc", "-l"], input=grep_all_decoded, stdout=subprocess.PIPE
         )
         self.subdomain_count = int(wc_process.stdout.decode("utf-8"))
         self.url_count = 0
@@ -113,30 +113,29 @@ class Intel:
                 self.is_in_intel = True
             else:
                 self.subdomain_only = False
-        else: 
+        else:
             self.subdomain_only = False
-                
 
         if self.is_in_intel is False:
             # self.get_e_list_entry()
             self.subdomain_count = 0
 
-    def get_e_list_entry(self):        
+    def get_e_list_entry(self):
         pattern = f"\s{self.domain}\s"
         e_cat_feed_process = subprocess.Popen(
             [
-            "/usr/local/nom/bin/cat-feed",
-            "--type",
-            "pmlist",
-            "tpsvc_malware_lv5_e",
-            "tpsvc_phishing_lv5_e",
-            "tpsvc_unidentified_lv5_e",
-            "tpsvc_malware_lv4_e",
-            "tpsvc_phishing_lv4_e",
-            "tpsvc_unidentified_lv4_e",
-            "tpsvc_malware_lv3_e",
-            "tpsvc_phishing_lv3_e",
-            "tpsvc_unidentified_lv3_e",
+                "/usr/local/nom/bin/cat-feed",
+                "--type",
+                "pmlist",
+                "tpsvc_malware_lv5_e",
+                "tpsvc_phishing_lv5_e",
+                "tpsvc_unidentified_lv5_e",
+                "tpsvc_malware_lv4_e",
+                "tpsvc_phishing_lv4_e",
+                "tpsvc_unidentified_lv4_e",
+                "tpsvc_malware_lv3_e",
+                "tpsvc_phishing_lv3_e",
+                "tpsvc_unidentified_lv3_e",
             ],
             stdout=subprocess.PIPE,
         )
@@ -146,7 +145,9 @@ class Intel:
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
-        e_grep_decoded = e_grep_process.communicate(input=e_cat_feed_process.stdout.read())[0]
+        e_grep_decoded = e_grep_process.communicate(
+            input=e_cat_feed_process.stdout.read()
+        )[0]
 
         e_cut_feed = subprocess.run(
             ["cut", "-f", "8"], input=e_grep_decoded, stdout=subprocess.PIPE
@@ -232,8 +233,8 @@ class Intel:
         #         .replace(",", "")
         #     )
 
-            # self.feed = e_feed
-            # self.confidence = e_confidence
-            # self.source = e_source
-            # self.is_in_intel = True if self.feed else False
-            # self.e_list_entry = True if self.feed else False
+        # self.feed = e_feed
+        # self.confidence = e_confidence
+        # self.source = e_source
+        # self.is_in_intel = True if self.feed else False
+        # self.e_list_entry = True if self.feed else False

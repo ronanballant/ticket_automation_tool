@@ -57,96 +57,164 @@ class TicketResolver:
                 if self.entity.has_data is True:
                     if int(self.entity.subdomain_count) <= 3:
                         if self.entity.e_list_entry is False:
-                            logger.info(f"Matching {self.entity.entity} data against rule set")
+                            logger.info(
+                                f"Matching {self.entity.entity} data against rule set"
+                            )
                             print(f"Matching {self.entity.entity} to rule set")
                             group = self.rules.get(self.entity.queue)
                             if group:
                                 type_match = group.get(self.entity.ticket_type)
                                 if type_match:
-                                    is_in_intel = type_match.get(self.entity.is_in_intel)
-                                    is_filtered = is_in_intel.get(self.entity.is_filtered)
+                                    is_in_intel = type_match.get(
+                                        self.entity.is_in_intel
+                                    )
+                                    is_filtered = is_in_intel.get(
+                                        self.entity.is_filtered
+                                    )
                                     if is_filtered:
                                         category_strength = is_filtered.get(
                                             self.entity.intel_category_strength
                                         )
                                         if category_strength:
-                                            age = category_strength.get(self.entity.domain_age)
+                                            age = category_strength.get(
+                                                self.entity.domain_age
+                                            )
                                             if age:
                                                 if self.entity.positives != "-":
                                                     age.pop("-", None)
                                                     min_positives = {}
                                                     max_positives = {}
                                                     for key, item_value in age.items():
-                                                        if int(key) <= self.entity.positives:
+                                                        if (
+                                                            int(key)
+                                                            <= self.entity.positives
+                                                        ):
                                                             new_values = {
-                                                                k: value for k, value in item_value.items()
+                                                                k: value
+                                                                for k, value in item_value.items()
                                                             }
                                                             min_positives = merge_dicts(
-                                                                min_positives, new_values
+                                                                min_positives,
+                                                                new_values,
                                                             )
 
-                                                    for key, item_value in min_positives.items():
-                                                        if int(key) >= self.entity.positives:
+                                                    for (
+                                                        key,
+                                                        item_value,
+                                                    ) in min_positives.items():
+                                                        if (
+                                                            int(key)
+                                                            >= self.entity.positives
+                                                        ):
                                                             new_values = {
-                                                                key: value for key, value in item_value.items()
+                                                                key: value
+                                                                for key, value in item_value.items()
                                                             }
                                                             max_positives = merge_dicts(
-                                                                max_positives, new_values
+                                                                max_positives,
+                                                                new_values,
                                                             )
                                                 else:
-                                                    min_positives = age.get(self.entity.positives)
-                                                    max_positives = min_positives.get(self.entity.positives)
+                                                    min_positives = age.get(
+                                                        self.entity.positives
+                                                    )
+                                                    max_positives = min_positives.get(
+                                                        self.entity.positives
+                                                    )
 
                                                 if self.entity.confidence_level != "-":
                                                     min_confidence = {}
                                                     match = {}
-                                                    for key, item_value in max_positives.items():
-                                                        if int(key) <= self.entity.confidence_level:
+                                                    for (
+                                                        key,
+                                                        item_value,
+                                                    ) in max_positives.items():
+                                                        if (
+                                                            int(key)
+                                                            <= self.entity.confidence_level
+                                                        ):
                                                             new_values = {
-                                                                key: value for key, value in item_value.items()
+                                                                key: value
+                                                                for key, value in item_value.items()
                                                             }
-                                                            min_confidence = merge_dicts(
-                                                                min_confidence, new_values
+                                                            min_confidence = (
+                                                                merge_dicts(
+                                                                    min_confidence,
+                                                                    new_values,
+                                                                )
                                                             )
 
-                                                    for key, item_value in min_confidence.items():
-                                                        if int(key) >= self.entity.confidence_level:
+                                                    for (
+                                                        key,
+                                                        item_value,
+                                                    ) in min_confidence.items():
+                                                        if (
+                                                            int(key)
+                                                            >= self.entity.confidence_level
+                                                        ):
                                                             new_values = {
-                                                                key: value for key, value in item_value.items()
+                                                                key: value
+                                                                for key, value in item_value.items()
                                                             }
                                                             match.update(new_values)
                                                 else:
                                                     min_confidence = max_positives.get(
                                                         self.entity.confidence_level
                                                     )
-                                                    match = min_confidence.get(self.entity.confidence_level)
+                                                    match = min_confidence.get(
+                                                        self.entity.confidence_level
+                                                    )
 
-                                                self.entity.resolution = match["verdict"]
-                                                response = match["response"].replace("\\n", "\n")
+                                                self.entity.resolution = match[
+                                                    "verdict"
+                                                ]
+                                                response = match["response"].replace(
+                                                    "\\n", "\n"
+                                                )
                                                 self.entity.response = response
                                             else:
-                                                print(f"Error: No 'age' Value to Match Rule Set. age: {self.entity.domain_age}")
-                                                logger.info(f"Error: No 'age' Value to Match Rule Set. age: {self.entity.domain_age}")
+                                                print(
+                                                    f"Error: No 'age' Value to Match Rule Set. age: {self.entity.domain_age}"
+                                                )
+                                                logger.info(
+                                                    f"Error: No 'age' Value to Match Rule Set. age: {self.entity.domain_age}"
+                                                )
                                                 self.entity.resolution = "In Progress"
                                                 self.entity.response = "No Rule Match"
                                         else:
-                                            print(f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.entity.category_strength}")
-                                            logger.info(f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.entity.category_strength}")
+                                            print(
+                                                f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.entity.category_strength}"
+                                            )
+                                            logger.info(
+                                                f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.entity.category_strength}"
+                                            )
                                             self.entity.resolution = "In Progress"
                                             self.entity.response = "No Rule Match"
                                     else:
-                                        print(f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.entity.is_filtered}")
-                                        logger.info(f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.entity.is_filtered}")
+                                        print(
+                                            f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.entity.is_filtered}"
+                                        )
+                                        logger.info(
+                                            f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.entity.is_filtered}"
+                                        )
                                         self.entity.resolution = "In Progress"
                                         self.entity.response = "No Rule Match"
                                 else:
-                                    print(f"Error: No Type Match in Rule Set. Type: {self.entity.ticket_type}")
-                                    logger.info(f"Error: No Type Match in Rule Set. Type: {self.entity.ticket_type}")
+                                    print(
+                                        f"Error: No Type Match in Rule Set. Type: {self.entity.ticket_type}"
+                                    )
+                                    logger.info(
+                                        f"Error: No Type Match in Rule Set. Type: {self.entity.ticket_type}"
+                                    )
                                     self.entity.resolution = "In Progress"
                                     self.entity.response = "No Rule Match"
                             else:
-                                print(f"Error: No Queue Match in Rule Set. Queue: {self.entity.queue}")
-                                logger.info(f"Error: No Queue Match in Rule Set. Queue: {self.entity.queue}")
+                                print(
+                                    f"Error: No Queue Match in Rule Set. Queue: {self.entity.queue}"
+                                )
+                                logger.info(
+                                    f"Error: No Queue Match in Rule Set. Queue: {self.entity.queue}"
+                                )
                                 self.entity.resolution = "In Progress"
                                 self.entity.response = "No Rule Match"
                         else:
@@ -167,7 +235,9 @@ class TicketResolver:
                 self.entity.response = f"Entity not directly in the intel. Entity has {self.entity.subdomain_count} subdomains in the intel"
         else:
             self.entity.resolution = "In Progress"
-            self.entity.response = f"IP addresses detected in the ticket.\nIP Addresses: {self.entity.ips}"
+            self.entity.response = (
+                f"IP addresses detected in the ticket.\nIP Addresses: {self.entity.ips}"
+            )
 
     def write_resolutions(self):
         if not os.path.exists(results_file_path):

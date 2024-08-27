@@ -53,11 +53,14 @@ class VirusTotalFetcher:
 
     def get_previous_query(self):
         try:
-            self.previous_query = VirusTotalFetcher.previous_queries.get(self.entity.domain)
+            self.previous_query = VirusTotalFetcher.previous_queries.get(
+                self.entity.domain
+            )
         except Exception as e:
             print(f"Failed to read previous VT query: {e}")
             logger.error(f"Failed to read previous VT query: {e}")
             raise
+
     def get_external_data(self):
         self.get_previous_query()
 
@@ -67,7 +70,9 @@ class VirusTotalFetcher:
                 self.decoded_response = json.loads(response.text)
             self.assign_results()
         else:
-            self.entity.vt_link = f"https://www.virustotal.com/gui/domain/{self.entity.domain}/detection"
+            self.entity.vt_link = (
+                f"https://www.virustotal.com/gui/domain/{self.entity.domain}/detection"
+            )
             if VirusTotalFetcher.vt_request_count <= VirusTotalFetcher.vt_api_threshold:
                 VirusTotalFetcher.vt_request_count += 1
                 domain = self.entity.domain
@@ -79,7 +84,7 @@ class VirusTotalFetcher:
                 try:
                     logger.info(f"{domain}: Fetching VT data")
                     response = requests.get(domain_vt_api, headers=request_headers)
-                    VirusTotalFetcher.previous_queries[self.entity.domain] = response 
+                    VirusTotalFetcher.previous_queries[self.entity.domain] = response
                 except Exception as e:
                     self.no_data()
                     print(f"Error querying VT API: {e}")
@@ -104,16 +109,10 @@ class VirusTotalFetcher:
             today = datetime.today()
             data_response = self.decoded_response.get("data", {})
             filtered_response = data_response.get("attributes", {})
-            last_analysis_stats = filtered_response.get(
-                "last_analysis_stats", ""
-            )
+            last_analysis_stats = filtered_response.get("last_analysis_stats", "")
             self.entity.positives = last_analysis_stats.get("malicious", "")
-            self.entity.creation_date = filtered_response.get(
-                "creation_date", ""
-            )
-            self.entity.last_seen = filtered_response.get(
-                "last_analysis_date", ""
-            )
+            self.entity.creation_date = filtered_response.get("creation_date", "")
+            self.entity.last_seen = filtered_response.get("last_analysis_date", "")
             if not self.entity.last_seen:
                 self.entity.last_seen = "-"
             self.entity.categories = filtered_response.get("categories", {})
@@ -126,22 +125,14 @@ class VirusTotalFetcher:
             self.entity.has_data = True
 
             if self.entity.creation_date:
-                creation_datetime = datetime.utcfromtimestamp(
-                    self.entity.creation_date
-                )
-                self.entity.days_since_creation = (
-                    today - creation_datetime
-                ).days
+                creation_datetime = datetime.utcfromtimestamp(self.entity.creation_date)
+                self.entity.days_since_creation = (today - creation_datetime).days
             else:
                 self.entity.days_since_creation = 100
 
             if self.entity.last_seen != "-":
-                last_seen_datetime = datetime.utcfromtimestamp(
-                    self.entity.last_seen
-                )
-                self.entity.days_since_last_seen = (
-                    today - last_seen_datetime
-                ).days
+                last_seen_datetime = datetime.utcfromtimestamp(self.entity.last_seen)
+                self.entity.days_since_last_seen = (today - last_seen_datetime).days
             else:
                 self.entity.days_since_last_seen = 365
         except Exception as e:

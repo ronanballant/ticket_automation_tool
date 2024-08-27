@@ -1,5 +1,6 @@
-import tb_cred
 from pymongo import MongoClient
+
+import tb_cred
 
 
 class InitialiseMongo:
@@ -9,4 +10,3 @@ class InitialiseMongo:
         self.client.server_info()
         self.db = self.client.secops
         self.blacklist = self.db.blacklist
-

@@ -3,8 +3,8 @@ import csv
 import subprocess
 
 from config import (destination_ip, destination_username, intel_fetcher_path,
-                    sps_intel_file_path, jump_host_ip, jump_host_username, logger,
-                    private_key_path)
+                    jump_host_ip, jump_host_username, logger, private_key_path,
+                    sps_intel_file_path)
 
 
 class SpsIntelFetcher:
@@ -19,7 +19,9 @@ class SpsIntelFetcher:
 
     def read_previous_queries(self):
         try:
-            self.previous_intel = SpsIntelFetcher.previous_queries.get(self.entity.domain)
+            self.previous_intel = SpsIntelFetcher.previous_queries.get(
+                self.entity.domain
+            )
         except Exception as e:
             print(f"Failed to read previous Intel query: {e}")
             logger.error(f"Failed to read previous Intel query: {e}")
@@ -37,7 +39,7 @@ class SpsIntelFetcher:
                 private_key_path,
                 "-J {}@{}".format(jump_host_username, jump_host_ip),
                 "{}@{}".format(destination_username, destination_ip),
-                "python3 {} -d '{}'".format(intel_fetcher_path, self.entity.domain)
+                "python3 {} -d '{}'".format(intel_fetcher_path, self.entity.domain),
             ]
 
             try:
@@ -64,12 +66,18 @@ class SpsIntelFetcher:
                     self.entity.intel_confidence = result.get("intel_confidence", "-")
                     if self.entity.intel_confidence != "-":
                         if self.entity.intel_confidence:
-                            self.entity.intel_confidence = float(self.entity.intel_confidence)
+                            self.entity.intel_confidence = float(
+                                self.entity.intel_confidence
+                            )
                     self.entity.subdomain_count = result.get("subdomain_count", 0)
                     self.entity.url_count = result.get("url_count", 0)
-                    self.entity.intel_source = result.get("intel_source", "-").replace("|", "/")
-                    self.entity.e_list_entry = str_to_bool(result.get("e_list_entry", False))
-                    
+                    self.entity.intel_source = result.get("intel_source", "-").replace(
+                        "|", "/"
+                    )
+                    self.entity.e_list_entry = str_to_bool(
+                        result.get("e_list_entry", False)
+                    )
+
                 else:
                     self.no_intel()
             else:
@@ -85,7 +93,7 @@ class SpsIntelFetcher:
         self.entity.intel_source = "-"
         self.entity.confidence_level = "-"
         self.entity.subdomain_count = 0
-        self.entity.url_count = 0 
+        self.entity.url_count = 0
         self.entity.is_in_intel = False
         self.entity.e_list_entry = False
         self.entity.subdomain_only = False
@@ -136,7 +144,6 @@ class SpsIntelFetcher:
         except Exception as e:
             print(f"Error opening SPS intel at {sps_intel_file_path}: {e}")
             logger.error(f"Error opening SPS intel at {sps_intel_file_path}: {e}")
-
 
 
 def str_to_bool(string):

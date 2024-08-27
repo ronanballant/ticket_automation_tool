@@ -1,7 +1,8 @@
 import csv
 import os
 
-from config import (etp_automation_data_location, logger, sps_automation_data_location)
+from config import (etp_automation_data_location, logger,
+                    sps_automation_data_location)
 
 
 class AutomationLogger:
@@ -69,7 +70,7 @@ class AutomationLogger:
                             entity.resolution,
                             entity.source_response,
                             entity.response,
-                            self.runtime
+                            self.runtime,
                         ]
                     )
             logger.info(f"Saved automation data to {data_file}")
@@ -130,7 +131,7 @@ class AutomationLogger:
                             entity.resolution,
                             entity.source_response,
                             entity.response,
-                            self.runtime
+                            self.runtime,
                         ]
                     )
             logger.info(f"Saved automation data to {data_file}")

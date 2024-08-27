@@ -5,7 +5,8 @@ import re
 import requests
 
 import get_az_secret
-from config import cert_name, cert_path, jira_search_api, key_name, key_path, logger
+from config import (cert_name, cert_path, jira_search_api, key_name, key_path,
+                    logger)
 
 
 class TicketFetcher:
@@ -93,17 +94,21 @@ class TicketFetcher:
                             summary = fields.get("summary")
                             customer = fields.get("customfield_12703")
                             if description:
-                                domains, urls, ips = collect_entities(summary, description, ticket_id)
-                                is_guardicor_ticket = is_guardicore(customer, description)
+                                domains, urls, ips = collect_entities(
+                                    summary, description, ticket_id
+                                )
+                                is_guardicor_ticket = is_guardicore(
+                                    customer, description
+                                )
                             if summary:
                                 components = fields.get("components")
                                 if components:
                                     component = components[0].get("name")
                                 else:
-                                    component = ''
-                                if 'SecOps False Negative' in component:
-                                    ticket_type = 'FN'
-                                elif 'SecOps False Positive' in component:
+                                    component = ""
+                                if "SecOps False Negative" in component:
+                                    ticket_type = "FN"
+                                elif "SecOps False Positive" in component:
                                     ticket_type = "FP"
                                 else:
                                     ticket_type = get_ticket_type(summary, description)
@@ -122,12 +127,17 @@ class TicketFetcher:
                                 "is_guardicore_ticket": is_guardicor_ticket,
                             }
             else:
-                print(f"Error Fetching Tickets - Bad Status code: {self.req.status_code}")
-                logger.info(f"Error Fetching Tickets - Bad Status code: {self.req.status_code}")
+                print(
+                    f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
+                )
+                logger.info(
+                    f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
+                )
         except Exception as e:
             print(f"Failed to parse ticket response: {e}")
             logger.error(f"Failed to parse ticket response: {e}")
             raise
+
 
 def is_guardicore(customer, description):
     if customer:
@@ -135,7 +145,7 @@ def is_guardicore(customer, description):
     else:
         text = description
     return True if "guardicore" in text.lower() else False
-    
+
 
 def clean_description(description):
     logger.info("Cleaning description")
@@ -179,6 +189,7 @@ def collect_domains(decsription):
 def collect_ips(description):
     ipv4_pattern = r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
     return re.findall(ipv4_pattern, description)
+
 
 def collect_entities(summary, desc, ticket):
     summary = summary.lower()
