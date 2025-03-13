@@ -7,8 +7,7 @@ from datetime import datetime, timedelta
 import get_az_secret
 import requests
 from config import (automation_fqdn_results, automation_ticket_results,
-                    blacklist_file, cert_name, cert_path,
-                    indicators_in_progress, jira_ticket_api, key_name,
+                    blacklist_file, cert_name, cert_path, jira_ticket_api, key_name,
                     key_path, logger, previous_ticket_resolutions_path,
                     results_file_path, secops_member)
 from intel_entry import IntelEntry

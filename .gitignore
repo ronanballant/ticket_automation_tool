@@ -54,3 +54,5 @@ results.csv
 *.txt
 *.gz
 *.json
+*.crt
+*.key

@@ -1,18 +1,14 @@
 import socket
 
-from config import (
-    etp_tickets_in_progress_file,
-    logger,
-    open_summary_tickets_file,
-    sps_tickets_in_progress_file,
-)
+from config import (etp_tickets_in_progress_file, logger,
+                    open_summary_tickets_file, sps_tickets_in_progress_file)
 from summary_creator import SummaryCreator
 from ticket import Ticket
 from ticket_responder import TicketResponder
 
 if __name__ == "__main__":
     server_name = socket.gethostname()
-    if server_name == "spoflists01":
+    if "muc" in server_name:
         queue = "SPS"
         tickets_in_progress_file = sps_tickets_in_progress_file
     elif server_name == "oth-mpbv4":
@@ -82,9 +78,3 @@ if __name__ == "__main__":
             f"Saving summary ticket to {summary_creator.open_summary_tickets_file}"
         )
         summary_creator.save_open_summary_ticket(responder.summary_ticket)
-
-
-
-# Add filter reasons, take into account evidence - give more context
-# Change Partially malicious verdict
-# Remove recommendation to utilise portal block if 0 indications

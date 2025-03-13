@@ -1,19 +1,19 @@
 #!/usr/bin/python3
 
 import argparse
-import json
 import time
-from datetime import datetime
-from config import logger, sps_tickets_in_progress_file, etp_tickets_in_progress_file
-from indicator import Indicator
+
+from config import (etp_tickets_in_progress_file, logger,
+                    sps_tickets_in_progress_file)
 from etp_intel_fetcher import ETPIntelFetcher
+from indicator import Indicator
 from initialise_mongo import InitialiseMongo
-from ticket_resolver import TicketResolver
 from response_creator import ResponseCreator
 from rule_fetcher import RuleFetcher
 from sps_intel_fetcher import SPSIntelFetcher
 from ticket import Ticket
 from ticket_fetcher import TicketFetcher
+from ticket_resolver import TicketResolver
 from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
 
@@ -36,6 +36,7 @@ def parse_args():
     else:
         return args
 
+
 def run_process():
     queue = args.queue.lower()
     print(f"\n\n{queue.upper()} Ticket Automation In Progress...\n")
@@ -48,20 +49,10 @@ def run_process():
         print(f"\nFailed to fetch tickets: {e}")
         logger.error(f"Failed to fetch tickets: {e}")
         return
-    
+
     if not tickets:
         logger.error(f"No tickets in {queue.upper()} queue")
         return
-
-    # test tickets
-    # with open("new_tickets.json", "r") as file:
-        # ticket_data = json.load(file)
-    
-    # tickets = {}
-    # for ticket in ticket_data:
-    #     ticket['creation_time'] = datetime.fromisoformat(ticket['creation_time'])
-    #     tickets[ticket["ticket_id"]] = ticket
-
 
     try:
         rule_set = RuleFetcher()
@@ -79,7 +70,6 @@ def run_process():
             print(f"Failed to intialise Mongo connection: {e}")
             logger.error(f"Failed to intialise Mongo connection: {e}")
             return
-    
 
     print("Creating tickets")
     logger.info("Creating tickets")
@@ -96,7 +86,7 @@ def run_process():
 
         if ticket_type == "FN" or ticket_type == "FP":
             new_ticket = Ticket(
-                ticket_id, 
+                ticket_id,
                 ticket_type,
                 queue.upper(),
                 reporter,
@@ -111,16 +101,12 @@ def run_process():
             new_ticket.set_process_flag()
             new_ticket.set_comment_greeting()
             new_ticket.set_comment_sign_off()
-        
+
     for ticket in Ticket.all_tickets:
         logger.info(f"Creating Indicator Instances for {ticket.ticket_id}")
         print(f"\nCreating Indicator Instances for {ticket.ticket_id}")
         for fqdn in ticket.fqdns:
-            indicator = Indicator(
-                fqdn,
-                ticket,
-                indicator_type
-            )
+            indicator = Indicator(fqdn, ticket, indicator_type)
             try:
                 indicator.clean_fqdn()
                 indicator.get_domain()
@@ -157,7 +143,10 @@ def run_process():
                         vt_fetcher.analyse_vt_rescan()
                     if vt_fetcher.indicator.has_vt_data is True:
                         vt_fetcher.get_domain_attributions()
-                    if not vt_fetcher.previous_vt_query and vt_fetcher.indicator.has_vt_data:
+                    if (
+                        not vt_fetcher.previous_vt_query
+                        and vt_fetcher.indicator.has_vt_data
+                    ):
                         vt_fetcher.write_vt_data()
 
                     print(f"VT indications:\t{indicator.vt_indications}")
@@ -188,7 +177,7 @@ def run_process():
                             indicator.candidate = candidate
                             intel_fetcher.query_intel()
                             intel_fetcher.assign_results()
-                            
+
                             if indicator.is_in_intel is True:
                                 break
 
@@ -202,7 +191,9 @@ def run_process():
                 try:
                     print(f"Finding resolution")
                     logger.info("Finding resolution")
-                    ticket_resolver = TicketResolver(indicator, rule_set.rules, file_time)
+                    ticket_resolver = TicketResolver(
+                        indicator, rule_set.rules, file_time
+                    )
                     ticket_resolver.prepare_fp_rule_query()
                     ticket_resolver.match_rule()
                     ticket_resolver.write_resolutions()
@@ -210,7 +201,7 @@ def run_process():
                     print(f"Failed to find resolution for {indicator.fqdn}: {e}")
                     logger.error(
                         f"Failed to finding resolution for {indicator.fqdn}: {e}"
-                        )
+                    )
 
                 try:
                     print(f"Generating indicator specific response")
@@ -218,7 +209,7 @@ def run_process():
                     response_creator = ResponseCreator(indicator)
                     response_creator.generate_source_response()
                     response_creator.generate_comment_response()
-                    
+
                     print(f"Response generated")
                     logger.info("Response generated")
                 except Exception as e:
@@ -240,12 +231,15 @@ def run_process():
         logger.error(f"Failed to process entities: {e}")
         return
 
-    tickets_in_progress_file = sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
+    tickets_in_progress_file = (
+        sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
+    )
     if Ticket.all_tickets:
         Ticket.update_current_tickets(tickets_in_progress_file)
 
     logger.info("Process Finished...")
     logger.info(f"{queue.upper()} ticket automation Finished")
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -256,28 +250,3 @@ if __name__ == "__main__":
         exit(1)
     else:
         run_process()
-
-
-"""
-remove writing in quotes
-check url pattern
-add whitelist checking functionality?
-add triage updates
-add PR capability
-add ability to run multiple times but only PR twice a day
-"""
-# in main
-#     save_intel_changes
-#     save summary ticket number
-
-# other flow
-#     get_open_ticket_numbers
-#     open_intel_changes
-#     open_jira_ticket
-#     parse_reviewed_changes
-#     parse_ticket
-#     find_resolved_tickets
-#     save_approvals
-#     close_resolved_tickets
-#     generate_approval_summary
-#     update_summary
