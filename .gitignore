@@ -39,6 +39,8 @@ prod_config_update.py
 vt_text.py
 setup.py
 main_process_tickets_old.py
+mongo_craden.py
+
 
 # Ignore data files
 etp_intel_file.csv
@@ -56,3 +58,4 @@ results.csv
 *.json
 *.crt
 *.key
+!requirements.txt

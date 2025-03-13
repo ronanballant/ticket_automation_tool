@@ -73,10 +73,7 @@ class VirusTotalFetcher:
                 self.indicator.days_since_creation,
                 self.indicator.days_since_last_scanned,
             ])
-
-    # def get_vt_query_url(self):
-    #     self.indicator.vt_query_url = f"https://www.virustotal.com/api/v3/domains/{self.indicator.fqdn}"
-
+            
     def get_previous_query(self):
         try:
             self.previous_vt_query = VirusTotalFetcher.previous_queries.get(self.indicator.fqdn)

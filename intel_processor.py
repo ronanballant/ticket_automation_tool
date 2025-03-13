@@ -1,6 +1,6 @@
 import fileinput
 import csv
-from config import (destination_ip, destination_username, etp_blacklist_file_path, etp_manual_blacklist_file_path, 
+from config import (destination_ip, destination_username, etp_blacklist_file_path, 
                     intel_processor_path, jump_host_ip, jump_host_username, logger, private_key_path,
                     destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_automation_file, sps_intel_update_file, etp_whitelist_file_path)
 from typing import List
@@ -64,13 +64,6 @@ class IntelProcessor:
                     else:
                         print(line, end="")
 
-        # if self.manual_blacklist:
-        #     with open(blacklist_file, "a", newline="") as file:
-        #         writer = csv.writer(file)
-        #         for intel_entry in self.blacklist:
-        #             logger.info(f"Removing {intel_entry} from {etp_manual_blacklist_file_path}")
-        #             writer.writerow(intel_entry)
-
     def add_to_sps_intel_file(self):
         if self.whitelist or self.blacklist:
             with open(sps_intel_update_file, "w", newline="") as file:
@@ -97,7 +90,6 @@ class IntelProcessor:
                 result = subprocess.run(scp_command, check=True, capture_output=True, text=True)
                 print("File copied successfully.")
                 logger.debug(result.stdout)
-                # result = subprocess.run(scp_command, check=True, capture_output=True)
             except subprocess.CalledProcessError as e:
                 logger.error(f"ERROR Processing Whitelist Entities: {e}")
                 logger.error(f"SCP command failed!")
@@ -110,7 +102,6 @@ class IntelProcessor:
                 )
         
     def trigger_sps_intel_update(self):
-        # {"errors": {}, "success": true}
         if self.add_error_comment is False:
             self.update_triggered = True
             if self.whitelist or self.blacklist:
@@ -148,8 +139,3 @@ class IntelProcessor:
             return
 
         entry.approved_intel_change = entry.approved_intel_change.replace("+++ ", "").replace("--- ", "")
-
-        # if update.
-        # parts_count = 7 
-        # if update:
-        #     update_parts = update.split(",")

@@ -283,15 +283,3 @@ def get_ticket_type(summary, description):
         return "FP"
     else:
         return "None"
-
-
-# def get_ticket_type(summary, description):
-#     summary = summary.lower()
-#     description = description.lower()
-#     if "fn test" in summary or "fn test" in description:
-#         return "FN"
-#     elif "fp test" in summary or "fp test" in description:
-#         return "FP"
-#     else:
-#         return "None"
-

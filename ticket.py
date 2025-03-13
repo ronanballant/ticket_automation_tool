@@ -130,9 +130,6 @@ class Ticket:
         else:
             self.comment = ""
             self.send_comment = False
-    
-    # def to_dict(self):
-    #     return self.__dict__
 
     def to_dict(self):
         indicators_dict = [indicator.to_dict() for indicator in self.indicators]
@@ -197,20 +194,6 @@ class Ticket:
         for key, value in data.items():
             if key not in skip_keys:
                 setattr(ticket, key, value)
-        # ticket.whitelist_additions = data.get("whitelist_additions", [])
-        # ticket.blacklist_additions = data.get("blacklist_additions", [])
-        # ticket.blacklist_removals = data.get("blacklist_removals", [])
-        # ticket.possible_changes = data.get("possible_changes", [])
-        # ticket.ticket_resolved = data.get("ticket_resolved", True)
-        # ticket.send_comment = data.get("send_comment", False)
-        # ticket.block_comment = data.get("block_comment", False)
-        # ticket.comment_failed = data.get("comment_failed", False)
-        # ticket.comment = data.get("comment", "")
-        # ticket.changes_approved = data.get("changes_approved", False)
-        # ticket.requires_approval = data.get("requires_approval", False)
-        # ticket.time_to_resolution = data.get("time_to_resolution", "")
-        # ticket.linked_summary_ticket = data.get("linked_summary_ticket", None)
-        # ticket.time_to_response = data.get("time_to_response", "")
         return ticket
 
     @classmethod
