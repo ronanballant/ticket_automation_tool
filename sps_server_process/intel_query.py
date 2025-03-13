@@ -6,9 +6,12 @@ import subprocess
 class Intel:
     def __init__(self, domain) -> None:
         self.domain: str = domain
-        self.get_intel_feed()
+        self.get_i_intel_feed()
+        self.get_subdomain_count()
+        if self.is_in_intel is False:
+            self.get_e_list_entry()
 
-    def get_intel_feed(self):
+    def get_i_intel_feed(self):
         pattern = f"\s{self.domain}\s"
         cat_feed_process = subprocess.Popen(
             [
@@ -18,16 +21,18 @@ class Intel:
                 "gix_vta_block_i",
                 "tpsvc_malware_lv5_i",
                 "tpsvc_phishing_lv5_i",
+                "tpsvc_botnet_lv5_i",
                 "tpsvc_unidentified_lv5_i",
                 "tpsvc_malware_lv4_i",
                 "tpsvc_phishing_lv4_i",
                 "tpsvc_unidentified_lv4_i",
+                "tpsvc_botnet_lv4_i",
                 "tpsvc_malware_lv3_i",
                 "tpsvc_phishing_lv3_i",
                 "tpsvc_unidentified_lv3_i",
-                "tpsvc_spam_lv5_i",
-                "tpsvc_spam_lv4_i",
-                "tpsvc_spam_lv3_i",
+                "tpsvc_botnet_lv3_i",
+                "tps_malware_i",
+                "tps_phishing_i",
             ],
             stdout=subprocess.PIPE,
         )
@@ -69,7 +74,8 @@ class Intel:
         self.source = source
         self.is_in_intel = True if self.feed else False
         self.e_list_entry = False
-
+    
+    def get_subdomain_count(self):
         pattern = f"\.{self.domain}\s"
         cat_feed_process = subprocess.Popen(
             [
@@ -79,16 +85,16 @@ class Intel:
                 "gix_vta_block_i",
                 "tpsvc_malware_lv5_i",
                 "tpsvc_phishing_lv5_i",
+                "tpsvc_botnet_lv5_i",
                 "tpsvc_unidentified_lv5_i",
                 "tpsvc_malware_lv4_i",
                 "tpsvc_phishing_lv4_i",
                 "tpsvc_unidentified_lv4_i",
+                "tpsvc_botnet_lv4_i",
                 "tpsvc_malware_lv3_i",
                 "tpsvc_phishing_lv3_i",
                 "tpsvc_unidentified_lv3_i",
-                "tpsvc_spam_lv5_i",
-                "tpsvc_spam_lv4_i",
-                "tpsvc_spam_lv3_i",
+                "tpsvc_botnet_lv3_i",
             ],
             stdout=subprocess.PIPE,
         )
@@ -117,7 +123,6 @@ class Intel:
             self.subdomain_only = False
 
         if self.is_in_intel is False:
-            # self.get_e_list_entry()
             self.subdomain_count = 0
 
     def get_e_list_entry(self):
@@ -178,8 +183,7 @@ class Intel:
         self.confidence = e_confidence
         self.source = e_source
         self.is_in_intel = True if self.feed else False
-        # self.e_list_entry = True if self.feed else False
-        self.e_list_entry = False
+        self.e_list_entry = True if e_feed else False
 
         # if self.e_list_entry is False:
         #     pattern = f"\.{self.domain}\s"
@@ -233,8 +237,8 @@ class Intel:
         #         .replace(",", "")
         #     )
 
-        # self.feed = e_feed
-        # self.confidence = e_confidence
-        # self.source = e_source
-        # self.is_in_intel = True if self.feed else False
-        # self.e_list_entry = True if self.feed else False
+        self.feed = e_feed
+        self.confidence = e_confidence
+        self.source = e_source
+        self.is_in_intel = True if self.feed else False
+        self.e_list_entry = True if self.feed else False

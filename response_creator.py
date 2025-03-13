@@ -4,99 +4,141 @@ from config import logger
 
 
 class ResponseCreator:
-    def __init__(self, entity) -> None:
-        self.entity = entity
-        self.get_feed_response()
-        self.create_response()
+    def __init__(self, indicator) -> None:
+        self.indicator = indicator
 
-    def get_feed_response(self):
-        logger.info(f"Generating source based response for {self.entity.entity}")
+    def generate_source_response(self):
+        logger.info(f"Generating source based response for {self.indicator.fqdn}")
         external_source_list = [
-            "sophos",
-            "surbl",
-            "netcraft",
-            "External",
-            "nom-promotion",
-            "yoroi",
-            "sunbelt",
+            "SOPHOS",
+            "SURBL",
+            "NETCRAFT",
+            "EXTERNAL",
+            "NOM-PROMOTION",
+            "YOROI",
+            "SUNBELT",
+        ]
+
+        malware_source_list = [
+            "ETP:MANUAL_BLACKLIST_MALWARE",
+            "NOMINUM_VC_MALWARE",
+            "WEBROOT_MALWARE",
+            "MANUAL_BLACKLIST_MALWARE",
+            "SOPHOS_MAL_DOM_MALWARE",
+            "SOPHOS_INFECTED_DOMAIN",
+            "PARTIALLY_MALICIOUS_MALWARE",
+            "SOPHOS_REPOSITORY",
+            "VIRUS_TOTAL_MALWARE",
         ]
 
         phishing_source_list = [
-            "Phishing",
-            "illegal_phishing",
-            "Crawled phishing",
+            "PHISHING",
+            "ILLEGAL_PHISHING",
+            "CRAWLED PHISHING",
             "ETP:MANUAL_BLACKLIST_PHISHING",
+            "WEBROOT_PHISHING",
+            "MANUAL_BLACKLIST_PHISHING",
+            "NETCRAFT_PHISHING",
+            "SURBL_PHISHING",
+            "PHISHTANK",
+            "PARTIALLY_MALICIOUS_PHISHING",
+            "SOPHOS_PHISHING",
+            "PMDURLSCAN"
         ]
 
         botnet_source_list = [
-            "DGA_Known_family",
+            "DGA_KNOWN_fAMILY",
+            "CNC",
+            "BMBNK_ALL_CNC",
+            "BMBNK_DGA_ALL_CNC",
+            "NOMINUM_VC_BOTNET",
+            "JAPAN_ANTI_PHISHING",
+            "NOMINUM_VC_PHISHING",
+            "LOOKING_GLASS_CNC",
+            "MANUAL_BLACKLIST_CNC",
+            "CNFCKR_CNC",
+            "NOMINUM_NPS",
+            "SOPHOS_CALLHOME",
         ]
 
+        malware_source_pattern = re.compile(
+            r"|".join(re.escape(source) for source in malware_source_list),
+            flags=re.IGNORECASE,
+        )
+        malware_source_matches = malware_source_pattern.findall(
+            self.indicator.intel_source
+        )
+        
         external_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in external_source_list),
             flags=re.IGNORECASE,
         )
         external_source_matches = external_source_pattern.findall(
-            self.entity.intel_source
+            self.indicator.intel_source
         )
+        
         phishing_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in phishing_source_list),
             flags=re.IGNORECASE,
         )
         phishing_source_matches = phishing_source_pattern.findall(
-            self.entity.intel_source
+            self.indicator.intel_source
         )
+        
         botnet_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in botnet_source_list),
             flags=re.IGNORECASE,
         )
-        botnet_source_matches = botnet_source_pattern.findall(self.entity.intel_source)
+        botnet_source_matches = botnet_source_pattern.findall(self.indicator.intel_source)
 
-        self.entity.vt_link = (
-            "https://www.virustotal.com/gui/domain/{}/detection".format(
-                self.entity.domain
-            )
-        )
+        self.indicator.vt_link = f"https://www.virustotal.com/gui/domain/{self.indicator.fqdn}/detection"
 
         if (
-            "resolved IP and name pattern" in self.entity.intel_source
-            or "ncdippat" in self.entity.intel_source
+            "resolved IP and name pattern" in self.indicator.intel_source
+            or "ncdippat" in self.indicator.intel_source
         ):
-            self.entity.source_response = "{} was flagged as it resolved to an IP address with a bad reputation. ".format(
-                self.entity.entity
-            )
+            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolved to an IP address with a bad reputation. "
+        elif malware_source_matches:
+            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as malicious activity was identified. "
         elif phishing_source_matches:
-            self.entity.source_response = (
-                "{} was flagged as it was identified for Phishing activity. ".format(
-                    self.entity.entity
-                )
-            )
+            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was identified for Phishing activity. "
         elif external_source_matches:
-            self.entity.source_response = "{} was flagged as it was reported malicious by security vendors. ".format(
-                self.entity.entity
-            )
+            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was reported malicious by security vendors. "
         elif botnet_source_matches:
-            self.entity.source_response = (
-                "{} was flagged as it collided with a DGA. ".format(self.entity.entity)
-            )
-        elif "ETP:MANUAL_BLACKLIST_MALWARE" in self.entity.intel_source:
-            self.entity.source_response = (
-                "{} was flagged for malware distribution. ".format(self.entity.entity)
-            )
+            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it collided with a DGA. "
         else:
-            self.entity.source_response = ""
+            self.indicator.source_response = ""
 
-    def create_response(self):
-        self.entity.is_resolved = True
-        if self.entity.resolution.lower() == "in progress":
-            self.entity.is_resolved = False
-            self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*Resolution*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.entity} is currently under investigation.\n "
-        elif self.entity.resolution.lower() == "allow":
-            self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n {self.entity.source_response} {self.entity.response}\n "
-        elif self.entity.resolution.lower() == "block":
-            self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \nFollowing a thorough investigation, several indications of {self.entity.attribution} were found. \nTherefore the domain will be added to the intel.\n*Links*:\n{self.entity.vt_link}\n"
-        else:
-            if self.entity.is_in_intel is True:
-                self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.response} \n*Links*:\n{self.entity.vt_link}\n "
+    def generate_comment_response(self):
+        self.indicator.is_resolved = True
+
+        if self.indicator.indicator_resolution.lower() == "in progress":
+            self.indicator.is_resolved = False
+            self.indicator.ticket.requires_approval = True
+            self.indicator.ticket.ticket_resolved = False
+            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*Resolution*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.source_response} Analysis is currently in progress.\n "
+        elif self.indicator.indicator_resolution.lower() == "allow":
+            self.indicator.ticket.send_comment = True
+            self.indicator.ticket.requires_approval = True
+            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.source_response} {self.indicator.rule_response}\n "
+        elif self.indicator.indicator_resolution.lower() == "block":
+            self.indicator.ticket.send_comment = True
+            self.indicator.ticket.requires_approval = True
+            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \nFollowing a thorough investigation, several indications of {self.indicator.attribution} were found. \nTherefore the domain will be added to the intel. \n*Links*:\n{self.indicator.vt_link}\n"
+        elif self.indicator.indicator_resolution.lower() == "closed":
+            self.indicator.ticket.send_comment = True
+            if self.indicator.ticket.ticket_type == "FP":
+                if self.indicator.is_in_intel is True:
+                    self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n"
+                else:
+                    self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n"
             else:
-                self.entity.comment = f" \n*{self.entity.entity_type}*: {self.entity.entity} \n*RESOLUTION*: {self.entity.resolution} \n*COMMENTS*: \n{self.entity.response} \n"
+                self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n "
+        else:
+            print(f"Incorrect resolution: {self.indicator.indicator_resolution}")
+            self.indicator.is_resolved = False
+            self.indicator.ticket.ticket_resolved = False
+            self.indicator.ticket.requires_approval = True
+            self.indicator.ticket.send_comment = True
+
+

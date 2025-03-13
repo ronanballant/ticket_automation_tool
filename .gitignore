@@ -16,19 +16,29 @@ test_files/
 results/
 myvenv/
 tickets_ioc/
+automation_intel/
 __pycache__/
 
 # Ignore python files
 tb_cred.py
 config.py
 mongo_craden.py
+pr_status.py
+etp_intel_fetcher_update.py
+email_sender.py
+
 
 # Ignore test files
 test_main.py
 test_whitelist_file.py
 *test.py
 main_temp.py
-
+secops_prod.py
+dev_config.py
+prod_config_update.py
+vt_text.py
+setup.py
+main_process_tickets_old.py
 
 # Ignore data files
 etp_intel_file.csv
@@ -38,6 +48,8 @@ sps_automation_data.csv
 etp_automation_data.csv
 sps_intel_file.csv
 intel_file.csv
+results.csv
+*.csv
 *.tsv
 *.txt
 *.gz

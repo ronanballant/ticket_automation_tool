@@ -7,20 +7,17 @@ from config import (destination_ip, destination_username, intel_fetcher_path,
                     sps_intel_file_path)
 
 
-class SpsIntelFetcher:
+class SPSIntelFetcher:
     previous_queries = {}
 
-    def __init__(self, entity) -> None:
-        self.entity = entity
-        self.fetch_intel()
-        self.assign_results()
-        # self.write_intel_file()
-        # self.open_intel()
+    def __init__(self, indicator) -> None:
+        self.indicator = indicator
+        self.results = {}
 
     def read_previous_queries(self):
         try:
-            self.previous_intel = SpsIntelFetcher.previous_queries.get(
-                self.entity.domain
+            self.previous_intel = SPSIntelFetcher.previous_queries.get(
+                self.indicator.fqdn, None
             )
         except Exception as e:
             print(f"Failed to read previous Intel query: {e}")
@@ -28,10 +25,8 @@ class SpsIntelFetcher:
             raise
 
     def fetch_intel(self):
-        self.read_previous_queries()
-
         if self.previous_intel:
-            self.results = self.previous_intel
+            self.results[self.indicator.fqdn] = self.previous_intel
         else:
             ssh_command = [
                 "ssh",
@@ -39,16 +34,16 @@ class SpsIntelFetcher:
                 private_key_path,
                 "-J {}@{}".format(jump_host_username, jump_host_ip),
                 "{}@{}".format(destination_username, destination_ip),
-                "python3 {} -d '{}'".format(intel_fetcher_path, self.entity.domain),
+                "python3 {} -d '{}'".format(intel_fetcher_path, self.indicator.fqdn),
             ]
 
             try:
                 result = subprocess.run(
                     ssh_command, check=True, capture_output=True, text=True
                 )
-                logger.info(f"SPS Intel query sent for {self.entity.domain}")
+                logger.info(f"SPS Intel query sent for {self.indicator.fqdn}")
                 self.results = ast.literal_eval(result.stdout)
-                SpsIntelFetcher.previous_queries[self.entity.domain] = self.results
+                SPSIntelFetcher.previous_queries[self.indicator.fqdn] = self.results
             except Exception as e:
                 print(f"Error querying SPS intel: {e}")
                 logger.error(f"Error querying SPS intel: {e}")
@@ -56,25 +51,25 @@ class SpsIntelFetcher:
 
     def assign_results(self):
         try:
-            logger.info(f"Attributing intel to {self.entity.domain}")
-            result = self.results.get(self.entity.domain)
+            logger.info(f"Attributing intel to {self.indicator.fqdn}")
+            result = self.results.get(self.indicator.fqdn)
             if result:
-                self.entity.is_in_intel = str_to_bool(result.get("is_in_intel", "-"))
-                self.entity.subdomain_only = str_to_bool(result.get("subdomain_only"))
-                if self.entity.is_in_intel is True:
-                    self.entity.intel_feed = result.get("intel_feed", "-")
-                    self.entity.intel_confidence = result.get("intel_confidence", "-")
-                    if self.entity.intel_confidence != "-":
-                        if self.entity.intel_confidence:
-                            self.entity.intel_confidence = float(
-                                self.entity.intel_confidence
+                self.indicator.is_in_intel = str_to_bool(result.get("is_in_intel", "-"))
+                self.indicator.subdomain_only = str_to_bool(result.get("subdomain_only"))
+                if self.indicator.is_in_intel is True:
+                    self.indicator.intel_feed = result.get("intel_feed", "-")
+                    self.indicator.intel_confidence = result.get("intel_confidence", "-")
+                    if self.indicator.intel_confidence != "-":
+                        if self.indicator.intel_confidence:
+                            self.indicator.intel_confidence = float(
+                                self.indicator.intel_confidence
                             )
-                    self.entity.subdomain_count = result.get("subdomain_count", 0)
-                    self.entity.url_count = result.get("url_count", 0)
-                    self.entity.intel_source = result.get("intel_source", "-").replace(
+                    self.indicator.subdomain_count = result.get("subdomain_count", 0)
+                    self.indicator.url_count = result.get("url_count", 0)
+                    self.indicator.intel_source = result.get("intel_source", "-").replace(
                         "|", "/"
                     )
-                    self.entity.e_list_entry = str_to_bool(
+                    self.indicator.e_list_entry = str_to_bool(
                         result.get("e_list_entry", False)
                     )
 
@@ -88,63 +83,63 @@ class SpsIntelFetcher:
             raise
 
     def no_intel(self):
-        self.entity.intel_feed = "-"
-        self.entity.intel_confidence = "-"
-        self.entity.intel_source = "-"
-        self.entity.confidence_level = "-"
-        self.entity.subdomain_count = 0
-        self.entity.url_count = 0
-        self.entity.is_in_intel = False
-        self.entity.e_list_entry = False
-        self.entity.subdomain_only = False
-        SpsIntelFetcher.previous_queries[self.entity.domain] = {}
+        self.indicator.intel_feed = "-"
+        self.indicator.intel_confidence = "-"
+        self.indicator.intel_source = "-"
+        self.indicator.confidence_level = "-"
+        self.indicator.subdomain_count = 0
+        self.indicator.url_count = 0
+        self.indicator.is_in_intel = False
+        self.indicator.e_list_entry = False
+        self.indicator.subdomain_only = False
+        SPSIntelFetcher.previous_queries[self.indicator.fqdn] = {}
 
     def write_intel_file(self):
         try:
-            with open(sps_intel_file_path, mode="w", newline="") as file:
-                csv_writer = csv.writer(file)
-                for entity in self.entities:
-                    logger.info(f"Writing {entity.entity} to intel file")
-                    csv_writer.writerow(
-                        [
-                            entity.domain,
-                            entity.intel_feed,
-                            entity.intel_confidence,
-                            entity.intel_source,
-                            entity.is_in_intel,
-                            entity.e_list_entry,
-                            entity.subdomain_count,
-                            entity.url_count,
-                            entity.subdomain_only,
-                        ]
-                    )
+            with open(sps_intel_file_path, mode="a", newline="") as f:
+                writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+                indicator = self.indicator
+                logger.info(f"Writing {indicator.fqdn} to intel file")
+                writer.writerow(
+                    [
+                        indicator.fqdn,
+                        indicator.intel_feed,
+                        indicator.intel_confidence,
+                        indicator.intel_source,
+                        indicator.is_in_intel,
+                        indicator.e_list_entry,
+                        indicator.subdomain_count,
+                        indicator.url_count,
+                        indicator.subdomain_only,
+                    ]
+                )
         except Exception as e:
             print(f"Error writing SPS intel to {sps_intel_file_path}: {e}")
             logger.error(f"Error writing SPS intel to {sps_intel_file_path}: {e}")
 
-    def open_intel(self):
+    def load_previous_intel():
         try:
             logger.info("Reading stored intel file")
             with open(sps_intel_file_path, mode="r", newline="") as file:
-                reader = csv.reader(file)
-                self.results = {}
+                reader = csv.reader(file, delimiter=",")
+                results = {}
                 for row in reader:
-                    self.results[row[0]] = {
+                    results[row[0]] = {
                         "intel_feed": row[1],
                         "intel_confidence": row[2],
                         "intel_source": row[3],
-                        "is_in_intel": row[4],
-                        "e_list_entry": row[5],
-                        "subdomain_count": row[6],
-                        "url_count": row[7],
-                        "subdomain_only": row[8],
+                        "is_in_intel": str_to_bool(row[4]),
+                        "e_list_entry": str_to_bool(row[5]),
+                        "subdomain_count": int(row[6]) if row[6].isdigit() else '-',
+                        "url_count": int(row[7]) if row[7].isdigit() else '-',
+                        "subdomain_only": str_to_bool(row[8]),
                     }
 
-                self.assign_results()
+                SPSIntelFetcher.previous_queries = results
+                
         except Exception as e:
             print(f"Error opening SPS intel at {sps_intel_file_path}: {e}")
             logger.error(f"Error opening SPS intel at {sps_intel_file_path}: {e}")
-
 
 def str_to_bool(string):
     if type(string) == str:
