@@ -12,7 +12,7 @@ charset-normalizer==3.4.0
 contourpy
 cryptography==43.0.3
 cycler
-dnspython==2.7.0
+dnspython
 filelock==3.16.1
 fonttools==4.55.0
 idna==3.10
