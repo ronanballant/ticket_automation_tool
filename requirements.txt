@@ -32,7 +32,7 @@ PyJWT==2.9.0
 pymongo==4.10.1
 pyparsing
 python-dateutil==2.9.0.post0
-RapidFuzz==3.12.1
+RapidFuzz
 requests==2.32.3
 requests-file==2.1.0
 s3transfer==0.10.4
