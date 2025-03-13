@@ -19,7 +19,7 @@ idna==3.10
 isodate==0.7.2
 jmespath==1.0.1
 kiwisolver==1.4.7
-Levenshtein==0.26.1
+Levenshtein
 matplotlib==3.9.2
 msal==1.31.0
 msal-extensions==1.2.0
