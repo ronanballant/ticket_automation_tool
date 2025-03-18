@@ -1,8 +1,6 @@
-import ast
-import csv
-
-from config import etp_intel_file_path, logger
+from config import logger
 from typing import List
+
 
 class ETPIntelFetcher:
     previous_queries = {}
@@ -25,30 +23,6 @@ class ETPIntelFetcher:
         self.etp_fqdn: str = ""
         self.subdomain_only: bool = False
         self.previous_intel = None
-
-    def load_previous_intel(cls):
-        logger.info("Reading stored intel file")
-        results = {}
-        with open(etp_intel_file_path, mode="r", newline="") as file:
-            reader = csv.reader(file)
-            for row in reader:
-                results[row[0]] = {
-                    "intel_category": row[1],
-                    "intel_source": [row[2]],
-                    "intel_description": [row[3]],
-                    "is_filtered": str_to_bool(row[4]),
-                    "filter_reason": ast.literal_eval(row[5]) if row[5] else [row[5]],
-                    "intel_threat_id": int(row[6]) if row[6].isdigit() else '-',
-                    "intel_list_id": int(row[7]) if row[7].isdigit() else '-',
-                    "intel_threat_keywords": ast.literal_eval(row[8]),
-                    "intel_category_strength": row[9],
-                    "is_in_intel": str_to_bool(row[10]),
-                    "subdomain_count": int(row[11]) if row[11].isdigit() else '-',
-                    "etp_fqdn": row[12],
-                    "subdomain_only": str_to_bool(row[13]),
-                }
-
-        cls.previous_queries = results
 
     def read_previous_queries(self):
         try:
@@ -80,19 +54,13 @@ class ETPIntelFetcher:
             self.indicator.subdomain_only = self.previous_intel.get("subdomain_only")
             self.attributes_assigned = True
         else:
-            if self.indicator.candidate[-1] == ".":
-                self.indicator.etp_candidate = self.indicator.candidate
-                self.indicator.candidate = self.indicator.candidate[:-1]
-            else:
-                self.indicator.etp_candidate = self.indicator.candidate + "."
-
             try:
                 cursor = self.mongo_connection.blacklist.find(
-                    {"etp_record": self.indicator.etp_candidate}
+                    {"etp_record": self.indicator.candidate}
                 )
                 self.indicator.mongo_results = [record for record in cursor]
 
-                sudomain_pattern = f".*.{self.indicator.etp_candidate}"
+                sudomain_pattern = f".*.{self.indicator.candidate}"
                 cursor = self.mongo_connection.blacklist.find(
                     {"#data": {"$regex": sudomain_pattern}}
                 )
@@ -107,7 +75,7 @@ class ETPIntelFetcher:
                 else:
                     self.indicator.subdomain_only = False
 
-                ETPIntelFetcher.previous_queries[self.indicator.etp_candidate] = {
+                ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
                     "mongo_results": self.indicator.mongo_results,
                     "subdomain_only": self.indicator.subdomain_only,
                     "subdomain_count": self.indicator.subdomain_count,
@@ -198,29 +166,24 @@ class ETPIntelFetcher:
         self.indicator.is_internal = False
 
         ETPIntelFetcher.previous_queries[self.indicator.fqdn] = {}
-
-    def write_intel_file(self):
-        with open(etp_intel_file_path, mode="a", newline="") as file:
-            csv_writer = csv.writer(file)
-            logger.info(f"Writing {self.indicator.fqdn} to intel file")
-            csv_writer.writerow(
-                [
-                    self.indicator.fqdn,
-                    self.indicator.intel_category,
-                    self.indicator.intel_source,
-                    self.indicator.intel_description,
-                    self.indicator.is_filtered,
-                    self.indicator.filter_reason,
-                    self.indicator.intel_threat_id,
-                    self.indicator.intel_list_id,
-                    self.indicator.intel_threat_keywords,
-                    self.indicator.intel_category_strength,
-                    self.indicator.is_in_intel,
-                    self.indicator.subdomain_count,
-                    self.indicator.etp_fqdn,
-                    self.indicator.subdomain_only,
-                ]
+    
+    def query_resolved_ip(self):
+        ip_query = self.resolved_ip.strip() + "/32"
+        try:
+            cursor = self.mongo_connection.blacklist.find(
+                {"etp_record": ip_query}
             )
+            self.indicator.mongo_results = [record for record in cursor]
+
+            if self.indicator.mongo_results:
+                self.indicator.ip_in_intel = True
+
+            ETPIntelFetcher.previous_queries[ip_query] = {
+                "mongo_results": self.indicator.mongo_results
+            }
+        except Exception as e:
+            print(f"Error querying ETP intel: {e}")
+            logger.error(f"Error querying ETP intel: {e}")
 
 def get_category_level(list_id):
     if list_id in [1, 2, 3]:
@@ -230,20 +193,17 @@ def get_category_level(list_id):
 
     return category_level
 
-
 def str_to_bool(string):
     if type(string) == str:
         return True if string.lower() == "true" else False
     else:
         return string
 
-
 def is_internal_source(source):
     if any(substring in source.lower() for substring in ["nom", "etp", "man"]):
         return True
     else:
         return False
-
 
 def is_in_man_bl(source):
     if "manual" in source.lower():

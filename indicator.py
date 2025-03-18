@@ -5,6 +5,7 @@ from typing import List
 import tldextract as tld
 from config import logger
 from intel_entry import IntelEntry
+import socket
 
 
 class Indicator:
@@ -56,12 +57,11 @@ class Indicator:
         self.whitelisted_domain = True
         self.file_extension = False
         self.legitimate_indicator = False
-        # self.whitelist_additions: List[str] = []
-        # self.blacklist_removals: List[str] = []
-        # self.blacklist_additions: List[str] = []
-        # self.intel_changes: List[str] = []
         self.intel_entries: List[IntelEntry] = []
         self.candidates = []
+        self.resolved_ip: str = None
+        self.ip_in_intel: bool = False
+        self.matched_ioc: str = "-"
 
     def clean_fqdn(self):
         logger.info(f"Cleaning {self.fqdn}")
@@ -178,3 +178,10 @@ class Indicator:
             self.fqdn = self.fqdn[:-1]
         else:
             self.etp_fqdn = self.fqdn + "."
+
+    def get_resolved_ip(self):
+        try:
+            resolved_ip = socket.gethostbyname(self.fqdn)
+            self.resolved_ip = resolved_ip.strip() + "/32" if resolved_ip else resolved_ip
+        except socket.gaierror:
+            self.resolved_ip = None

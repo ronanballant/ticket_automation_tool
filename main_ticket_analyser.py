@@ -23,7 +23,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="etp",
+        default="sps",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -35,7 +35,6 @@ def parse_args():
         exit(1)
     else:
         return args
-
 
 def run_process():
     queue = args.queue.lower()
@@ -160,10 +159,16 @@ def run_process():
                         print("Querying SPS intel")
                         logger.info("Querying SPS intel")
                         intel_fetcher = SPSIntelFetcher(indicator)
-                        intel_fetcher.read_previous_queries()
-                        intel_fetcher.fetch_intel()
-                        intel_fetcher.assign_results()
-                        intel_fetcher.write_intel_file()
+                        for candidate in indicator.candidates:
+                            indicator.matched_ioc_type = "DOMAIN"
+                            indicator.candidate = candidate 
+                            intel_fetcher.read_previous_queries()
+                            intel_fetcher.fetch_intel()
+                            intel_fetcher.assign_results()
+
+                            if indicator.is_in_intel is True:
+                                indicator.matched_ioc = candidate
+                                break
                     except Exception as e:
                         print(f"Failed to query intel for {indicator.fqdn}: {e}")
                         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
@@ -174,12 +179,26 @@ def run_process():
                         intel_fetcher = ETPIntelFetcher(indicator, mongo_connection)
 
                         for candidate in indicator.candidates:
-                            indicator.candidate = candidate
+                            indicator.matched_ioc_type = "DOMAIN"
+                            indicator.candidate = candidate + "." if candidate[-1] != "." else candidate 
                             intel_fetcher.query_intel()
                             intel_fetcher.assign_results()
 
                             if indicator.is_in_intel is True:
+                                indicator.matched_ioc = indicator.candidate
                                 break
+                            else:
+                                if candidate == indicator.candidates[-1]:
+                                    indicator.get_resolved_ip()
+
+                                    if indicator.resolved_ip:
+                                        intel_fetcher.query_resolved_ip()
+                                    
+                                        if indicator.ip_in_intel is True:
+                                            intel_fetcher.attributes_assigned = False
+                                            intel_fetcher.assign_results()
+                                            indicator.matched_ioc = indicator.resolved_ip
+                                            indicator.matched_ioc_type = "IPV4"
 
                         if intel_fetcher.previous_intel is None:
                             intel_fetcher.write_intel_file()
@@ -196,7 +215,6 @@ def run_process():
                     )
                     ticket_resolver.prepare_fp_rule_query()
                     ticket_resolver.match_rule()
-                    ticket_resolver.write_resolutions()
                 except Exception as e:
                     print(f"Failed to find resolution for {indicator.fqdn}: {e}")
                     logger.error(

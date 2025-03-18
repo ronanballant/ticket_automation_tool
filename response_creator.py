@@ -97,15 +97,33 @@ class ResponseCreator:
             "resolved IP and name pattern" in self.indicator.intel_source
             or "ncdippat" in self.indicator.intel_source
         ):
-            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolved to an IP address with a bad reputation. "
+            if self.indicator.fqdn == self.indicator.matched_ioc:
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolved to an IP address with a bad reputation. "
+            else:
+                if self.indicator.ip_in_intel is True:
+                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolves to {self.indicator.resolved_ip} which has indications of malicious activity. "
+                else:
+                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolved to an IP address with a bad reputation. "
         elif malware_source_matches:
-            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as malicious activity was identified. "
+            if self.indicator.fqdn == self.indicator.matched_ioc:
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as malicious activity was identified. "
+            else:
+                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} has been associated with malcious activity. "
         elif phishing_source_matches:
-            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was identified for Phishing activity. "
+            if self.indicator.fqdn == self.indicator.matched_ioc:
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was identified for Phishing activity. "
+            else:
+                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was identified for Phishing activity. "
         elif external_source_matches:
-            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was reported malicious by security vendors. "
+            if self.indicator.fqdn == self.indicator.matched_ioc:
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was reported malicious by security vendors. "
+            else:
+                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was reported malicious by security vendors. "
         elif botnet_source_matches:
-            self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it collided with a DGA. "
+            if self.indicator.fqdn == self.indicator.matched_ioc:
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it collided with a DGA. "
+            else:
+                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} collided with a DGA. "
         else:
             self.indicator.source_response = ""
 

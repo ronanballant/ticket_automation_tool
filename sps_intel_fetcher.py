@@ -1,10 +1,8 @@
 import ast
-import csv
 import subprocess
 
 from config import (destination_ip, destination_username, intel_fetcher_path,
-                    jump_host_ip, jump_host_username, logger, private_key_path,
-                    sps_intel_file_path)
+                    jump_host_ip, jump_host_username, logger, private_key_path)
 
 
 class SPSIntelFetcher:
@@ -17,7 +15,7 @@ class SPSIntelFetcher:
     def read_previous_queries(self):
         try:
             self.previous_intel = SPSIntelFetcher.previous_queries.get(
-                self.indicator.fqdn, None
+                self.indicator.candidate, None
             )
         except Exception as e:
             print(f"Failed to read previous Intel query: {e}")
@@ -26,7 +24,7 @@ class SPSIntelFetcher:
 
     def fetch_intel(self):
         if self.previous_intel:
-            self.results[self.indicator.fqdn] = self.previous_intel
+            self.results = self.previous_intel
         else:
             ssh_command = [
                 "ssh",
@@ -34,16 +32,16 @@ class SPSIntelFetcher:
                 private_key_path,
                 "-J {}@{}".format(jump_host_username, jump_host_ip),
                 "{}@{}".format(destination_username, destination_ip),
-                "python3 {} -d '{}'".format(intel_fetcher_path, self.indicator.fqdn),
+                "python3 {} -d '{}'".format(intel_fetcher_path, self.indicator.candidate),
             ]
 
             try:
                 result = subprocess.run(
                     ssh_command, check=True, capture_output=True, text=True
                 )
-                logger.info(f"SPS Intel query sent for {self.indicator.fqdn}")
+                logger.info(f"SPS Intel query sent for {self.indicator.candidate}")
                 self.results = ast.literal_eval(result.stdout)
-                SPSIntelFetcher.previous_queries[self.indicator.fqdn] = self.results
+                SPSIntelFetcher.previous_queries[self.indicator.candidate] = self.results
             except Exception as e:
                 print(f"Error querying SPS intel: {e}")
                 logger.error(f"Error querying SPS intel: {e}")
@@ -52,7 +50,7 @@ class SPSIntelFetcher:
     def assign_results(self):
         try:
             logger.info(f"Attributing intel to {self.indicator.fqdn}")
-            result = self.results.get(self.indicator.fqdn)
+            result = self.results.get(self.indicator.candidate)
             if result:
                 self.indicator.is_in_intel = str_to_bool(result.get("is_in_intel", "-"))
                 self.indicator.subdomain_only = str_to_bool(result.get("subdomain_only"))
@@ -92,54 +90,7 @@ class SPSIntelFetcher:
         self.indicator.is_in_intel = False
         self.indicator.e_list_entry = False
         self.indicator.subdomain_only = False
-        SPSIntelFetcher.previous_queries[self.indicator.fqdn] = {}
-
-    def write_intel_file(self):
-        try:
-            with open(sps_intel_file_path, mode="a", newline="") as f:
-                writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_MINIMAL)
-                indicator = self.indicator
-                logger.info(f"Writing {indicator.fqdn} to intel file")
-                writer.writerow(
-                    [
-                        indicator.fqdn,
-                        indicator.intel_feed,
-                        indicator.intel_confidence,
-                        indicator.intel_source,
-                        indicator.is_in_intel,
-                        indicator.e_list_entry,
-                        indicator.subdomain_count,
-                        indicator.url_count,
-                        indicator.subdomain_only,
-                    ]
-                )
-        except Exception as e:
-            print(f"Error writing SPS intel to {sps_intel_file_path}: {e}")
-            logger.error(f"Error writing SPS intel to {sps_intel_file_path}: {e}")
-
-    def load_previous_intel():
-        try:
-            logger.info("Reading stored intel file")
-            with open(sps_intel_file_path, mode="r", newline="") as file:
-                reader = csv.reader(file, delimiter=",")
-                results = {}
-                for row in reader:
-                    results[row[0]] = {
-                        "intel_feed": row[1],
-                        "intel_confidence": row[2],
-                        "intel_source": row[3],
-                        "is_in_intel": str_to_bool(row[4]),
-                        "e_list_entry": str_to_bool(row[5]),
-                        "subdomain_count": int(row[6]) if row[6].isdigit() else '-',
-                        "url_count": int(row[7]) if row[7].isdigit() else '-',
-                        "subdomain_only": str_to_bool(row[8]),
-                    }
-
-                SPSIntelFetcher.previous_queries = results
-                
-        except Exception as e:
-            print(f"Error opening SPS intel at {sps_intel_file_path}: {e}")
-            logger.error(f"Error opening SPS intel at {sps_intel_file_path}: {e}")
+        SPSIntelFetcher.previous_queries[self.indicator.candidate] = {}
 
 def str_to_bool(string):
     if type(string) == str:

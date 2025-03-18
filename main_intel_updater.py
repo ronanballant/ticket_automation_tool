@@ -2,7 +2,7 @@ import socket
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
-from config import (approvals_prefix, blacklist_file, cert_path,
+from config import (blacklist_file, cert_path,
                     etp_intel_repo, etp_processed_tickets_file,
                     etp_tickets_in_progress_file, intel_processor_path,
                     jira_search_api, jira_ticket_api, key_path, logger,
@@ -55,12 +55,10 @@ if __name__ == "__main__":
 
     logger.info(f"tickets_in_progress_file path = {tickets_in_progress_file}")
     logger.info(f"open_summary_tickets_file path = {open_summary_tickets_file}")
-    logger.info(f"approvals_prefix = {approvals_prefix}")
 
     approval_finder = ApprovalFinder(
         tickets_in_progress_file,
         open_summary_tickets_file,
-        approvals_prefix,
         processed_tickets_file,
         jira_search_api,
         jira_ticket_api,
@@ -134,7 +132,8 @@ if __name__ == "__main__":
                 intel_processor.transfer_sps_update_file()
                 logger.info(f"Triggering {intel_processor_path} on SPOF VM")
                 intel_processor.trigger_sps_intel_update()
-                approval_finder.add_summary_comment("Intel update successful")
+                approval_finder.generate_data_string_comment()
+                approval_finder.add_summary_comment(approval_finder.data_string_comment)
             else:
                 intel_processor.update_triggered = True
         elif queue == "ETP":

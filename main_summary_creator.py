@@ -1,7 +1,7 @@
 import socket
 
 from config import (etp_tickets_in_progress_file, logger,
-                    open_summary_tickets_file, sps_tickets_in_progress_file)
+                    open_sps_summary_tickets_file, open_etp_summary_tickets_file, sps_tickets_in_progress_file)
 from summary_creator import SummaryCreator
 from ticket import Ticket
 from ticket_responder import TicketResponder
@@ -12,10 +12,12 @@ if __name__ == "__main__":
         queue = "SPS"
         tickets_in_progress_file = sps_tickets_in_progress_file
     elif server_name == "oth-mpbv4":
-        # queue = "SPS"
-        # tickets_in_progress_file = sps_tickets_in_progress_file
-        queue = "ETP"
-        tickets_in_progress_file = etp_tickets_in_progress_file
+        queue = "SPS"
+        tickets_in_progress_file = sps_tickets_in_progress_file
+        open_summary_tickets_file = open_sps_summary_tickets_file
+        # queue = "ETP"
+        # tickets_in_progress_file = etp_tickets_in_progress_file
+        # open_summary_tickets_file = open_etp_summary_tickets_file
     elif server_name == "prod-galaxy-t4tools.dfw02.corp.akamai.com":
         queue = "ETP"
         tickets_in_progress_file = etp_tickets_in_progress_file

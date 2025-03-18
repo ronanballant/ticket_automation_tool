@@ -19,6 +19,17 @@ class GitRepoManager:
         self.result = result.stdout.strip()
         self.std_err = result.stderr.strip()
 
+    def run_command(self, command):
+        try:
+            result = subprocess.run(
+                command, cwd=self.repo_path, stdout=log, stderr=subprocess.STDOUT, text=True, check=True
+            )
+            if log_output:
+                print(result.stdout.strip())
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed: {' '.join(command)}\n{e.stderr}", file=sys.stderr)
+            sys.exit(1)
+
     def checkout_master(self):
         self.run_command(["git", "checkout", "master"])
     

@@ -1,16 +1,12 @@
-import csv
-import os
-
-from config import logger, results_file_path
+from config import logger
 
 
 class TicketResolver:
     DAYS_SINCE_CREATION = 30  # days since creation
 
-    def __init__(self, indicator, rules, file_time) -> None:
+    def __init__(self, indicator, rules) -> None:
         self.indicator = indicator
         self.rules = rules
-        self.file_path = os.path.join(results_file_path, f"{file_time}_results.csv")
 
     def prepare_fp_rule_query(self):
         logger.info("Preparing data for rule matching")
@@ -217,47 +213,6 @@ class TicketResolver:
         if int(self.indicator.subdomain_count) > 3 and self.indicator.indicator_resolution == "Allow":
                 self.indicator.indicator_resolution = "In Progress"
                 self.indicator.rule_response = f"FQDN has {self.indicator.subdomain_count} subdomains in the intel and must be analysed manually."
-
-
-    def write_resolutions(self):
-        if not os.path.exists(results_file_path):
-            os.makedirs(results_file_path)
-
-        try:
-            logger.info(f"Writing resolutions to {self.file_path}")
-            with open(self.file_path, mode="a", newline="") as file:
-                csv_writer = csv.writer(file)
-
-                if self.indicator.has_vt_data:
-                    csv_writer.writerow(
-                        [
-                            self.indicator.ticket_id,
-                            self.indicator.ticket_type,
-                            self.indicator.fqdn,
-                            self.indicator.vt_indications,
-                            self.indicator.last_scanned,
-                            self.indicator.categories,
-                            self.indicator.indicator_resolution,
-                            self.indicator.rule_response,
-                        ]
-                    )
-                else:
-                    csv_writer.writerow(
-                        [
-                            self.indicator.ticket_id,
-                            self.indicator.ticket_type,
-                            self.indicator.fqdn,
-                            None,
-                            None,
-                            None,
-                            self.indicator.indicator_resolution,
-                            self.indicator.rule_response,
-                        ]
-                    )
-                # add webroot
-        except Exception as e:
-            logger.error(f"Error writing to {self.file_path}. Error: {e}")
-
 
 def merge_dicts(dict1, dict2):
     for key, value in dict2.items():

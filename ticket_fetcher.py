@@ -53,13 +53,13 @@ class TicketFetcher:
     def get_tickets(self):
         try:
             if self.queue.lower() == "sps":
-                jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
+                # jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
                 # jql_query = f'project="ReCat Sec Ops Requests" AND status IS "Open" AND assignee IS EMPTY'
-                # jql_query = f'project="ReCat Sec Ops Requests" AND issue = "RCSOR-7222"'
+                jql_query = f'project="ReCat Sec Ops Requests" AND issue = "RCSOR-7408"'
 
             if self.queue.lower() == "etp":
                 jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14118"'
+                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14166"'
                 # jql_query = 'project="ETPESC" AND issue = "ETPESC-9841"'
             params = {"jql": jql_query, "maxResults": 100}
 

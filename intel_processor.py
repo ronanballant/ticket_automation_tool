@@ -1,8 +1,8 @@
 import fileinput
 import csv
-from config import (destination_ip, destination_username, etp_blacklist_file_path, 
+from config import (destination_ip, destination_username, 
                     intel_processor_path, jump_host_ip, jump_host_username, logger, private_key_path,
-                    destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_automation_file, sps_intel_update_file, etp_whitelist_file_path)
+                    destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_file, sps_intel_update_file)
 from typing import List
 import subprocess
 
@@ -14,6 +14,7 @@ class IntelProcessor:
         self.whitelist_removal: List[str] = []
         self.blacklist: List[str] = []
         self.manual_blacklist: List[str] = []
+        self.data_strings: List[str] = []
         self.add_error_comment: bool = False
         self.error_comment: str = ""
 
@@ -36,22 +37,26 @@ class IntelProcessor:
                         elif intel_entry.operation.lower() == "remove":
                             self.manual_blacklist.append(intel_entry.approved_intel_change)
                             logger.info(f"{intel_entry.indicator.fqdn} identified for manual blacklist removal.")
+
+        self.whitelist = list(set(self.whitelist))
+        self.blacklist = list(set(self.blacklist))
+        self.manual_blacklist = list(set(self.manual_blacklist))
     
     def add_to_etp_whitelist(self):
         if self.whitelist:
             with open(whitelist_file, "a", newline="") as file:
                 writer = csv.writer(file, lineterminator="\n")
                 for intel_entry in self.whitelist:
-                    logger.info(f"Adding {intel_entry} to {etp_whitelist_file_path}")
+                    logger.info(f"Adding {intel_entry} to {whitelist_file}")
                     entry = [x.strip() for x in intel_entry.strip().split(",")]
                     writer.writerow(entry)
 
     def add_to_etp_blacklist(self):
         if self.blacklist:
-            with open(secops_feed_automation_file, "a", newline="") as file:
+            with open(secops_feed_file, "a", newline="") as file:
                 writer = csv.writer(file, lineterminator="\n")
                 for intel_entry in self.blacklist:
-                    logger.info(f"Adding {intel_entry} to {etp_blacklist_file_path}")
+                    logger.info(f"Adding {intel_entry} to {secops_feed_file}")
                     entry = [x.strip() for x in intel_entry.strip().split(",")]
                     writer.writerow(entry)
 
@@ -116,6 +121,7 @@ class IntelProcessor:
 
                 try:
                     result = subprocess.run(ssh_command, check=True, capture_output=True, text=True)
+                    intel_update_results = result.stdout
                     logger.debug(result.stdout)
                 except subprocess.CalledProcessError as e:
                     self.update_triggered = False

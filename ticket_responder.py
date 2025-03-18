@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 import time
@@ -9,7 +8,6 @@ import requests
 import get_az_secret
 from config import (blacklist_file, cert_name, cert_path, jira_ticket_api,
                     key_name, key_path, logger,
-                    previous_ticket_resolutions_path, results_file_path,
                     secops_member)
 from intel_entry import IntelEntry
 from ticket import Ticket
@@ -29,10 +27,6 @@ class TicketResponder:
         self.time = int(time.time())
         self.cert_path = "processed_cert.crt"
         self.key_path = "processed_key.key"
-        self.unresolved_file_path = (
-            results_file_path + f"{self.time}_domains_to_analyse.csv"
-        )
-        self.response_file_path = results_file_path + f"{self.time}_result_comments.csv"
         self.get_username()
         self.get_keys()
 
@@ -99,9 +93,6 @@ class TicketResponder:
 
         self.close_ticket()
 
-    def delete_indicator_details(self):
-        os.remove(previous_ticket_resolutions_path)
-
     def create_sps_ticket(self, tickets):
         print("\nCreating SPS ticket")
         logger.info("Creating SPS ticket")
@@ -118,20 +109,20 @@ class TicketResponder:
         blacklist_additions = []
         possible_changes = []
         closed_list = [
-            "||ticket_id||ticket_type||fqdn||resolution||vt_indications||subdomains_in_intel||comments||categories||feed||source||confidence||vt_link||"
+            "||Ticket ID||Ticket Type||FQDN||Intel Match||Resolution||VT Indications||Subdomains||Comments||VT Categories||Feed||Source||Confidence||VT Link||"
         ]
         open_list = [
-            "||ticket_id||ticket_type||fqdn||resolution||vt_indications||subdomains_in_intel||comments||categories||feed||source||confidence||vt_link||"
+            "||Ticket ID||Ticket Type||FQDN||Intel Match||Resolution||VT Indications||Subdomains||Comments||VT Categories||Feed||Source||Confidence||VT Link||"
         ]
         for indicator in self.sorted_indicators:
             self.process_attributes(indicator)
             self.queue = indicator.ticket.queue
-            line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_feed}|{indicator.intel_source}|{indicator.intel_confidence}|[Virus Total Link|{indicator.vt_link}]|"
+            line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_feed}|{indicator.intel_source}|{indicator.intel_confidence}|[Virus Total Link|{indicator.vt_link}]|"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
                     in_progress_line = (
-                        f"+++ {indicator.fqdn},{indicator.ticket.ticket_id},whitelist"
+                        f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
                     )
                     intel_entry = IntelEntry(
                         indicator, in_progress_line, "possible_changes", "add"
@@ -150,7 +141,7 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
                 whitelist_line = (
-                    f"+++ {indicator.fqdn},{indicator.ticket.ticket_id},whitelist"
+                    f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
                 )
                 intel_entry = IntelEntry(indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
@@ -166,6 +157,9 @@ class TicketResponder:
             else:
                 closed_list.append(line)
 
+        whitelist_additions = list(set(whitelist_additions))
+        blacklist_additions = list(set(blacklist_additions))
+        possible_changes = list(set(possible_changes))
         self.open_table = "\n".join(open_list)
         self.closed_table = "\n".join(closed_list)
         allow_strings = "\n".join(whitelist_additions)
@@ -195,10 +189,6 @@ class TicketResponder:
 
         headers = {"Content-Type": "application/json"}
         date = datetime.strftime(datetime.fromtimestamp(self.time), "%Y-%m-%d %H:00")
-
-        # self.comment = (
-        #     "*Open Cases*\n" + self.open_table + "\n\n\n*Closed Cases*\n" + self.closed_table
-        # )
 
         data = {
             "fields": {
@@ -261,10 +251,10 @@ class TicketResponder:
         blacklist_additions = []
         possible_changes = []
         closed_list = [
-            "||Ticket ID||Ticket Type||FQDN||Resolution||VT Indications||Subdomains||Comments||VT Categories||Category||Source Feeds||Filtered||Filtered Reason||VT Link||"
+            "||Ticket ID||Ticket Type||FQDN||Intel Match||Resolution||VT Indications||Subdomains||Comments||VT Categories||Category||Source Feeds||Filtered||Filtered Reason||VT Link||"
         ]
         open_list = [
-            "||Ticket ID||Ticket Type||FQDN||Resolution||VT Indications||Subdomains||Comments||VT Categories||Category||Source Feeds||Filtered||Filtered Reason||VT Link||"
+            "||Ticket ID||Ticket Type||FQDN||Intel Match||Resolution||VT Indications||Subdomains||Comments||VT Categories||Category||Source Feeds||Filtered||Filtered Reason||VT Link||"
         ]
 
         for ticket in tickets:
@@ -278,12 +268,12 @@ class TicketResponder:
         for indicator in self.sorted_indicators:
             self.process_attributes(indicator)
             self.queue = indicator.ticket.queue
-            line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
+            line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
                     self.get_single_intel_source(indicator)
-                    in_progress_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                    in_progress_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                     intel_entry = IntelEntry(
                         indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -300,7 +290,7 @@ class TicketResponder:
                         possible_changes.append(in_progress_line)
                         indicator.ticket.possible_changes.append(in_progress_line)
                 elif indicator.ticket.ticket_type == "FN":
-                    in_progress_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
+                    in_progress_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
                     intel_entry = IntelEntry(
                         indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -310,7 +300,7 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
                 self.get_single_intel_source(indicator)
-                whitelist_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                whitelist_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                 intel_entry = IntelEntry(indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
@@ -333,6 +323,11 @@ class TicketResponder:
                 indicator.ticket.blacklist_additions.append(blacklist_line)
             else:
                 closed_list.append(line)
+
+        whitelist_additions = list(set(whitelist_additions))
+        blacklist_additions = list(set(blacklist_additions))
+        blacklist_removals = list(set(blacklist_removals))
+        possible_changes = list(set(possible_changes))
 
         self.open_table = "\n".join(open_list)
         self.closed_table = "\n".join(closed_list)
@@ -641,7 +636,7 @@ class TicketResponder:
 
             for line in reader:
                 data = line.split(",")
-                if data[0] == f"{indicator.fqdn}.":
+                if data[0] == f"{indicator.fqdn}." or data[0] == indicator.matched_ioc:
                     self.manual_blacklist_entry = line.strip()
                     break
 

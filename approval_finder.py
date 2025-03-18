@@ -12,12 +12,12 @@ from ticket import Ticket
 
 class ApprovalFinder:
     processed_tickets = []
+    intel_data_strings = []
 
     def __init__(
         self,
         tickets_in_progress_file: str,
         open_summary_tickets_file: str,
-        approvals_prefix: str,
         processed_tickets_file: str,
         jira_search_api: str,
         jira_ticket_api: str,
@@ -26,7 +26,6 @@ class ApprovalFinder:
     ) -> None:
         self.tickets_in_progress_file: str = tickets_in_progress_file
         self.open_summary_tickets_file: str = open_summary_tickets_file
-        self.approvals_prefix: str = approvals_prefix
         self.processed_tickets_file: str = processed_tickets_file
         self.jira_search_api: str = jira_search_api
         self.jira_ticket_api: str = jira_ticket_api
@@ -94,7 +93,6 @@ class ApprovalFinder:
 
             if self.queue.lower() == "etp":
                 jql_query = f'project="ETPESC" AND issue = "{self.summary_ticket}"'
-                # jql_query = f'project="Enterprise Tier 3 Escalation Support" AND issue = "{self.summary_ticket}"'
             params = {"jql": jql_query, "maxResults": 100}
 
             self.req = requests.get(
@@ -165,12 +163,6 @@ class ApprovalFinder:
         extracted_list = extracted_text.split("\n")
         block_list = [entry.strip() for entry in extracted_list if entry.strip()]
 
-        # reviewed_intel_changes = allow_list + block_list
-        # self.reviewed_intel_changes = [
-        #     line.strip()
-        #     for line in reviewed_intel_changes
-        #     if line
-        # ]
         self.reviewed_allow_list = [
             line.strip()
             for line in allow_list
@@ -250,6 +242,7 @@ class ApprovalFinder:
                                 if entry_fqdn == reviewed_fqdn:
                                     entry_found = True
                                     intel_entry.is_approved = True
+                                    self.generate_data_string(indicator)
                                     self.update_owner(intel_entry, reviewed_change_string)
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "whitelist"
@@ -261,6 +254,7 @@ class ApprovalFinder:
                                 reviewed_fqdn = reviewed_change_parts[0]
                                 if entry_fqdn == reviewed_fqdn:
                                     entry_found = True
+                                    self.generate_data_string(indicator)
                                     intel_entry.is_approved = True
                                     self.update_owner(intel_entry, reviewed_change_string)
                                     if intel_entry.intel_list.lower() == "possible_changes":
@@ -516,3 +510,41 @@ class ApprovalFinder:
 
         with open(self.tickets_in_progress_file, "w") as file:
             json.dump(tickets_in_progress, file, indent=4)
+
+
+    def generate_data_string(self, indicator):
+        logger.info(f"Creating intel data string for {indicator.fqdn}")
+        date = datetime.today().strftime("%m/%d/%Y")
+        reason = f"Internal|Carrier|SecOps|{indicator.ticket.ticket_id}"
+
+        if indicator.indicator_resolution == "Allow":
+            data_string = [
+                date,
+                indicator.matched_ioc,
+                "False-Positive",
+                indicator.intel_feed.replace("|", "\|"),
+                indicator.intel_source.replace("|", "\|"),
+                reason.replace("|", "\|"),
+                indicator.ticket.ticket_id
+            ]
+        else:
+            data_string = [
+                date,
+                indicator.matched_ioc,
+                "False-Negative",
+                indicator.intel_feed,
+                "-",
+                reason,
+                indicator.ticket.ticket_id
+            ]
+        
+        ApprovalFinder.intel_data_strings.append(data_string)
+
+    def generate_data_string_comment(self):
+        strings = []
+        
+        for data_string in ApprovalFinder.intel_data_strings:
+            new_string = "|" + "|".join(data_string) + "|"
+            strings.append(new_string)
+        
+        self.data_string_comment = "Intel update successful\n" + "\n".join(strings)

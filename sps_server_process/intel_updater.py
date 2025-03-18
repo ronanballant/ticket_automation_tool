@@ -81,10 +81,10 @@ class IntelUpdater:
 
     def get_domain_data(self):
         logger.info(f"Fetching {self.fqdn} intel data")
-        intel = IntelFinder(self.fqdn)
-        intel.get_intel_feed()
-        self.current_feed = intel.feed
-        self.current_source = intel.source
+        # intel = IntelFinder(self.fqdn)
+        # intel.get_intel_feed()
+        # self.current_feed = intel.feed
+        # self.current_source = intel.source
 
     def execute_command(self):
         logger.info(f"Executing command")
@@ -98,31 +98,6 @@ class IntelUpdater:
             logger.info(f"{self.fqdn} added to {self.intel_feed}")
         else:
             logger.info(f"Failed to add {self.fqdn} to {self.intel_feed}")
-
-    def generate_data_string(self):
-        logger.info(f"Creating intel data string")
-        date = datetime.datetime.today().strftime("%m/%d/%Y")
-        
-        if self.feed.lower() == "whitelist":
-            self.data_string = [
-                date,
-                self.fqdn,
-                "False-Positive",
-                self.current_feed,
-                self.current_source,
-                self.reason,
-                self.ticket_id
-            ]
-        else:
-            self.data_string = [
-                date,
-                self.fqdn,
-                "False-Negative",
-                self.intel_feed,
-                " - ",
-                self.reason,
-                self.ticket_id
-            ]
 
     def clean_domain(self):
         logger.info(f"Cleaning {self.fqdn}")
@@ -167,11 +142,11 @@ if __name__ == "__main__":
             intel_updater.get_update_parameters()
             intel_updater.get_reason()
             intel_updater.create_update_command()
-            intel_updater.get_domain_data()
-            intel_updater.generate_data_string()
+            # intel_updater.get_domain_data()
+            # intel_updater.generate_data_string()
             intel_updater.execute_command()
 
-    with open("data_strings.csv", "w") as file:
-        for row in data_strings:
-            writer = csv.writer(file)
-            writer.writerow([row])
+    # with open("data_strings.csv", "w") as file:
+    #     for row in data_strings:
+    #         writer = csv.writer(file)
+    #         writer.writerow([row])
