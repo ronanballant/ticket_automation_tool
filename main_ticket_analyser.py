@@ -4,7 +4,7 @@ import argparse
 import time
 
 from config import (cert_path, etp_tickets_in_progress_file, key_path, logger,
-                    sps_tickets_in_progress_file, ssh_key_path)
+                    secops_member, sps_tickets_in_progress_file, ssh_key_path)
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
@@ -135,7 +135,7 @@ def run_process():
                 print(f"Failed to create indicator for {fqdn}: {e}")
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
-    responder = TicketResponder()
+    responder = TicketResponder(secops_member)
     try:
         for ticket in Ticket.all_tickets:
             print(f"\nProcessing {ticket.ticket_id}")
