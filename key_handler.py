@@ -17,9 +17,11 @@ class KeyHandler:
         self.key_path = key_path
         self.ssh_key_path = ssh_key_path
 
-    def remove_keys(self):
+    def remove_personal_keys(self):
         os.remove(self.cert_path)
         os.remove(self.key_path)
+    
+    def remove_ssh_keys(self):
         os.remove(self.ssh_key_path)
 
     def decode_key(self, key):

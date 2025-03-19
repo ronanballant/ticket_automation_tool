@@ -155,8 +155,9 @@ def run_process():
                         vt_fetcher.get_external_data()
                         vt_fetcher.scan_domain()
                         vt_fetcher.analyse_vt_rescan()
-                    if vt_fetcher.indicator.has_vt_data is True:
-                        vt_fetcher.get_domain_attributions()
+                        vt_fetcher.save_results()
+                        if vt_fetcher.indicator.has_vt_data is True:
+                            vt_fetcher.get_domain_attributions()
                     if (
                         not vt_fetcher.previous_vt_query
                         and vt_fetcher.indicator.has_vt_data
@@ -263,7 +264,6 @@ def run_process():
                 logger.error(f"Failed to respond to {ticket.ticket_id}: {e}")
 
             try:
-                print(f"Adding {ticket.ticket_id} to {tickets_in_progress_file}")
                 logger.info(f"Adding {ticket.ticket_id} to {tickets_in_progress_file}")
                 ticket.update_tickets_in_progress(tickets_in_progress_file)
             except Exception as e:
@@ -274,7 +274,7 @@ def run_process():
         logger.error(f"Failed to process entities: {e}")
         return
 
-    key_handler.remove_keys()
+    key_handler.remove_personal_keys()
 
     logger.info("Process Finished...")
     logger.info(f"{queue.upper()} ticket automation Finished")

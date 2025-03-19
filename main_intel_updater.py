@@ -80,6 +80,10 @@ if __name__ == "__main__":
         logger.info(f"No open tickets. Exiting Script")
         exit()
 
+    key_handler = KeyHandler(cert_path, key_path, ssh_key_path, approval_finder.comment_owner)
+    key_handler.get_key_names()
+    key_handler.get_personal_keys()
+
     approval_finder.group_tickets()
     for summary_ticket in approval_finder.open_summary_tickets:
         logger.info(f"Processing {summary_ticket}")
@@ -137,10 +141,7 @@ if __name__ == "__main__":
                 intel_processor.update_triggered = True
         elif queue == "ETP":
             if intel_processor.intel_entries:
-                key_handler = KeyHandler(cert_path, key_path, ssh_key_path, approval_finder.comment_owner)
-                key_handler.get_key_names()
                 key_handler.get_ssh_key()
-                key_handler.get_personal_keys()
 
                 git_manager = GitRepoManager(etp_intel_repo)
                 git_manager.add_ssh_key()
@@ -162,6 +163,7 @@ if __name__ == "__main__":
                     git_manager.push_changes(branch_name, approval_finder.user_name)
                     git_manager.get_pr_link()
                     approval_finder.add_summary_comment(git_manager.pr_comment)
+                    key_handler.remove_ssh_keys()
             else:
                 intel_processor.update_triggered = True
 
@@ -171,4 +173,4 @@ if __name__ == "__main__":
         ):
             close_summary(approval_finder, summary_ticket)
     
-    key_handler.remove_keys()
+    key_handler.remove_personal_keys()

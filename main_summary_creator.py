@@ -1,7 +1,9 @@
 import socket
 
 from config import (etp_tickets_in_progress_file, logger,
-                    open_sps_summary_tickets_file, open_etp_summary_tickets_file, sps_tickets_in_progress_file)
+                    open_sps_summary_tickets_file, open_etp_summary_tickets_file, 
+                    secops_member, sps_tickets_in_progress_file, cert_path, key_path, ssh_key_path)
+from key_handler import KeyHandler
 from summary_creator import SummaryCreator
 from ticket import Ticket
 from ticket_responder import TicketResponder
@@ -11,6 +13,7 @@ if __name__ == "__main__":
     if "muc" in server_name:
         queue = "SPS"
         tickets_in_progress_file = sps_tickets_in_progress_file
+        open_summary_tickets_file = open_sps_summary_tickets_file
     elif server_name == "oth-mpbv4":
         queue = "SPS"
         tickets_in_progress_file = sps_tickets_in_progress_file
@@ -18,9 +21,10 @@ if __name__ == "__main__":
         # queue = "ETP"
         # tickets_in_progress_file = etp_tickets_in_progress_file
         # open_summary_tickets_file = open_etp_summary_tickets_file
-    elif server_name == "prod-galaxy-t4tools.dfw02.corp.akamai.com":
+    elif "t4tools" in server_name:
         queue = "ETP"
         tickets_in_progress_file = etp_tickets_in_progress_file
+        open_summary_tickets_file = open_etp_summary_tickets_file
 
     summary_creator = SummaryCreator(
         tickets_in_progress_file, open_summary_tickets_file
@@ -30,7 +34,7 @@ if __name__ == "__main__":
     logger.info(f"Creating ticket instances")
     summary_creator.create_tickets()
 
-    responder = TicketResponder()
+    responder = TicketResponder(secops_member)
     logger.info(f"Finding unprocessed tickets")
     new_tickets = [
         ticket for ticket in Ticket.all_tickets if not ticket.linked_summary_ticket
@@ -39,6 +43,10 @@ if __name__ == "__main__":
     if not new_tickets:
         logger.info(f"No new tickets, exiting script")
         exit()
+
+    key_handler = KeyHandler(cert_path, key_path, ssh_key_path)
+    key_handler.get_key_names()
+    key_handler.get_personal_keys()
 
     if queue == "SPS":
         try:
@@ -81,4 +89,4 @@ if __name__ == "__main__":
         )
         summary_creator.save_open_summary_ticket(responder.summary_ticket)
     
-    responder.remove_keys()
+    key_handler.remove_personal_keys()

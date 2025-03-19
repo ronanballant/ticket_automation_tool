@@ -239,8 +239,8 @@ class ApprovalFinder:
                                 if entry_fqdn == reviewed_fqdn:
                                     entry_found = True
                                     intel_entry.is_approved = True
-                                    self.generate_data_string(indicator)
                                     self.update_owner(intel_entry, reviewed_change_string)
+                                    self.generate_data_string(indicator)
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "whitelist"
                         
@@ -251,9 +251,9 @@ class ApprovalFinder:
                                 reviewed_fqdn = reviewed_change_parts[0]
                                 if entry_fqdn == reviewed_fqdn:
                                     entry_found = True
-                                    self.generate_data_string(indicator)
                                     intel_entry.is_approved = True
                                     self.update_owner(intel_entry, reviewed_change_string)
+                                    self.generate_data_string(indicator)
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "blacklist"
                         
@@ -509,6 +509,9 @@ class ApprovalFinder:
             json.dump(tickets_in_progress, file, indent=4)
 
 
+    # def get_attribution(self, entry):
+    #         if .ticket.queue = "sps":
+
     def generate_data_string(self, indicator):
         logger.info(f"Creating intel data string for {indicator.fqdn}")
         date = datetime.today().strftime("%m/%d/%Y")
@@ -517,7 +520,7 @@ class ApprovalFinder:
         if indicator.indicator_resolution == "Allow":
             data_string = [
                 date,
-                indicator.matched_ioc,
+                indicator.matched_ioc.replace(".", "[.]"),
                 "False-Positive",
                 indicator.intel_feed.replace("|", "\\|"),
                 indicator.intel_source.replace("|", "\\|"),
@@ -527,11 +530,11 @@ class ApprovalFinder:
         else:
             data_string = [
                 date,
-                indicator.matched_ioc,
+                indicator.fqdn.replace(".", "[.]"),
                 "False-Negative",
-                indicator.intel_feed,
+                indicator.intel_feed.replace("|", "\\|"),
                 "-",
-                reason,
+                reason.replace("|", "\\|"),
                 indicator.ticket.ticket_id
             ]
         

@@ -164,7 +164,6 @@ class VirusTotalFetcher:
             else:
                 if response.status_code == 200:
                     self.decoded_response = json.loads(response.text)
-                    VirusTotalFetcher.previous_queries[self.indicator.fqdn] = self.decoded_response
                     self.assign_results()
                 else:
                     self.no_data()
@@ -175,6 +174,22 @@ class VirusTotalFetcher:
             print("VT query failed - API quota reached")
             logger.error("VT query failed - API quota reached")
 
+    def save_results(self):
+        VirusTotalFetcher.previous_queries[self.indicator.fqdn] = {
+            "vt_indications": self.indicator.vt_indications,
+            "creation_date": self.indicator.creation_date,
+            "last_scanned": self.indicator.last_scanned,
+            "categories": self.indicator.categories,
+            "tags": self.indicator.tags,
+            "data_source": self.indicator.data_source,
+            "has_vt_data": self.indicator.has_vt_data,
+            "days_since_creation": self.indicator.days_since_creation,
+            "days_since_last_scanned": self.indicator.days_since_last_scanned,
+            "attribution": self.indicator.attribution,
+            "attribution_id": self.indicator.attribution_id,
+            "attribution_description": self.indicator.attribution_description,
+        }
+                    
     def assign_results(self):
         try:
             self.today = datetime.today()
