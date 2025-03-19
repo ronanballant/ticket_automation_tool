@@ -1,14 +1,13 @@
 import subprocess
 import os
 import sys
-from config import logger
+from config import logger, ssh_key_path
 import re
 
 
 class GitRepoManager:
-    def __init__(self, repo_path, ssh_key):
+    def __init__(self, repo_path):
         self.repo_path = repo_path
-        self.ssh_key = ssh_key
 
     def run_command(self, command):
         result = subprocess.run(command, cwd=self.repo_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -18,17 +17,6 @@ class GitRepoManager:
         
         self.result = result.stdout.strip()
         self.std_err = result.stderr.strip()
-
-    def run_command(self, command):
-        try:
-            result = subprocess.run(
-                command, cwd=self.repo_path, stdout=log, stderr=subprocess.STDOUT, text=True, check=True
-            )
-            if log_output:
-                print(result.stdout.strip())
-        except subprocess.CalledProcessError as e:
-            print(f"Command failed: {' '.join(command)}\n{e.stderr}", file=sys.stderr)
-            sys.exit(1)
 
     def checkout_master(self):
         self.run_command(["git", "checkout", "master"])
@@ -50,7 +38,7 @@ class GitRepoManager:
         self.run_command(["git", "commit", "-m", commit_message])
     
     def push_changes(self, branch_name, user_name):
-        git_url = f"ssh://git@git.source.akamai.com:7999/~rballant/etp-threat-intel-config.git"
+        git_url = f"ssh://git@git.source.akamai.com:7999/~{user_name}/etp-threat-intel-config.git"
         self.run_command(["git", "push", git_url, branch_name])
         self.push_link = self.result
 
@@ -61,7 +49,6 @@ class GitRepoManager:
             self.pr_comment = f"Create Pull Request: \n{self.pr_link}"
         else:
             self.pr_comment = f"Git Push Failed... \nPlease update intel manually"
-
 
     def start_ssh_agent(self):
         try:
@@ -92,7 +79,7 @@ class GitRepoManager:
     def add_ssh_key(self):
         try:
             subprocess.run(
-                ["ssh-add", self.ssh_key],
+                ["ssh-add", self.ssh_key_path],
                 check=True
             )
         

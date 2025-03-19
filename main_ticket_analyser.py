@@ -3,11 +3,12 @@
 import argparse
 import time
 
-from config import (etp_tickets_in_progress_file, logger,
-                    sps_tickets_in_progress_file)
+from config import (cert_path, etp_tickets_in_progress_file, key_path, logger,
+                    sps_tickets_in_progress_file, ssh_key_path)
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
+from key_handler import KeyHandler
 from response_creator import ResponseCreator
 from rule_fetcher import RuleFetcher
 from sps_intel_fetcher import SPSIntelFetcher
@@ -36,14 +37,29 @@ def parse_args():
     else:
         return args
 
+
 def run_process():
     queue = args.queue.lower()
     print(f"\n\n{queue.upper()} Ticket Automation In Progress...\n")
     logger.info(f"{queue.upper()} Process In Progress...")
+    tickets_in_progress_file = sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
+
+    print("\nFetching Keys")
+    try:
+        key_handler = KeyHandler(cert_path, key_path, ssh_key_path)
+        key_handler.get_key_names()
+        key_handler.get_personal_keys()
+    except Exception as e:
+        print(f"\nFailed to fetch keys: {e}")
+        logger.error(f"Failed to fetch keys: {e}")
+        return
 
     print("\nFetching Tickets")
     try:
-        tickets = TicketFetcher(queue).tickets
+        ticket_fetcher = TicketFetcher(cert_path, key_path, queue)
+        ticket_fetcher.get_tickets()
+        ticket_fetcher.parse_tickets()
+        tickets = ticket_fetcher.tickets
     except Exception as e:
         print(f"\nFailed to fetch tickets: {e}")
         logger.error(f"Failed to fetch tickets: {e}")
@@ -119,7 +135,6 @@ def run_process():
                 print(f"Failed to create indicator for {fqdn}: {e}")
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
-    file_time = time.time()
     responder = TicketResponder()
     try:
         for ticket in Ticket.all_tickets:
@@ -161,7 +176,7 @@ def run_process():
                         intel_fetcher = SPSIntelFetcher(indicator)
                         for candidate in indicator.candidates:
                             indicator.matched_ioc_type = "DOMAIN"
-                            indicator.candidate = candidate 
+                            indicator.candidate = candidate
                             intel_fetcher.read_previous_queries()
                             intel_fetcher.fetch_intel()
                             intel_fetcher.assign_results()
@@ -180,7 +195,9 @@ def run_process():
 
                         for candidate in indicator.candidates:
                             indicator.matched_ioc_type = "DOMAIN"
-                            indicator.candidate = candidate + "." if candidate[-1] != "." else candidate 
+                            indicator.candidate = (
+                                candidate + "." if candidate[-1] != "." else candidate
+                            )
                             intel_fetcher.query_intel()
                             intel_fetcher.assign_results()
 
@@ -193,11 +210,13 @@ def run_process():
 
                                     if indicator.resolved_ip:
                                         intel_fetcher.query_resolved_ip()
-                                    
+
                                         if indicator.ip_in_intel is True:
                                             intel_fetcher.attributes_assigned = False
                                             intel_fetcher.assign_results()
-                                            indicator.matched_ioc = indicator.resolved_ip
+                                            indicator.matched_ioc = (
+                                                indicator.resolved_ip
+                                            )
                                             indicator.matched_ioc_type = "IPV4"
 
                         if intel_fetcher.previous_intel is None:
@@ -210,9 +229,7 @@ def run_process():
                 try:
                     print(f"Finding resolution")
                     logger.info("Finding resolution")
-                    ticket_resolver = TicketResolver(
-                        indicator, rule_set.rules, file_time
-                    )
+                    ticket_resolver = TicketResolver(indicator, rule_set.rules)
                     ticket_resolver.prepare_fp_rule_query()
                     ticket_resolver.match_rule()
                 except Exception as e:
@@ -244,16 +261,20 @@ def run_process():
             except Exception as e:
                 print(f"Failed to respond to {ticket.ticket_id}: {e}")
                 logger.error(f"Failed to respond to {ticket.ticket_id}: {e}")
+
+            try:
+                print(f"Adding {ticket.ticket_id} to {tickets_in_progress_file}")
+                logger.info(f"Adding {ticket.ticket_id} to {tickets_in_progress_file}")
+                ticket.update_tickets_in_progress(tickets_in_progress_file)
+            except Exception as e:
+                print(f"Failed to add {ticket.ticket_id} to {tickets_in_progress_file}: {e}")
+                logger.error(f"Failed to add {ticket.ticket_id} to {tickets_in_progress_file}: {e}")
     except Exception as e:
         print(f"\nFailed to process entities: {e}")
         logger.error(f"Failed to process entities: {e}")
         return
 
-    tickets_in_progress_file = (
-        sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
-    )
-    if Ticket.all_tickets:
-        Ticket.update_current_tickets(tickets_in_progress_file)
+    key_handler.remove_keys()
 
     logger.info("Process Finished...")
     logger.info(f"{queue.upper()} ticket automation Finished")

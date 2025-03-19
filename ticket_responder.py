@@ -5,10 +5,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-import get_az_secret
-from config import (blacklist_file, cert_name, cert_path, jira_ticket_api,
-                    key_name, key_path, logger,
-                    secops_member)
+from config import (blacklist_file, cert_path, jira_ticket_api, key_path, logger)
 from intel_entry import IntelEntry
 from ticket import Ticket
 
@@ -21,42 +18,14 @@ class TicketResponder:
     service_type_sent = []
     resolved_tickets = []
 
-    def __init__(self):
+    def __init__(self, secops_member):
         self.assignee = secops_member
         self.label = ""
         self.time = int(time.time())
-        self.cert_path = "processed_cert.crt"
-        self.key_path = "processed_key.key"
         self.get_username()
-        self.get_keys()
 
     def get_username(self):
         self.username = os.getenv("USER") or os.getenv("USERNAME")
-
-    def get_keys(self):
-        with open(cert_path, "r") as f:
-            cert = f.readlines()
-
-        with open(self.cert_path, "w") as f:
-            for line in cert:
-                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
-
-        with open(key_path, "r") as f:
-            key = f.readlines()
-
-        with open(self.key_path, "w") as f:
-            for line in key:
-                f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
-
-    # def get_keys(self):
-    #     cert = get_az_secret.get_az_secret(cert_name)
-    #     self.cert_path = cert_path
-    #     with open(self.cert_path, "w") as f:
-    #         f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
-    #     key = get_az_secret.get_az_secret(key_name)
-    #     self.key_path = key_path
-    #     with open(self.key_path, "w") as f:
-    #         f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
 
     def update_ticket(self, ticket):
         self.ticket = ticket
@@ -121,9 +90,7 @@ class TicketResponder:
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
-                    in_progress_line = (
-                        f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
-                    )
+                    in_progress_line = f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
                     intel_entry = IntelEntry(
                         indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -140,9 +107,7 @@ class TicketResponder:
                     indicator.ticket.possible_changes.append(in_progress_line)
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
-                whitelist_line = (
-                    f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
-                )
+                whitelist_line = f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
                 intel_entry = IntelEntry(indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
@@ -204,7 +169,7 @@ class TicketResponder:
                 jira_ticket_api,
                 json=data,
                 headers=headers,
-                cert=(self.cert_path, self.key_path),
+                cert=(cert_path, key_path),
                 verify=False,
             )
         except Exception as e:
@@ -383,7 +348,7 @@ class TicketResponder:
                 jira_ticket_api,
                 data=json_object,
                 headers=headers,
-                cert=(self.cert_path, self.key_path),
+                cert=(cert_path, key_path),
                 verify=False,
             )
         except Exception as e:
@@ -456,7 +421,7 @@ class TicketResponder:
             url,
             json=payload,
             headers=headers,
-            cert=(self.cert_path, self.key_path),
+            cert=(cert_path, key_path),
             verify=False,
         )
 
@@ -602,7 +567,7 @@ class TicketResponder:
                     url,
                     json=payload,
                     headers=headers,
-                    cert=(self.cert_path, self.key_path),
+                    cert=(cert_path, key_path),
                     verify=False,
                 )
                 pass
@@ -664,4 +629,3 @@ class TicketResponder:
 
         if source_found is False:
             indicator.single_intel_source = intel_sources[0]
-

@@ -102,8 +102,13 @@ class IntelUpdater:
     def clean_domain(self):
         logger.info(f"Cleaning {self.fqdn}")
         pattern = re.compile(
-            "((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}"
+            r"^(?=.{1,253}$)((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}\.?$",
+            re.IGNORECASE
         )
+    
+        #     "((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}"
+        # )
+
 
         self.fqdn = (
             self.fqdn.replace("'", "")

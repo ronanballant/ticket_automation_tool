@@ -6,7 +6,7 @@ from typing import Dict, List
 import Levenshtein 
 from datetime import datetime
 import requests
-from config import logger
+from config import cert_path, key_path, logger
 from ticket import Ticket
 
 
@@ -20,17 +20,13 @@ class ApprovalFinder:
         open_summary_tickets_file: str,
         processed_tickets_file: str,
         jira_search_api: str,
-        jira_ticket_api: str,
-        cert_path: str,
-        key_path: str,
+        jira_ticket_api: str
     ) -> None:
         self.tickets_in_progress_file: str = tickets_in_progress_file
         self.open_summary_tickets_file: str = open_summary_tickets_file
         self.processed_tickets_file: str = processed_tickets_file
         self.jira_search_api: str = jira_search_api
         self.jira_ticket_api: str = jira_ticket_api
-        self.cert_path: str = cert_path
-        self.key_path: str = key_path
         self.reviewed_intel_changes: List[str] = []
         self.reviewed_allow_list: List[str] = []
         self.reviewed_block_list: List[str] = []
@@ -39,6 +35,7 @@ class ApprovalFinder:
         self.incomplete_tickets: List[str] = {}
         self.complete_tickets: List[str] = {}
         self.summary_ticket: str = ""
+        self.comment_owner: str = ""
         self.update_triggered: bool = False
         self.intel_changes: Dict = {}
         self.tickets: List = []
@@ -98,7 +95,7 @@ class ApprovalFinder:
             self.req = requests.get(
                 self.jira_search_api,
                 params=params,
-                cert=(self.cert_path, self.key_path),
+                cert=(cert_path, key_path),
                 verify=False,
             )
         except Exception as e:
@@ -111,7 +108,7 @@ class ApprovalFinder:
 
         comment_response = requests.get(
             comment_api, 
-            cert=(self.cert_path, self.key_path),
+            cert=(cert_path, key_path),
             verify=False,
         )
 
@@ -289,7 +286,7 @@ class ApprovalFinder:
                 url, 
                 json=payload,
                 headers=headers, 
-                cert=(self.cert_path, self.key_path),
+                cert=(cert_path, key_path),
                 verify=False,
             )
         except Exception as e:
@@ -337,7 +334,7 @@ class ApprovalFinder:
                             url,
                             json=payload,
                             headers=headers,
-                            cert=(self.cert_path, self.key_path),
+                            cert=(cert_path, key_path),
                             verify=False,
                         )
                 except Exception as e:
@@ -346,7 +343,6 @@ class ApprovalFinder:
                     logger.info(f"Response text: {response.text}")
                     print(f"\nFailed to close {ticket.ticket_id} - Error: {e}\n")
                 else:
-                    self.update_assignee(ticket.ticket_id)
                     status = str(response.status_code)
                     if status.startswith("2"):
                         self.approved_tickets.append(ticket.ticket_id)
@@ -362,6 +358,7 @@ class ApprovalFinder:
                         print(
                             f"\nFailed to close {ticket.ticket_id} - Status: {status}"
                         )
+                self.update_assignee(ticket.ticket_id)
             else:
                 self.unapproved_tickets.append(ticket.ticket_id)
                 logger.info(f"{ticket.ticket_id} not approved.")
@@ -397,7 +394,7 @@ class ApprovalFinder:
                 url,
                 json=payload,
                 headers=headers,
-                cert=(self.cert_path, self.key_path),
+                cert=(cert_path, key_path),
                 verify=False,
             )
 
@@ -428,7 +425,7 @@ class ApprovalFinder:
                 url,
                 json=payload,
                 headers=headers,
-                cert=(self.cert_path, self.key_path),
+                cert=(cert_path, key_path),
                 verify=False,
             )
 
@@ -522,9 +519,9 @@ class ApprovalFinder:
                 date,
                 indicator.matched_ioc,
                 "False-Positive",
-                indicator.intel_feed.replace("|", "\|"),
-                indicator.intel_source.replace("|", "\|"),
-                reason.replace("|", "\|"),
+                indicator.intel_feed.replace("|", "\\|"),
+                indicator.intel_source.replace("|", "\\|"),
+                reason.replace("|", "\\|"),
                 indicator.ticket.ticket_id
             ]
         else:

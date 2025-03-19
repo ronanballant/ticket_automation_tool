@@ -34,7 +34,6 @@ class SummaryCreator:
             
             json.dump(tickets_dicts, file, indent=4)
 
-
     def save_open_summary_ticket(self, summary_ticket):
         with open(self.open_summary_tickets_file, "a+") as file:
             writer = csv.writer(file)

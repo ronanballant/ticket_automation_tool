@@ -1,61 +1,23 @@
 import json
-import os
 import re
 from datetime import datetime
 import requests
 import tldextract as tld
 
-
-# import get_az_secret
-from config import (cert_name, cert_path, jira_search_api, key_name, key_path,
-                    logger)
-
+from config import jira_search_api, logger
 
 class TicketFetcher:
-    def __init__(self, queue="sps") -> None:
+    def __init__(self, cert_path, key_path, queue="sps") -> None:
+        self.cert_path = cert_path
+        self.key_path = key_path
         self.queue = queue
-        self.cert_path = "processed_cert.crt"
-        self.key_path = "processed_key.key"
-        self.get_keys()
-        self.get_tickets()
-        self.parse_tickets()
-
-    def get_keys(self):
-        try:
-            with open(cert_path, "r") as f:
-                cert = f.readlines()
-
-            with open(self.cert_path, "w") as f:
-                for line in cert:
-                    f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
-
-            with open(key_path, "r") as f:
-                key = f.readlines()
-
-            with open(self.key_path, "w") as f:
-                for line in key:
-                    f.write(line.replace("\\n", "\n").replace("\n ", "\n"))
-        except Exception as e:
-            print(f"Failed to get keys: {e}")
-            logger.error(f"Failed to get keys: {e}")
-            raise
-
-    # def get_keys(self):
-    #     cert = get_az_secret.get_az_secret(cert_name)
-    #     self.cert_path = cert_path
-    #     with open(self.cert_path, "w") as f:
-    #         f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
-    #     key = get_az_secret.get_az_secret(key_name)
-    #     self.key_path = key_path
-    #     with open(self.key_path, "w") as f:
-    #         f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
 
     def get_tickets(self):
         try:
             if self.queue.lower() == "sps":
-                # jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
+                jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
                 # jql_query = f'project="ReCat Sec Ops Requests" AND status IS "Open" AND assignee IS EMPTY'
-                jql_query = f'project="ReCat Sec Ops Requests" AND issue = "RCSOR-7408"'
+                # jql_query = f'project="ReCat Sec Ops Requests" AND issue = "RCSOR-7408"'
 
             if self.queue.lower() == "etp":
                 jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
@@ -191,7 +153,7 @@ def clean_description(description):
 def collect_urls(description):
     words = description.split()
     # pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
-    pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.)+)+[\w]{2,}(:\d+)?/.*")
+    pattern = re.compile("([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\.)+)+[\\w]{2,}(:\\d+)?/.*")
 
     matched_urls = []
     for word in words:
@@ -207,7 +169,7 @@ def collect_urls(description):
 def collect_fqdns(description):
     words = description.split()
     pattern = re.compile(
-        "((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}"
+        "((?=[a-z0-9-]{1,63}\\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,63}"
     )
     
     matched_fqdns = []

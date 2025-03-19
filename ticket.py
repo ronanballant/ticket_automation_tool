@@ -82,6 +82,7 @@ class Ticket:
         self.blacklist_removals: List[str] = []
         self.possible_changes: List[str] = []
         self.ticket_resolved: bool = True
+        self.waiting_on_resolution: bool = False
         self.send_comment: bool = False
         self.block_comment: bool = False
         self.comment_failed: bool = False
@@ -212,8 +213,7 @@ class Ticket:
             
             json.dump(tickets_dicts, file, indent=4)
 
-    @classmethod
-    def update_current_tickets(cls, in_progress_file):
+    def update_tickets_in_progress(self, in_progress_file):
         with open(in_progress_file, "r") as file:
             try:
                 in_progress_dict = json.load(file) 
@@ -223,8 +223,7 @@ class Ticket:
                 in_progress_dict = []  
 
         with open(in_progress_file, "w") as file:
-            for ticket in Ticket.all_tickets:
-                ticket_dict = ticket.to_dict()
-                in_progress_dict.append(ticket_dict)
+            ticket_dict = self.to_dict()
+            in_progress_dict.append(ticket_dict)
             
             json.dump(in_progress_dict, file, indent=4)

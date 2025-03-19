@@ -2,17 +2,18 @@ import socket
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
-from config import (blacklist_file, cert_path,
-                    etp_intel_repo, etp_processed_tickets_file,
-                    etp_tickets_in_progress_file, intel_processor_path,
-                    jira_search_api, jira_ticket_api, key_path, logger,
+from config import (cert_path, blacklist_file, etp_intel_repo,
+                    etp_processed_tickets_file, etp_tickets_in_progress_file,
+                    intel_processor_path, jira_search_api,
+                    jira_ticket_api, key_path, logger,
                     open_etp_summary_tickets_file,
-                    open_sps_summary_tickets_file, sps_intel_update_file,
-                    sps_processed_tickets_file, sps_tickets_in_progress_file,
-                    ssh_key_path, whitelist_file)
+                    open_sps_summary_tickets_file, 
+                    sps_intel_update_file, sps_processed_tickets_file,
+                    sps_tickets_in_progress_file, ssh_key_path, whitelist_file)
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
 from intel_processor import IntelProcessor
+from key_handler import KeyHandler
 from ticket import Ticket
 
 
@@ -61,9 +62,7 @@ if __name__ == "__main__":
         open_summary_tickets_file,
         processed_tickets_file,
         jira_search_api,
-        jira_ticket_api,
-        cert_path,
-        key_path,
+        jira_ticket_api
     )
 
     logger.info(f"Getting open summary tickets")
@@ -138,7 +137,12 @@ if __name__ == "__main__":
                 intel_processor.update_triggered = True
         elif queue == "ETP":
             if intel_processor.intel_entries:
-                git_manager = GitRepoManager(etp_intel_repo, ssh_key_path)
+                key_handler = KeyHandler(cert_path, key_path, ssh_key_path, approval_finder.comment_owner)
+                key_handler.get_key_names()
+                key_handler.get_ssh_key()
+                key_handler.get_personal_keys()
+
+                git_manager = GitRepoManager(etp_intel_repo)
                 git_manager.add_ssh_key()
                 git_manager.checkout_master()
                 git_manager.git_pull()
@@ -166,3 +170,5 @@ if __name__ == "__main__":
             and approval_finder.summary_updated is True
         ):
             close_summary(approval_finder, summary_ticket)
+    
+    key_handler.remove_keys()

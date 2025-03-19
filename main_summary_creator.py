@@ -80,3 +80,5 @@ if __name__ == "__main__":
             f"Saving summary ticket to {summary_creator.open_summary_tickets_file}"
         )
         summary_creator.save_open_summary_ticket(responder.summary_ticket)
+    
+    responder.remove_keys()
