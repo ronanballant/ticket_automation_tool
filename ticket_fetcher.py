@@ -153,7 +153,7 @@ def clean_description(description):
 def collect_urls(description):
     words = description.split()
     # pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
-    pattern = re.compile("([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\.)+)+[\\w]{2,}(:\\d+)?/.*")
+    pattern = re.compile("([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\\.)+)+[\\w]{2,}(:\\d+)?/.*")
 
     matched_urls = []
     for word in words:
