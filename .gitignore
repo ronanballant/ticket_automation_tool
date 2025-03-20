@@ -37,7 +37,6 @@ secops_prod.py
 dev_config.py
 prod_config_update.py
 vt_text.py
-setup.py
 main_process_tickets_old.py
 mongo_craden.py
 
