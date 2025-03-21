@@ -123,6 +123,7 @@ def run_process():
 
             print("\nwriting s3 file")
             s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
+            s3_client.write_file(search_fqdns_local_file, results_path)
             
             recheck = True
             max_retries = 45
