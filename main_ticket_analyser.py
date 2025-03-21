@@ -228,7 +228,8 @@ def run_process():
                             indicator.matched_ioc_type = "DOMAIN"
                             indicator.candidate = candidate
                             intel_fetcher.read_previous_queries()
-                            intel_fetcher.fetch_intel()
+                            if not intel_fetcher.results and "muc" not in server_name: 
+                                intel_fetcher.fetch_intel()
                             intel_fetcher.assign_results()
 
                             if indicator.is_in_intel is True:

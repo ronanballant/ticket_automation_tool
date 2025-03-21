@@ -14,7 +14,7 @@ class SPSIntelFetcher:
 
     def read_previous_queries(self):
         try:
-            self.previous_intel = SPSIntelFetcher.previous_queries.get(
+            self.results[self.indicator.candidate] = SPSIntelFetcher.previous_queries.get(
                 self.indicator.candidate, None
             )
         except Exception as e:
@@ -23,29 +23,26 @@ class SPSIntelFetcher:
             raise
 
     def fetch_intel(self):
-        if self.previous_intel:
-            self.results[self.indicator.candidate] = self.previous_intel
-        else:
-            ssh_command = [
-                "ssh",
-                "-i",
-                private_key_path,
-                "-J {}@{}".format(jump_host_username, jump_host_ip),
-                "{}@{}".format(destination_username, destination_ip),
-                "python3 {} -d '{}'".format(intel_fetcher_path, self.indicator.candidate),
-            ]
+        ssh_command = [
+            "ssh",
+            "-i",
+            private_key_path,
+            "-J {}@{}".format(jump_host_username, jump_host_ip),
+            "{}@{}".format(destination_username, destination_ip),
+            "python3 {} -d '{}'".format(intel_fetcher_path, self.indicator.candidate),
+        ]
 
-            try:
-                result = subprocess.run(
-                    ssh_command, check=True, capture_output=True, text=True
-                )
-                logger.info(f"SPS Intel query sent for {self.indicator.candidate}")
-                self.results = ast.literal_eval(result.stdout)
-                SPSIntelFetcher.previous_queries[self.indicator.candidate] = self.results
-            except Exception as e:
-                print(f"Error querying SPS intel: {e}")
-                logger.error(f"Error querying SPS intel: {e}")
-                self.results = None
+        try:
+            result = subprocess.run(
+                ssh_command, check=True, capture_output=True, text=True
+            )
+            logger.info(f"SPS Intel query sent for {self.indicator.candidate}")
+            self.results = ast.literal_eval(result.stdout)
+            SPSIntelFetcher.previous_queries[self.indicator.candidate] = self.results
+        except Exception as e:
+            print(f"Error querying SPS intel: {e}")
+            logger.error(f"Error querying SPS intel: {e}")
+            self.results = None
 
     def assign_results(self):
         try:
