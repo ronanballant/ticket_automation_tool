@@ -128,11 +128,12 @@ def run_process():
             while recheck and retry_count < max_retries:
                 time.sleep(60) 
                 s3_client.read_s3_file(results_path)
-                json_results = json.loads(s3_client.file_content)
-                if json_results:
-                    recheck = False
-                else:
-                    retry_count += 1  
+                if s3_client.file_content:
+                    json_results = json.loads(s3_client.file_content)
+                    if json_results:
+                        recheck = False
+                    else:
+                        retry_count += 1  
 
     SPSIntelFetcher.previous_queries = json_results.copy()
     print("Creating tickets")
