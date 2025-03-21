@@ -142,21 +142,21 @@ if __name__ == "__main__":
     print("data", data)
     intel_updates = [row.strip() for row in data]
     print("intel_updates", intel_updates)
+    if intel_updates[0]:
+        responses = []
+        for row in intel_updates:
+            if row[0]:
+                intel_updater = IntelUpdater(row[0])
+                intel_updater.parse_update()
+                intel_updater.clean_domain()
+                intel_updater.get_update_parameters()
+                intel_updater.get_reason()
+                intel_updater.create_update_command()
+                intel_updater.execute_command()
+                responses.append(intel_updater.response_text)
 
-    responses = []
-    for row in intel_updates:
-        if row[0]:
-            intel_updater = IntelUpdater(row[0])
-            intel_updater.parse_update()
-            intel_updater.clean_domain()
-            intel_updater.get_update_parameters()
-            intel_updater.get_reason()
-            intel_updater.create_update_command()
-            intel_updater.execute_command()
-            responses.append(intel_updater.response_text)
+        print("responses", responses)
+        with open("intel_update_responses.json", "w") as file:
+            json.dump(responses, file, indent=4)
 
-    print("responses", responses)
-    with open("intel_update_responses.json", "w") as file:
-        json.dump(responses, file, indent=4)
-
-    s3_client.write_file("intel_update_responses.json", update_responses_s3_path)
+        s3_client.write_file("intel_update_responses.json", update_responses_s3_path)
