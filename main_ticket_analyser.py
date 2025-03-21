@@ -113,6 +113,7 @@ def run_process():
                 all_fqdns += fqdns
 
             all_fqdns = list(set(all_fqdns))
+            print(all_fqdns)
 
             with open(search_fqdns_local_file, "w") as file:
                 writer = csv.writer(file)
@@ -120,6 +121,7 @@ def run_process():
                 for fqdn in all_fqdns:
                     writer.writerow([fqdn])
 
+            print("\nwriting s3 file")
             s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
             
             recheck = True
@@ -127,6 +129,8 @@ def run_process():
             retry_count = 0
             while recheck and retry_count < max_retries:
                 time.sleep(60) 
+                print(f"Atttempt {retry_count+1}")
+                print(f"Readin S3 file")
                 s3_client.read_s3_file(results_path)
                 
                 if s3_client.file_content:
