@@ -240,9 +240,13 @@ class ApprovalFinder:
                                     entry_found = True
                                     intel_entry.is_approved = True
                                     self.update_owner(intel_entry, reviewed_change_string)
-                                    self.generate_data_string(indicator)
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "whitelist"
+                                        indicator.reviewed_resolution = "Allow"
+                                    else:
+                                        indicator.reviewed_resolution = indicator.indicator_resolution
+
+                                    self.generate_data_string(indicator)
                         
                         for reviewed_change_string in self.reviewed_block_list:
                             reviewed_change_parts = reviewed_change_string.split(",")
@@ -253,9 +257,13 @@ class ApprovalFinder:
                                     entry_found = True
                                     intel_entry.is_approved = True
                                     self.update_owner(intel_entry, reviewed_change_string)
-                                    self.generate_data_string(indicator)
+                                    indicator.sps_feed = intel_entry.approved_intel_change.split(",")[-1]
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "blacklist"
+                                        indicator.reviewed_resolution = "Block"
+                                    else:
+                                        indicator.reviewed_resolution = indicator.indicator_resolution
+                                    self.generate_data_string(indicator)
                         
                         if entry_found is False:
                             intel_entry.is_approved = False
@@ -517,7 +525,7 @@ class ApprovalFinder:
         date = datetime.today().strftime("%m/%d/%Y")
         reason = f"Internal|Carrier|SecOps|{indicator.ticket.ticket_id}"
 
-        if indicator.indicator_resolution == "Allow":
+        if indicator.reviewed_resolution == "Allow":
             data_string = [
                 date,
                 indicator.matched_ioc.replace(".", "[.]"),
@@ -532,7 +540,7 @@ class ApprovalFinder:
                 date,
                 indicator.fqdn.replace(".", "[.]"),
                 "False-Negative",
-                indicator.intel_feed.replace("|", "\\|"),
+                indicator.sps_feed,
                 "-",
                 reason.replace("|", "\\|"),
                 indicator.ticket.ticket_id

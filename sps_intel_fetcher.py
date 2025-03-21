@@ -24,7 +24,7 @@ class SPSIntelFetcher:
 
     def fetch_intel(self):
         if self.previous_intel:
-            self.results = self.previous_intel
+            self.results[self.indicator.candidate] = self.previous_intel
         else:
             ssh_command = [
                 "ssh",

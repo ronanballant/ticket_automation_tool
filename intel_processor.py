@@ -121,7 +121,15 @@ class IntelProcessor:
 
                 try:
                     result = subprocess.run(ssh_command, check=True, capture_output=True, text=True)
-                    intel_update_results = result.stdout
+                    intel_update_results = result.stdout.lower()
+                    if '"success": false' in intel_update_results:
+                        self.update_triggered = False
+                        self.error_comment = (
+                            "*{color:#de350b}!!! Failed to trigger intel update !!!{color}*"
+                            + "{code:java} \n"
+                            + intel_update_results
+                            + "{code}"
+                        )
                     logger.debug(result.stdout)
                 except subprocess.CalledProcessError as e:
                     self.update_triggered = False

@@ -136,7 +136,10 @@ if __name__ == "__main__":
                 logger.info(f"Triggering {intel_processor_path} on SPOF VM")
                 intel_processor.trigger_sps_intel_update()
                 approval_finder.generate_data_string_comment()
-                approval_finder.add_summary_comment(approval_finder.data_string_comment)
+                if intel_processor.update_triggered is True:
+                    approval_finder.add_summary_comment(approval_finder.data_string_comment)
+                else:
+                    approval_finder.add_summary_comment(intel_processor.error_comment)
             else:
                 intel_processor.update_triggered = True
         elif queue == "ETP":

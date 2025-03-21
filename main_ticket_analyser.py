@@ -1,16 +1,24 @@
 #!/usr/bin/python3
 
 import argparse
+import csv
+import json
+import os
 import time
 
 from config import (cert_path, etp_tickets_in_progress_file, key_path, logger,
-                    secops_member, sps_tickets_in_progress_file, ssh_key_path)
+                    secops_member, sps_tickets_in_progress_file, ssh_key_path,
+                    destination_region, directory_prefix, results_path,
+                    search_fqdns_path, secops_s3_aws_access_key,
+                    secops_s3_aws_secret_key, secops_s3_bucket, secops_s3_endpoint, 
+                    sps_intel_results_local_file, search_fqdns_local_file)
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
 from key_handler import KeyHandler
 from response_creator import ResponseCreator
 from rule_fetcher import RuleFetcher
+from s3_client import S3Client
 from sps_intel_fetcher import SPSIntelFetcher
 from ticket import Ticket
 from ticket_fetcher import TicketFetcher
@@ -86,6 +94,47 @@ def run_process():
             logger.error(f"Failed to intialise Mongo connection: {e}")
             return
 
+    if queue == "sps":
+        server_name = os.uname().nodename 
+        if "muc" in server_name:    
+            s3_client = S3Client(
+                destination_region,
+                secops_s3_endpoint,
+                secops_s3_bucket,
+                secops_s3_aws_access_key,
+                secops_s3_aws_secret_key,
+                directory_prefix,
+            )
+            s3_client.initialise_client()
+        
+            all_fqdns = []
+            for ticket, values in tickets.items():
+                fqdns = values.get("fqdns")
+                all_fqdns += fqdns
+
+            all_fqdns = list(set(all_fqdns))
+
+            with open(search_fqdns_local_file, "w") as file:
+                writer = csv.writer(file)
+
+                for fqdn in all_fqdns:
+                    writer.writerow([fqdn])
+
+            s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
+            
+            recheck = True
+            max_retries = 30
+            retry_count = 0
+            while recheck and retry_count < max_retries:
+                time.sleep(60) 
+                s3_client.read_s3_file(results_path)
+                json_results = json.loads(s3_client.file_content)
+                if json_results:
+                    recheck = False
+                else:
+                    retry_count += 1  
+
+    SPSIntelFetcher.previous_queries = json_results.copy()
     print("Creating tickets")
     logger.info("Creating tickets")
     for ticket, values in tickets.items():
