@@ -1,12 +1,17 @@
 #!/usr/bin/python3
 
-import csv
 import datetime
+import json
 import re
 
 import requests
-from config import api_key, logger, sps_intel_update_file
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+from config import (api_key, destination_region, directory_prefix, logger,
+                    secops_s3_aws_access_key, secops_s3_aws_secret_key,
+                    secops_s3_bucket, secops_s3_endpoint,
+                    sps_intel_update_s3_path, update_responses_s3_path)
+from s3_client import S3Client
 
 
 class IntelUpdater:
@@ -19,17 +24,14 @@ class IntelUpdater:
 
     def parse_update(self):
         update_data = (
-            self.update_line.replace('"', '')
-            .replace("'", "")
-            .strip()
-            .split(",")
+            self.update_line.replace('"', "").replace("'", "").strip().split(",")
         )
 
         if len(update_data) == 3:
             self.fqdn = update_data[0]
             self.ticket_id = update_data[1]
             self.feed = update_data[2]
-            
+
             if self.fqdn and self.ticket_id and self.feed:
                 self.valid_update = True
             else:
@@ -63,8 +65,9 @@ class IntelUpdater:
             self.intel_feed = ""
             self.expiration_time = ""
             self.threat_id = ""
-        logger.info(f"Created parameters - feed: {self.intel_feed}, expiration: {self.expiration_time}, threat_id: {self.threat_id}")
-
+        logger.info(
+            f"Created parameters - feed: {self.intel_feed}, expiration: {self.expiration_time}, threat_id: {self.threat_id}"
+        )
 
     def create_update_command(self):
         self.command = {
@@ -85,7 +88,7 @@ class IntelUpdater:
         url = "https://fresh-milk-feeds.rad.nominum.com:51000/api/v1/entry/add"
         response = requests.post(url, data=self.command, verify=False)
         print(response.text)
-        self.response_text = response.text
+
         if str(response.status_code).startswith("2"):
             logger.info(f"{self.fqdn} added to {self.intel_feed}")
         else:
@@ -95,12 +98,11 @@ class IntelUpdater:
         logger.info(f"Cleaning {self.fqdn}")
         pattern = re.compile(
             r"^(?=.{1,253}$)((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}\.?$",
-            re.IGNORECASE
+            re.IGNORECASE,
         )
-    
+
         #     "((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}"
         # )
-
 
         self.fqdn = (
             self.fqdn.replace("'", "")
@@ -126,11 +128,22 @@ class IntelUpdater:
 
 
 if __name__ == "__main__":
-    data_strings = []
-    with open(sps_intel_update_file, "r") as file:
-        reader = csv.reader(file)
-        intel_updates = [row for row in reader]
+    s3_client = S3Client(
+        destination_region,
+        secops_s3_endpoint,
+        secops_s3_bucket,
+        secops_s3_aws_access_key,
+        secops_s3_aws_secret_key,
+        directory_prefix,
+    )
+    s3_client.initialise_client()
+    s3_client.read_s3_file(sps_intel_update_s3_path)
+    data = s3_client.file_content.strip().split("\n")
+    print("data", data)
+    intel_updates = [row.strip() for row in data]
+    print("intel_updates", intel_updates)
 
+    responses = []
     for row in intel_updates:
         if row[0]:
             intel_updater = IntelUpdater(row[0])
@@ -140,3 +153,10 @@ if __name__ == "__main__":
             intel_updater.get_reason()
             intel_updater.create_update_command()
             intel_updater.execute_command()
+            responses.append(intel_updater.response_text)
+
+    print("responses", responses)
+    with open("intel_update_responses.json", "w") as file:
+        json.dump(responses, file, indent=4)
+
+    s3_client.write_file("intel_update_responses.json", update_responses_s3_path)

@@ -1,19 +1,25 @@
+import json
 import socket
+import time
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
-from config import (cert_path, blacklist_file, etp_intel_repo,
+from config import (blacklist_file, cert_path, destination_region,
+                    directory_prefix, etp_intel_repo,
                     etp_processed_tickets_file, etp_tickets_in_progress_file,
-                    intel_processor_path, jira_search_api,
-                    jira_ticket_api, key_path, logger,
-                    open_etp_summary_tickets_file,
-                    open_sps_summary_tickets_file, 
-                    sps_intel_update_file, sps_processed_tickets_file,
-                    sps_tickets_in_progress_file, ssh_key_path, whitelist_file)
+                    intel_processor_path, jira_search_api, jira_ticket_api,
+                    key_path, logger, open_etp_summary_tickets_file,
+                    open_sps_summary_tickets_file, search_fqdns_local_file,
+                    secops_s3_aws_access_key, secops_s3_aws_secret_key,
+                    secops_s3_bucket, secops_s3_endpoint,
+                    sps_intel_update_file, sps_intel_update_s3_path,
+                    sps_processed_tickets_file, sps_tickets_in_progress_file,
+                    ssh_key_path, update_responses_s3_path, whitelist_file)
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
 from intel_processor import IntelProcessor
 from key_handler import KeyHandler
+from s3_client import S3Client
 from ticket import Ticket
 
 
@@ -62,7 +68,7 @@ if __name__ == "__main__":
         open_summary_tickets_file,
         processed_tickets_file,
         jira_search_api,
-        jira_ticket_api
+        jira_ticket_api,
     )
 
     logger.info(f"Getting open summary tickets")
@@ -80,7 +86,9 @@ if __name__ == "__main__":
         logger.info(f"No open tickets. Exiting Script")
         exit()
 
-    key_handler = KeyHandler(cert_path, key_path, ssh_key_path, approval_finder.comment_owner)
+    key_handler = KeyHandler(
+        cert_path, key_path, ssh_key_path, approval_finder.comment_owner
+    )
     key_handler.get_key_names()
     key_handler.get_personal_keys()
 
@@ -132,12 +140,72 @@ if __name__ == "__main__":
             if intel_processor.intel_entries:
                 intel_processor.add_to_sps_intel_file()
                 logger.info(f"Transfering {sps_intel_update_file} to SPOF VM")
-                intel_processor.transfer_sps_update_file()
-                logger.info(f"Triggering {intel_processor_path} on SPOF VM")
-                intel_processor.trigger_sps_intel_update()
+
+                if "muc" in server_name:
+                    logger.info(f"Running on {server_name}. Starting S3 process")
+                    s3_client = S3Client(
+                        destination_region,
+                        secops_s3_endpoint,
+                        secops_s3_bucket,
+                        secops_s3_aws_access_key,
+                        secops_s3_aws_secret_key,
+                        directory_prefix,
+                    )
+                    s3_client.initialise_client()
+                    intel_processor.update_triggered = True
+                    if intel_processor.whitelist or intel_processor.blacklist:
+                        try:
+                            logger.info(f"Sending {sps_intel_update_file} to {sps_intel_update_s3_path}")
+                            s3_client.write_file(sps_intel_update_file, sps_intel_update_s3_path)
+                        except Exception as e:
+                            logger.error(f"Failed to send {sps_intel_update_file} to {sps_intel_update_s3_path}:\n{e}")
+                            intel_processor.update_triggered = False
+                            intel_processor.error_comment = (f"Failed to write intel update to S3 bucket:\n{e}")
+                        else:
+                            recheck = True
+                            max_retries = 5
+                            retry_count = 0
+                            update_results = '"success": false'
+                            while recheck and retry_count < max_retries:
+                                time.sleep(60) 
+                                s3_client.read_s3_file(update_responses_s3_path)
+                                
+                                if s3_client.file_content:
+                                    try:
+                                        json_results = json.loads(s3_client.file_content.strip())  
+                                        if json_results:  
+                                            update_results = json_results
+                                            recheck = False
+                                        else:
+                                            retry_count += 1
+                                    except json.JSONDecodeError as e:
+                                        print(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
+                                        retry_count += 1  
+                                else:
+                                    retry_count += 1  
+                            
+                            if '"success": false' in update_results:
+                                intel_processor.update_triggered = False
+                                intel_processor.error_comment = (
+                                    "*{color:#de350b}!!! Failed to trigger intel update !!!{color}*"
+                                    + "{code:java} \n"
+                                    + update_results
+                                    + "{code}"
+                                )
+                                
+                            s3_client.write_file(search_fqdns_local_file, update_responses_s3_path)
+                    else:
+                        logger.info(f"No Whitelist or Blacklist entries to process")
+                else:
+                    intel_processor.transfer_sps_update_file()
+                    logger.info(f"Triggering {intel_processor_path} on SPOF VM")
+                    intel_processor.trigger_sps_intel_update()
+
                 approval_finder.generate_data_string_comment()
                 if intel_processor.update_triggered is True:
-                    approval_finder.add_summary_comment(approval_finder.data_string_comment)
+                    approval_finder.add_summary_comment(
+                        approval_finder.data_string_comment
+                    )
                 else:
                     approval_finder.add_summary_comment(intel_processor.error_comment)
             else:
@@ -175,5 +243,5 @@ if __name__ == "__main__":
             and approval_finder.summary_updated is True
         ):
             close_summary(approval_finder, summary_ticket)
-    
+
     key_handler.remove_personal_keys()
