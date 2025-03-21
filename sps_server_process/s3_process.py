@@ -49,6 +49,8 @@ s3_client.read_s3_file(search_fqdns_path)
 data = s3_client.file_content.strip().split("\n")
 fqdns = [fqdn.strip().replace("[.]", ".") for fqdn in data]
 if fqdns[0] == "empty":
+    with open("is_s3_running.csv", "w") as file:
+        file.writelines("false")
     exit()
 
 with open("/home/azuser/secops_scripts/sps_ticket_automation/s3_results.json", "w") as file:
