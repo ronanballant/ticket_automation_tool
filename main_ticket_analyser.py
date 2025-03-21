@@ -125,7 +125,7 @@ def run_process():
             s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
             
             recheck = True
-            max_retries = 30
+            max_retries = 45
             retry_count = 0
             while recheck and retry_count < max_retries:
                 time.sleep(60) 
