@@ -128,12 +128,19 @@ def run_process():
             while recheck and retry_count < max_retries:
                 time.sleep(60) 
                 s3_client.read_s3_file(results_path)
+                
                 if s3_client.file_content:
-                    json_results = json.loads(s3_client.file_content)
-                    if json_results:
-                        recheck = False
-                    else:
-                        retry_count += 1  
+                    try:
+                        json_results = json.loads(s3_client.file_content.strip())  # Strip spaces & newlines
+                        if json_results:  # Check if it's a valid, non-empty JSON
+                            recheck = False
+                        else:
+                            retry_count += 1
+                    except json.JSONDecodeError as e:
+                        print(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
+                        retry_count += 1  # Keep retrying if JSON is invalid
+                else:
+                    retry_count += 1  
 
     SPSIntelFetcher.previous_queries = json_results.copy()
     print("Creating tickets")
