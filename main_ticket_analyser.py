@@ -61,7 +61,6 @@ def muc_server_process(fqdns, server_name):
         with open(search_fqdns_local_file, "w") as file:
             writer = csv.writer(file)
             for fqdn in fqdns:
-                print(fqdn)
                 writer.writerow([fqdn])
 
         print(f"\nwriting s3 file to {search_fqdns_path}")
@@ -188,9 +187,8 @@ def run_process():
                 indicator.is_legitimate_indicator()
                 indicator.add_indicator_to_ticket()
                 indicator.get_candidates()
-                if indicator.is_legitimate_indicator is True:
+                if indicator.legitimate_indicator is True:
                     intel_search_fqdns.append(indicator.fqdn)
-                    print(f"indicator fqdn - {indicator.fqdn} in {intel_search_fqdns}")
             except Exception as e:
                 print(f"Failed to create indicator for {fqdn}: {e}")
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
