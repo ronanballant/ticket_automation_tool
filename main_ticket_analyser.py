@@ -60,8 +60,8 @@ def muc_server_process(fqdns, server_name):
 
         with open(search_fqdns_local_file, "w") as file:
             writer = csv.writer(file)
-            print(fqdn)
             for fqdn in fqdns:
+                print(fqdn)
                 writer.writerow([fqdn])
 
         print(f"\nwriting s3 file to {search_fqdns_path}")
