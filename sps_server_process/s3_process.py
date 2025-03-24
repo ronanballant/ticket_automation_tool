@@ -11,7 +11,7 @@ def get_domain_data(domains):
     results = {}
     for domain in domains:
         print('domain', domain)
-        logger.info(f'Searching intel for {domain}')
+        logger.info(f"Searching intel for {domain}")
         result = IocQuery(domain)
 
         results[domain] = {
