@@ -132,6 +132,7 @@ class ApprovalFinder:
                     self.intel_changes_approved = True
                     logger.info(f"Changes approved by {self.comment_owner}")
                     logger.info(f"Approval comment: {comment_text}")
+                    break
 
     def parse_reviewed_changes(self):
         self.description = (
@@ -322,16 +323,15 @@ class ApprovalFinder:
                 url = self.jira_ticket_api + f"{ticket.ticket_id}/transitions"
 
                 if ticket.ticket_id.lower().startswith("rcsor"):
-                    ticket_resolved = "5"
+                    transitions = ["5"]
                 elif ticket.ticket_id.lower().startswith("entesc"):
                     # ticket_resolved = "141"
-                    ticket_resolved = ""
+                    transitions = []
 
                 else:
                     print(f"Unknown queue for ticket: {ticket.ticket_id}")
                     logger.info(f"Unknown queue for ticket: {ticket.ticket_id}")
 
-                transitions = [ticket_resolved]
                 headers = {"Content-Type": "application/json"}
 
                 print(f"Closing {ticket.ticket_id}")

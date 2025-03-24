@@ -64,7 +64,7 @@ def muc_server_process(fqdns, server_name):
             for fqdn in fqdns:
                 writer.writerow([fqdn])
 
-        print("\nwriting s3 file")
+        print("\nwriting s3 file to {search_fqdns_path}")
         s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
         s3_client.write_file(search_fqdns_local_file, results_path)
         
@@ -74,7 +74,7 @@ def muc_server_process(fqdns, server_name):
         while recheck and retry_count < max_retries:
             time.sleep(60) 
             print(f"Atttempt {retry_count+1}")
-            print(f"Readin S3 file")
+            print(f"Reading S3 file")
             s3_client.read_s3_file(results_path)
             
             if s3_client.file_content:

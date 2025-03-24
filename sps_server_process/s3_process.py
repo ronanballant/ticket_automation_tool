@@ -10,7 +10,6 @@ from config import (destination_region, directory_prefix, logger, results_path,
 def get_domain_data(domains):
     results = {}
     for domain in domains:
-        print('domain', domain)
         logger.info(f"Searching intel for {domain}")
         result = IocQuery(domain)
 

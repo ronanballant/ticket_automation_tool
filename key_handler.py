@@ -12,7 +12,7 @@ from config import (asheik_cert_name, asheik_key_name, asheik_ssh_key_name,
 
 class KeyHandler:
     def __init__(self, cert_path, key_path, ssh_key_path, analyst="rballant") -> None:
-        self.analyst = analyst
+        self.analyst = "rballant"
         self.cert_path = cert_path
         self.key_path = key_path
         self.ssh_key_path = ssh_key_path
@@ -55,11 +55,15 @@ class KeyHandler:
             ssh_key = self.decode_key(encoded_ssh_key).decode("utf-8")
             with open(self.ssh_key_path, "w") as f:
                 f.write(ssh_key.replace("\\n", "\n").replace("\n ", "\n"))
+
+            os.chmod(self.ssh_key_path, 0o600)
         except:
             encoded_ssh_key = get_az_secret.get_az_secret(rballant_ssh_key_name)
             ssh_key = self.decode_key(encoded_ssh_key).decode("utf-8")
             with open(self.ssh_key_path, "w") as f:
                 f.write(ssh_key.replace("\\n", "\n").replace("\n ", "\n"))
+            
+            os.chmod(self.ssh_key_path, 0o600)
 
     def get_personal_keys(self):
         try:

@@ -87,7 +87,7 @@ if __name__ == "__main__":
         exit()
 
     key_handler = KeyHandler(
-        cert_path, key_path, ssh_key_path, approval_finder.comment_owner
+        cert_path, key_path, ssh_key_path
     )
     key_handler.get_key_names()
     key_handler.get_personal_keys()
@@ -231,7 +231,7 @@ if __name__ == "__main__":
                     git_manager.create_new_branch(branch_name)
                     git_manager.git_add([whitelist_file, blacklist_file, secops_feed_file])
                     git_manager.git_commit("Ticket Automation")
-                    git_manager.push_changes(branch_name, approval_finder.user_name)
+                    git_manager.push_changes(branch_name)
                     git_manager.get_pr_link()
                     approval_finder.add_summary_comment(git_manager.pr_comment)
                     key_handler.remove_ssh_keys()
