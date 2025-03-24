@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="etp",
+        default="sps",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -45,8 +45,57 @@ def parse_args():
     else:
         return args
 
+def muc_server_process(fqdns):
+    fqdns = list(set(fqdns))
+    server_name = os.uname().nodename 
+    if "muc" in server_name:    
+        s3_client = S3Client(
+            destination_region,
+            secops_s3_endpoint,
+            secops_s3_bucket,
+            secops_s3_aws_access_key,
+            secops_s3_aws_secret_key,
+            directory_prefix,
+        )
+        s3_client.initialise_client()
+
+        with open(search_fqdns_local_file, "w") as file:
+            writer = csv.writer(file)
+
+            for fqdn in fqdns:
+                writer.writerow([fqdn])
+
+        print("\nwriting s3 file")
+        s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
+        s3_client.write_file(search_fqdns_local_file, results_path)
+        
+        recheck = True
+        max_retries = 45
+        retry_count = 0
+        while recheck and retry_count < max_retries:
+            time.sleep(60) 
+            print(f"Atttempt {retry_count+1}")
+            print(f"Readin S3 file")
+            s3_client.read_s3_file(results_path)
+            
+            if s3_client.file_content:
+                try:
+                    json_results = json.loads(s3_client.file_content.strip())  # Strip spaces & newlines
+                    if json_results:  # Check if it's a valid, non-empty JSON
+                        recheck = False
+                    else:
+                        retry_count += 1
+                except json.JSONDecodeError as e:
+                    print(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
+                    retry_count += 1  # Keep retrying if JSON is invalid
+            else:
+                retry_count += 1  
+
+        SPSIntelFetcher.previous_queries = json_results.copy()
+
 
 def run_process():
+    intel_search_fqdns = []
     queue = args.queue.lower()
     print(f"\n\n{queue.upper()} Ticket Automation In Progress...\n")
     logger.info(f"{queue.upper()} Process In Progress...")
@@ -94,60 +143,6 @@ def run_process():
             logger.error(f"Failed to intialise Mongo connection: {e}")
             return
 
-    if queue == "sps":
-        server_name = os.uname().nodename 
-        if "muc" in server_name:    
-            s3_client = S3Client(
-                destination_region,
-                secops_s3_endpoint,
-                secops_s3_bucket,
-                secops_s3_aws_access_key,
-                secops_s3_aws_secret_key,
-                directory_prefix,
-            )
-            s3_client.initialise_client()
-        
-            all_fqdns = []
-            for ticket, values in tickets.items():
-                fqdns = values.get("fqdns")
-                all_fqdns += fqdns
-
-            all_fqdns = list(set(all_fqdns))
-            print(all_fqdns)
-
-            with open(search_fqdns_local_file, "w") as file:
-                writer = csv.writer(file)
-
-                for fqdn in all_fqdns:
-                    writer.writerow([fqdn])
-
-            print("\nwriting s3 file")
-            s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
-            s3_client.write_file(search_fqdns_local_file, results_path)
-            
-            recheck = True
-            max_retries = 45
-            retry_count = 0
-            while recheck and retry_count < max_retries:
-                time.sleep(60) 
-                print(f"Atttempt {retry_count+1}")
-                print(f"Readin S3 file")
-                s3_client.read_s3_file(results_path)
-                
-                if s3_client.file_content:
-                    try:
-                        json_results = json.loads(s3_client.file_content.strip())  # Strip spaces & newlines
-                        if json_results:  # Check if it's a valid, non-empty JSON
-                            recheck = False
-                        else:
-                            retry_count += 1
-                    except json.JSONDecodeError as e:
-                        print(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
-                        retry_count += 1  # Keep retrying if JSON is invalid
-                else:
-                    retry_count += 1  
-
-            SPSIntelFetcher.previous_queries = json_results.copy()
     print("Creating tickets")
     logger.info("Creating tickets")
     for ticket, values in tickets.items():
@@ -193,9 +188,14 @@ def run_process():
                 indicator.is_legitimate_indicator()
                 indicator.add_indicator_to_ticket()
                 indicator.get_candidates()
+                if indicator.is_legitimate_indicator is True:
+                    intel_search_fqdns.append(indicator.fqdn)
             except Exception as e:
                 print(f"Failed to create indicator for {fqdn}: {e}")
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
+
+    if queue == "sps":
+        muc_server_process(intel_search_fqdns)
 
     responder = TicketResponder(secops_member)
     try:
