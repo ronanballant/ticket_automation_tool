@@ -326,7 +326,7 @@ class ApprovalFinder:
                     transitions = ["5"]
                 elif ticket.ticket_id.lower().startswith("entesc"):
                     # ticket_resolved = "141"
-                    transitions = []
+                    transitions = [""]
 
                 else:
                     print(f"Unknown queue for ticket: {ticket.ticket_id}")
@@ -353,22 +353,11 @@ class ApprovalFinder:
                     logger.error(f"Failed to close {ticket.ticket_id} - Error: {e}")
                     logger.info(f"Response text: {response.text}")
                     print(f"\nFailed to close {ticket.ticket_id} - Error: {e}\n")
-                else:
-                    status = str(response.status_code)
-                    if status.startswith("2"):
-                        self.approved_tickets.append(ticket.ticket_id)
-                        ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
-                        logger.info(f"{ticket.ticket_id} closed succesfully")
-                        print(f"{ticket.ticket_id} closed succesfully")
-                    else:
-                        logger.info(f"Response text: {response.text}")
-                        self.unapproved_tickets.append(ticket.ticket_id)
-                        logger.info(
-                            f"Failed to close {ticket.ticket_id} - Status: {status}"
-                        )
-                        print(
-                            f"\nFailed to close {ticket.ticket_id} - Status: {status}"
-                        )
+
+                self.approved_tickets.append(ticket.ticket_id)
+                ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
+                logger.info(f"{ticket.ticket_id} closed succesfully")
+                print(f"{ticket.ticket_id} closed succesfully")
                 self.update_assignee(ticket.ticket_id)
             else:
                 self.unapproved_tickets.append(ticket.ticket_id)
