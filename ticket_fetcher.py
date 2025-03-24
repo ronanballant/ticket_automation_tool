@@ -7,6 +7,9 @@ import tldextract as tld
 from config import jira_search_api, logger
 
 class TicketFetcher:
+    requests.packages.urllib3.disable_warnings(
+        requests.urllib3.exceptions.InsecureRequestWarning
+    )
     def __init__(self, cert_path, key_path, queue="sps") -> None:
         self.cert_path = cert_path
         self.key_path = key_path

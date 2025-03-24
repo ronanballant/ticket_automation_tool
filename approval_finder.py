@@ -11,6 +11,9 @@ from ticket import Ticket
 
 
 class ApprovalFinder:
+    requests.packages.urllib3.disable_warnings(
+        requests.urllib3.exceptions.InsecureRequestWarning
+    )
     processed_tickets = []
     intel_data_strings = []
 
