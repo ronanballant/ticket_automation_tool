@@ -190,6 +190,7 @@ def run_process():
                 indicator.get_candidates()
                 if indicator.is_legitimate_indicator is True:
                     intel_search_fqdns.append(indicator.fqdn)
+                    print(f"indicator fqdn - {indicator.fqdn} in {intel_search_fqdns}")
             except Exception as e:
                 print(f"Failed to create indicator for {fqdn}: {e}")
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
