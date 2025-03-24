@@ -9,6 +9,7 @@ from ticket import Ticket
 from ticket_responder import TicketResponder
 
 if __name__ == "__main__":
+    logger.info("Summary process in progress")
     server_name = socket.gethostname()
     if "muc" in server_name:
         queue = "SPS"

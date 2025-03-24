@@ -38,6 +38,7 @@ def close_summary(approval_finder, summary_ticket):
 
 
 if __name__ == "__main__":
+    logger.info("Intel update process in progress")
     server_name = socket.gethostname()
     if "muc" in server_name:
         queue = "SPS"
