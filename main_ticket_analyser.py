@@ -45,9 +45,8 @@ def parse_args():
     else:
         return args
 
-def muc_server_process(fqdns):
+def muc_server_process(fqdns, server_name):
     fqdns = list(set(fqdns))
-    server_name = os.uname().nodename 
     if "muc" in server_name:    
         s3_client = S3Client(
             destination_region,
@@ -100,6 +99,7 @@ def run_process():
     print(f"\n\n{queue.upper()} Ticket Automation In Progress...\n")
     logger.info(f"{queue.upper()} Process In Progress...")
     tickets_in_progress_file = sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
+    server_name = os.uname().nodename 
 
     print("\nFetching Keys")
     try:
@@ -195,7 +195,7 @@ def run_process():
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
     if queue == "sps":
-        muc_server_process(intel_search_fqdns)
+        muc_server_process(intel_search_fqdns, server_name)
 
     responder = TicketResponder(secops_member)
     try:
