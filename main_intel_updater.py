@@ -215,7 +215,7 @@ if __name__ == "__main__":
                 key_handler.get_ssh_key()
 
                 git_manager = GitRepoManager(etp_intel_repo)
-                git_manager.add_ssh_key()
+                git_manager.add_ssh_key(ssh_key_path)
                 git_manager.checkout_master()
                 git_manager.git_pull()
 

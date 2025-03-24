@@ -1,7 +1,7 @@
 import subprocess
 import os
 import sys
-from config import logger, ssh_key_path
+from config import logger
 import re
 
 
@@ -37,9 +37,9 @@ class GitRepoManager:
     def git_commit(self, commit_message):
         self.run_command(["git", "commit", "-m", commit_message])
     
-    def push_changes(self, branch_name, user_name):
-        git_url = f"ssh://git@git.source.akamai.com:7999/~{user_name}/etp-threat-intel-config.git"
-        self.run_command(["git", "push", git_url, branch_name])
+    def push_changes(self, branch_name):
+        # git_url = f"ssh://git@git.source.akamai.com:7999/~{user_name}/etp-threat-intel-config.git"
+        self.run_command(["git", "push", "--set-upstream", "origin", branch_name])
         self.push_link = self.result
 
     def get_pr_link(self):
@@ -76,10 +76,10 @@ class GitRepoManager:
             print(f"Unexpected error: {str(e)}", file=sys.stderr)
             sys.exit(1)
 
-    def add_ssh_key(self):
+    def add_ssh_key(self, ssh_key):
         try:
             subprocess.run(
-                ["ssh-add", self.ssh_key_path],
+                ["ssh-add", ssh_key],
                 check=True
             )
         

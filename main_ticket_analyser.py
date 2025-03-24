@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="sps",
+        default="etp",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -147,7 +147,7 @@ def run_process():
                 else:
                     retry_count += 1  
 
-    SPSIntelFetcher.previous_queries = json_results.copy()
+            SPSIntelFetcher.previous_queries = json_results.copy()
     print("Creating tickets")
     logger.info("Creating tickets")
     for ticket, values in tickets.items():
