@@ -10,7 +10,7 @@ from config import (blacklist_file, cert_path, destination_region,
                     intel_processor_path, jira_search_api, jira_ticket_api,
                     key_path, logger, open_etp_summary_tickets_file,
                     open_sps_summary_tickets_file, search_fqdns_local_file,
-                    secops_s3_aws_access_key, secops_s3_aws_secret_key,
+                    secops_feed_file, secops_s3_aws_access_key, secops_s3_aws_secret_key,
                     secops_s3_bucket, secops_s3_endpoint,
                     sps_intel_update_file, sps_intel_update_s3_path,
                     sps_processed_tickets_file, sps_tickets_in_progress_file,
@@ -229,7 +229,7 @@ if __name__ == "__main__":
                 else:
                     branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H00")}'
                     git_manager.create_new_branch(branch_name)
-                    git_manager.git_add([whitelist_file, blacklist_file])
+                    git_manager.git_add([whitelist_file, blacklist_file, secops_feed_file])
                     git_manager.git_commit("Ticket Automation")
                     git_manager.push_changes(branch_name, approval_finder.user_name)
                     git_manager.get_pr_link()
