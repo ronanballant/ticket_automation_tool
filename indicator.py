@@ -94,7 +94,6 @@ class Indicator:
             if self.domain not in self.ticket.whitelist_domains:
                 self.whitelisted_domain = False
         else:
-            print(f"Skipping {self.fqdn} - Could not identify parent domain")
             self.logger.info(f"Skipping {self.fqdn} - Could not identify parent domain")
 
     def is_file_extension(self):
@@ -107,13 +106,10 @@ class Indicator:
         if self.whitelisted_domain is False:
             if self.file_extension is False:
                 self.legitimate_indicator = True
-                print(f"Indicator Found: {self.fqdn}")
                 self.logger.info(f"{self.fqdn} indicator instance created")
             else:
-                print(f"Skipping {self.fqdn} - File extension detected")
                 self.logger.info(f"Skipping {self.fqdn} - File extension detected")
         else:
-            print(f"Skipping {self.fqdn} - Whitelisted domain")
             self.logger.info(f"Skipping {self.fqdn} - Whitelisted domain")
 
     def add_indicator_to_ticket(self):
@@ -138,9 +134,10 @@ class Indicator:
         return indicator_dict
 
     @classmethod
-    def from_dict(cls, data, ticket):
+    def from_dict(cls, data, ticket, logger):
 
         indicator = cls(
+            logger,
             fqdn=data["fqdn"],
             indicator_type=data["indicator_type"],
             ticket=ticket,  
@@ -148,7 +145,7 @@ class Indicator:
         
         indicator.intel_entries = []
         for intel_entry_data in data.get("intel_entries", []):
-            intel_entry = IntelEntry.from_dict(intel_entry_data, indicator) 
+            intel_entry = IntelEntry.from_dict(intel_entry_data, indicator, logger) 
             intel_entry.append_to_indicator()
 
         for key, value in data.items():

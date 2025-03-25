@@ -154,7 +154,7 @@ class Ticket:
         return ticket_dict
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data, logger):
         skip_keys = [
             "ticket_id",
             "ticket_type",
@@ -180,6 +180,7 @@ class Ticket:
         
 
         ticket = cls(
+            logger,
             ticket_id=data["ticket_id"],
             ticket_type=data["ticket_type"],
             queue=data["queue"],
@@ -193,7 +194,7 @@ class Ticket:
 
         ticket.indicators = []
         for indicator_data in data.get("indicators", []):
-            indicator = Indicator.from_dict(indicator_data, ticket) 
+            indicator = Indicator.from_dict(indicator_data, ticket, logger) 
             indicator.add_indicator_to_ticket()
 
         for key, value in data.items():
@@ -239,9 +240,9 @@ class Ticket:
                 Ticket.previous_ticket_data = json.load(file)
 
     @classmethod
-    def create_tickets(cls):
+    def create_tickets(cls, logger):
         for ticket in Ticket.previous_ticket_data:
-            Ticket.from_dict(ticket)
+            Ticket.from_dict(ticket, logger)
 
     @classmethod
     def get_tickets_in_progress(cls):

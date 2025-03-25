@@ -32,13 +32,14 @@ class GitRepoManager:
             f.writelines([line + "\n" for line in new_content])
 
     def git_add(self, files):
+        self.logger.info(f"Adding files to git")
         self.run_command(["git", "add"] + files)
 
     def git_commit(self, commit_message):
+        self.logger.info(f"Commiting files")
         self.run_command(["git", "commit", "-m", commit_message])
     
     def push_changes(self, branch_name):
-        # git_url = f"ssh://git@git.source.akamai.com:7999/~{user_name}/etp-threat-intel-config.git"
         self.run_command(["git", "push", "--set-upstream", "origin", branch_name])
         self.push_link = self.result
 
@@ -46,8 +47,10 @@ class GitRepoManager:
         match = re.search(r"https://git\.source\.akamai\.com[^\s]+", self.std_err)
         self.pr_link = match.group(0) if match else None
         if self.pr_link: 
+            self.logger.info(f"PR link: {self.pr_link}")
             self.pr_comment = f"Create Pull Request: \n{self.pr_link}"
         else:
+            self.logger.info(f"Git Push Failed, no PR link")
             self.pr_comment = f"Git Push Failed... \nPlease update intel manually"
 
     def start_ssh_agent(self):
@@ -70,10 +73,10 @@ class GitRepoManager:
                     os.environ[key] = value
         
         except subprocess.CalledProcessError as e:
-            print(f"Error: {e.stderr if e.stderr else str(e)}", file=sys.stderr)
+            self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"Unexpected error: {str(e)}", file=sys.stderr)
+            self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
             sys.exit(1)
 
     def add_ssh_key(self, ssh_key):
@@ -84,22 +87,22 @@ class GitRepoManager:
             )
         
         except subprocess.CalledProcessError as e:
-            print(f"Error: {e.stderr if e.stderr else str(e)}", file=sys.stderr)
+            self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"Unexpected error: {str(e)}", file=sys.stderr)
+            self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
             sys.exit(1)
 
     def change_directory(self, path):
         try:
             os.chdir(path)
-            print(f"Successfully changed directory to {path}.")
+            self.logger.info(f"Successfully changed directory to {path}.")
         except FileNotFoundError:
-            print(f"Error: Directory {path} does not exist.", file=sys.stderr)
+            self.logger.error(f"Error: Directory {path} does not exist.", file=sys.stderr)
             sys.exit(1)
         except PermissionError:
-            print(f"Error: Permission denied for directory {path}.", file=sys.stderr)
+            self.logger.error(f"Error: Permission denied for directory {path}.", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"Unexpected error: {str(e)}", file=sys.stderr)
+            self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
             sys.exit(1)

@@ -19,7 +19,6 @@ class SPSIntelFetcher:
                 self.indicator.candidate, None
             )
         except Exception as e:
-            print(f"Failed to read previous Intel query: {e}")
             self.logger.error(f"Failed to read previous Intel query: {e}")
             raise
 
@@ -41,7 +40,6 @@ class SPSIntelFetcher:
             self.results = ast.literal_eval(result.stdout)
             SPSIntelFetcher.previous_queries[self.indicator.candidate] = self.results
         except Exception as e:
-            print(f"Error querying SPS intel: {e}")
             self.logger.error(f"Error querying SPS intel: {e}")
             self.results = None
 
@@ -74,7 +72,6 @@ class SPSIntelFetcher:
             else:
                 self.no_intel()
         except Exception as e:
-            print(f"Error attributing SPS intel: {e}")
             self.logger.error(f"Error attributing SPS intel: {e}")
             raise
 

@@ -30,7 +30,6 @@ class ETPIntelFetcher:
                 self.indicator.candidate, None
             )
         except Exception as e:
-            print(f"Failed to read previous Intel query: {e}")
             self.logger.error(f"Failed to read previous Intel query: {e}")
             raise
 
@@ -81,7 +80,6 @@ class ETPIntelFetcher:
                 #     "subdomain_count": self.indicator.subdomain_count,
                 # }
             except Exception as e:
-                print(f"Error querying ETP intel: {e}")
                 self.logger.error(f"Error querying ETP intel: {e}")
                 self.no_intel()
 
@@ -201,7 +199,6 @@ class ETPIntelFetcher:
                     self.indicator.resolved_ip = ip_query
                     break
             except Exception as e:
-                print(f"Error querying ETP intel: {e}")
                 self.logger.error(f"Error querying ETP intel: {e}")
 
 def get_category_level(list_id):

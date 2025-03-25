@@ -58,14 +58,12 @@ if __name__ == "__main__":
             logger.info(f"Creating SPS summary ticket")
             responder.create_sps_ticket(new_tickets)
         except Exception as e:
-            print(f"\nFailed to create SPS summary ticket: {e}")
             logger.error(f"Failed to create SPS summary results ticket: {e}")
     elif queue == "ETP":
         try:
             logger.info(f"Creating ETP summary ticket")
             responder.create_etp_ticket(new_tickets)
         except Exception as e:
-            print(f"\nFailed to create ETP summary ticket: {e}")
             logger.error(f"Failed to create ETP summary results ticket: {e}")
 
     if responder.summary_ticket_created is True:
@@ -77,7 +75,6 @@ if __name__ == "__main__":
             logger.info(
                 f"Failed to add result comments to {responder.summary_ticket}: {e}"
             )
-            print(f"\nFailed to add result comments to {responder.summary_ticket}: {e}")
 
         if responder.comment_succesfully_added is False:
             logger.info(f"Failed to add comment to {responder.summary_ticket}")

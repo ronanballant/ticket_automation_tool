@@ -24,7 +24,7 @@ class IntelEntry:
         return intel_processor_dict
 
     @classmethod
-    def from_dict(cls, data, indicator):
+    def from_dict(cls, data, indicator, logger):
         keys = [ 
             "indicator",
             "entry",
@@ -33,6 +33,7 @@ class IntelEntry:
         ]
 
         intel_entry = cls(
+            logger,
             indicator=indicator,
             entry=data["entry"],
             intel_list=data["intel_list"],

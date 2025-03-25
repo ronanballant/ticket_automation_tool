@@ -23,9 +23,11 @@ class KeyHandler:
         os.remove(self.key_path)
     
     def remove_ssh_keys(self):
+        self.logger.info("Removing SSH keys")
         os.remove(self.ssh_key_path)
 
     def decode_key(self, key):
+        self.logger.info("Decoding Key")
         return base64.b64decode(key)
 
     def get_key_names(self):
@@ -51,6 +53,7 @@ class KeyHandler:
             self.ssh_key_name = rballant_ssh_key_name
 
     def get_ssh_key(self):
+        self.logger.info("Getting SSH key")
         try:
             encoded_ssh_key = get_az_secret.get_az_secret(self.ssh_key_name)
             ssh_key = self.decode_key(encoded_ssh_key).decode("utf-8")
@@ -67,6 +70,7 @@ class KeyHandler:
             os.chmod(self.ssh_key_path, 0o600)
 
     def get_personal_keys(self):
+        self.logger.info("Getting Personal keys")
         try:
             encoded_cert = get_az_secret.get_az_secret(self.cert_name)
             cert = self.decode_key(encoded_cert).decode("utf-8")

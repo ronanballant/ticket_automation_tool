@@ -36,7 +36,6 @@ class TicketFetcher:
                 verify=False,
             )
         except Exception as e:
-            print(f"JIRA ticket API Failed: {e}")
             self.logger.error(f"JIRA ticket API Failed: {e}")
             raise
 
@@ -67,10 +66,10 @@ class TicketFetcher:
                             summary = fields.get("summary")
                             customer = fields.get("customfield_12703", "")
                             if description:
-                                fqdns, urls, ips = collect_indicators(
+                                fqdns, urls, ips = self.collect_indicators(
                                     summary, description, ticket_id
                                 )
-                                is_guardicor_ticket = is_guardicore(
+                                is_guardicor_ticket = self.is_guardicore(
                                     customer, description
                                 )
                             if summary:
@@ -86,7 +85,7 @@ class TicketFetcher:
                                 elif "secops false positive" in component.lower():
                                     ticket_type = "FP"
                                 else:
-                                    ticket_type = get_ticket_type(summary, description)
+                                    ticket_type = self.get_ticket_type(summary, description)
 
                             self.tickets[ticket_id] = {
                                 "ticket_type": ticket_type,
@@ -104,149 +103,144 @@ class TicketFetcher:
                                 "creation_time": creation_time,
                             }
             else:
-                print(
-                    f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
-                )
                 self.logger.info(
                     f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
                 )
         except Exception as e:
-            print(f"Failed to parse ticket response: {e}")
             self.logger.error(f"Failed to parse ticket response: {e}")
             raise
 
-def is_guardicore(customer, description):
-    if customer:
-        text = customer + description
-    else:
-        text = description
-    return True if "guardicore" in text.lower() else False
+    def collect_indicators(self, summary, desc, ticket):
+        summary = summary.lower()
+        desc = desc.lower()
+        text = summary + " " + desc
+        self.logger.info("Extracting entities from tickets")
+        desc = self.clean_description(text)
+        desc, urls = self.collect_urls(desc)
+        fqdns = self.collect_fqdns(desc)
+        ips = self.collect_ips(desc)
+        self.logger.info(
+            f"Extracted {len(set(fqdns))} FQDNs, {len(set(ips))} IPs and {len(set(urls))} URLs from {ticket}"
+        )
+        return fqdns, urls, ips
 
-def clean_description(description):
-    self.logger.info("Cleaning description")
-    description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
-    pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
-    description = re.sub(pattern, " ", description)
-    pattern = r"\[([^\|]*)\|.*?\]"  
-    description = re.sub(pattern, r"\1", description)
-    description = (
-        description
-        .replace("{quote}", " ")
-        .replace("|", " ")
-        .replace("[:]", ":")
-        .replace("[.]", ".")
-        .replace("[", "")
-        .replace("]", "")
-        .replace("*", " ")
-        .replace("'", " ")
-        .replace('"', " ")
-        .replace("{.}", ".")
-        .replace("{:}", ":")
-        .replace(";", " ")
-        .replace(",", " ")
-        .replace("\\", "")
-        .replace("(", " ")
-        .replace(")", " ")
-    ).strip()
+    def clean_description(self, description):
+        self.logger.info("Cleaning description")
+        description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
+        pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
+        description = re.sub(pattern, " ", description)
+        pattern = r"\[([^\|]*)\|.*?\]"  
+        description = re.sub(pattern, r"\1", description)
+        description = (
+            description
+            .replace("{quote}", " ")
+            .replace("|", " ")
+            .replace("[:]", ":")
+            .replace("[.]", ".")
+            .replace("[", "")
+            .replace("]", "")
+            .replace("*", " ")
+            .replace("'", " ")
+            .replace('"', " ")
+            .replace("{.}", ".")
+            .replace("{:}", ":")
+            .replace(";", " ")
+            .replace(",", " ")
+            .replace("\\", "")
+            .replace("(", " ")
+            .replace(")", " ")
+        ).strip()
 
-    if "carrier support team" in description:
-        description = description.split("carrier support team")[0]
+        if "carrier support team" in description:
+            description = description.split("carrier support team")[0]
 
-    self.logger.info("Description cleaned")
-    return description
+        self.logger.info("Description cleaned")
+        return description
 
-def collect_urls(description):
-    words = description.split()
-    # pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
-    pattern = re.compile("([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\\.)+)+[\\w]{2,}(:\\d+)?/.*")
+    def collect_fqdns(self, description):
+        words = description.split()
+        pattern = re.compile(
+            "((?=[a-z0-9-]{1,63}\\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,63}"
+        )
+        
+        matched_fqdns = []
+        for word in words:
+            if "@" not in word:
+                matches = re.finditer(pattern, word)
+                fqdn_matches = [(match.group(0)) for match in matches]
+                matched_fqdns += fqdn_matches
 
-    matched_urls = []
-    for word in words:
-        matches = re.finditer(pattern, word)
-        urls = [match.group(0) for match in matches]
-        matched_urls += urls
+        matches = [
+            fqdn[4:] if fqdn.startswith("www.") else fqdn
+            for fqdn in matched_fqdns
+        ]
 
-    urls = sorted(matched_urls, key=len, reverse=True)
-    for url in urls:
-        description = description.replace(url, " ")
-    return description, list(set(urls))
+        fqdns = []
+        for fqdn in matches:
+            if tld.extract(fqdn).suffix:
+                fqdns.append(fqdn)
+            else:
+                self.logger.info(f"Invalid Suffix for {fqdn}")
 
-def collect_fqdns(description):
-    words = description.split()
-    pattern = re.compile(
-        "((?=[a-z0-9-]{1,63}\\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,63}"
-    )
-    
-    matched_fqdns = []
-    for word in words:
-        if "@" not in word:
-            matches = re.finditer(pattern, word)
-            fqdn_matches = [(match.group(0)) for match in matches]
-            matched_fqdns += fqdn_matches
+        return list(set(fqdns))
 
-    matches = [
-        fqdn[4:] if fqdn.startswith("www.") else fqdn
-        for fqdn in matched_fqdns
-    ]
-
-    fqdns = []
-    for fqdn in matches:
-        if tld.extract(fqdn).suffix:
-            fqdns.append(fqdn)
+    def is_guardicore(self, customer, description):
+        if customer:
+            text = customer + description
         else:
-            self.logger.info(f"Invalid Suffix for {fqdn}")
+            text = description
+        return True if "guardicore" in text.lower() else False
 
-    return list(set(fqdns))
+    def collect_urls(self, description):
+        words = description.split()
+        # pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
+        pattern = re.compile("([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\\.)+)+[\\w]{2,}(:\\d+)?/.*")
 
-def collect_ips(description):
-    ipv4_pattern = r"\b(?:\d{1,3}(\[.\]|\.)\d{1,3}(\[.\]|\.)\d{1,3}(\[.\]|\.)\d{1,3})(?:/\d{1,2})?\b"
+        matched_urls = []
+        for word in words:
+            matches = re.finditer(pattern, word)
+            urls = [match.group(0) for match in matches]
+            matched_urls += urls
 
-    words = description.split()
-    matched_ips = []
-    for word in words:
-        matches = re.finditer(ipv4_pattern, word)
-        ip_matches = [(match.group(0)) for match in matches]
-        matched_ips += ip_matches
+        urls = sorted(matched_urls, key=len, reverse=True)
+        for url in urls:
+            description = description.replace(url, " ")
+        return description, list(set(urls))
 
-    return list(set(matched_ips))
+    def collect_ips(self, description):
+        ipv4_pattern = r"\b(?:\d{1,3}(\[.\]|\.)\d{1,3}(\[.\]|\.)\d{1,3}(\[.\]|\.)\d{1,3})(?:/\d{1,2})?\b"
 
-def collect_indicators(summary, desc, ticket):
-    summary = summary.lower()
-    desc = desc.lower()
-    text = summary + " " + desc
-    self.logger.info("Extracting entities from tickets")
-    desc = clean_description(text)
-    desc, urls = collect_urls(desc)
-    fqdns = collect_fqdns(desc)
-    ips = collect_ips(desc)
-    self.logger.info(
-        f"Extracted {len(set(fqdns))} FQDNs, {len(set(ips))} IPs and {len(set(urls))} URLs from {ticket}"
-    )
-    return fqdns, urls, ips
+        words = description.split()
+        matched_ips = []
+        for word in words:
+            matches = re.finditer(ipv4_pattern, word)
+            ip_matches = [(match.group(0)) for match in matches]
+            matched_ips += ip_matches
 
+        return list(set(matched_ips))
 
-def get_ticket_type(summary, description):
-    summary = summary.lower()
-    description = description.lower()
-    
-    if "exfil" in description or "exfiltration" in description:
-        return "None"
-    
-    if "fn:" in summary or "false negative" in summary:
-        return "FN"
-    elif "fp:" in summary or "false positive" in summary:
-        return "FP"
-    elif "fn - " in summary or "false positive" in summary:
-        return "FN"
-    elif "fp - " in summary or "false positive" in summary:
-        return "FP"
-    elif "fn | " in summary or "false positive" in summary:
-        return "FN"
-    elif "fp | " in summary or "false positive" in summary:
-        return "FP"
-    elif " fn " in description or "false negative" in description:
-        return "FP"
-    elif " fp " in description or "false positive" in description:
-        return "FP"
-    else:
-        return "None"
+    def get_ticket_type(self, summary, description):
+        summary = summary.lower()
+        description = description.lower()
+        
+        if "exfil" in description or "exfiltration" in description:
+            return "None"
+        
+        if "fn:" in summary or "false negative" in summary:
+            return "FN"
+        elif "fp:" in summary or "false positive" in summary:
+            return "FP"
+        elif "fn - " in summary or "false positive" in summary:
+            return "FN"
+        elif "fp - " in summary or "false positive" in summary:
+            return "FP"
+        elif "fn | " in summary or "false positive" in summary:
+            return "FN"
+        elif "fp | " in summary or "false positive" in summary:
+            return "FP"
+        elif " fn " in description or "false negative" in description:
+            return "FP"
+        elif " fp " in description or "false positive" in description:
+            return "FP"
+        else:
+            return "None"

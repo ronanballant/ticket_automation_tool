@@ -95,7 +95,6 @@ class VirusTotalFetcher:
                 self.indicator.attribution_id = "-"
                 self.indicator.attribution_description = "-"
         except Exception as e:
-            print(f"Failed to read previous VT query: {e}")
             self.logger.error(f"Failed to read previous VT query: {e}")
             raise
 
@@ -161,7 +160,6 @@ class VirusTotalFetcher:
                 response = requests.get(fqdn_vt_api, headers=request_headers)
             except Exception as e:
                 self.no_data()
-                print(f"Error querying VT API: {e}")
                 self.logger.error(f"Error querying VT API: {e}")
                 raise
             else:
@@ -170,11 +168,9 @@ class VirusTotalFetcher:
                     self.assign_results()
                 else:
                     self.no_data()
-                    print(f"Bad VT Response for: {response.status_code}")
                     self.logger.error(f"Bad VT Response for: {response.status_code}")
         else:
             self.no_data()
-            print("VT query failed - API quota reached")
             self.logger.error("VT query failed - API quota reached")
 
     def save_results(self):
@@ -242,7 +238,6 @@ class VirusTotalFetcher:
                 else:
                     self.indicator.days_since_last_scanned = 365
         except Exception as e:
-            print(f"Error attributing VT data to {self.indicator.fqdn}: {e}")
             self.logger.error(f"Error attributing VT data to {self.indicator.fqdn}: {e}")
             self.no_data()
             raise

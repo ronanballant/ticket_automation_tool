@@ -91,7 +91,7 @@ class IntelUpdater:
 
         url = "https://fresh-milk-feeds.rad.nominum.com:51000/api/v1/entry/add"
         response = requests.post(url, data=self.command, verify=False)
-        print(response.text)
+        self.logger.info(f"Response text: {response.text}")
         self.response_text = response.text
         if str(response.status_code).startswith("2"):
             self.logger.info(f"{self.fqdn} added to {self.intel_feed}")
@@ -144,14 +144,14 @@ if __name__ == "__main__":
     s3_client.initialise_client()
     s3_client.read_s3_file(sps_intel_update_s3_path)
     data = s3_client.file_content.strip().split("\n")
-    print("data", data)
+    logger.info(f"FQDNs to search: {data}")
     intel_updates = [row.strip().replace("'","") for row in data]
-    print("intel_updates", intel_updates)
+    logger.info(f"intel_updates: {intel_updates}")
     if intel_updates[0]:
         responses = []
         for row in intel_updates:
             if row[0]:
-                print(row)
+                logger.info(f"Processing: {row}")
                 intel_updater = IntelUpdater(logger, row)
                 intel_updater.parse_update()
                 intel_updater.clean_domain()

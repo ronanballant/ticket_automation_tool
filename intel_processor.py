@@ -103,7 +103,7 @@ class IntelProcessor:
 
             try:
                 result = subprocess.run(scp_command, check=True, capture_output=True, text=True)
-                print("File copied successfully.")
+                self.logger.info("File copied successfully.")
                 self.logger.debug(result.stdout)
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"ERROR Processing Whitelist Entities: {e}")

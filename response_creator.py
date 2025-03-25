@@ -155,7 +155,8 @@ class ResponseCreator:
             else:
                 self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n "
         else:
-            print(f"Incorrect resolution: {self.indicator.indicator_resolution}")
+            self.logger.info(f"Incorrect resolution: {self.indicator.indicator_resolution}")
+            self.indicator.indicator_resolution = "In Progress"
             self.indicator.is_resolved = False
             self.indicator.ticket.ticket_resolved = False
             self.indicator.ticket.requires_approval = True

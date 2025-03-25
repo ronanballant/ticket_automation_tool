@@ -18,7 +18,7 @@ class SummaryCreator:
 
     def create_tickets(self):
         for ticket in self.ticket_data:
-            Ticket.from_dict(ticket)
+            Ticket.from_dict(ticket, self.logger)
 
     def clear_tickets(self):
         with open(self.tickets_in_progress_file, "w") as file:

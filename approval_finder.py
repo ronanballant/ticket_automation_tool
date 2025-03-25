@@ -53,7 +53,7 @@ class ApprovalFinder:
         for ticket in self.ticket_data:
             summary_ticket = ticket.get("linked_summary_ticket", "")
             if summary_ticket in self.open_summary_tickets:
-                Ticket.from_dict(ticket)
+                Ticket.from_dict(ticket, self.logger)
 
     def clear_processed_summary_ticket(self):
         new_tickets = [
@@ -74,7 +74,6 @@ class ApprovalFinder:
             for ticket in reader:
                 if ticket:
                     self.open_summary_tickets.append(ticket[0])
-            print(self.open_summary_tickets)
 
     def group_tickets(self):
         self.grouped_tickets = {}
@@ -108,7 +107,6 @@ class ApprovalFinder:
                 verify=False,
             )
         except Exception as e:
-            print(f"JIRA ticket API Failed: {e}")
             self.logger.error(f"JIRA ticket API Failed: {e}")
             raise
 
@@ -217,14 +215,10 @@ class ApprovalFinder:
                             self.description = normalized_description
                             self.description = self.description.replace("\r", "")
             else:
-                print(
-                    f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
-                )
                 self.logger.info(
                     f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
                 )
         except Exception as e:
-            print(f"Failed to parse ticket response: {e}")
             self.logger.error(f"Failed to parse ticket response: {e}")
             raise
 
@@ -335,12 +329,10 @@ class ApprovalFinder:
                     transitions = [""]
 
                 else:
-                    print(f"Unknown queue for ticket: {ticket.ticket_id}")
                     self.logger.info(f"Unknown queue for ticket: {ticket.ticket_id}")
 
                 headers = {"Content-Type": "application/json"}
 
-                print(f"Closing {ticket.ticket_id}")
                 self.logger.info(f"Closing {ticket.ticket_id}")
                 try:
                     for transition in transitions:
@@ -358,12 +350,10 @@ class ApprovalFinder:
                     self.unapproved_tickets.append(ticket.ticket_id)
                     self.logger.error(f"Failed to close {ticket.ticket_id} - Error: {e}")
                     self.logger.info(f"Response text: {response.text}")
-                    print(f"\nFailed to close {ticket.ticket_id} - Error: {e}\n")
 
                 self.approved_tickets.append(ticket.ticket_id)
                 ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
                 self.logger.info(f"{ticket.ticket_id} closed succesfully")
-                print(f"{ticket.ticket_id} closed succesfully")
                 self.update_assignee(ticket.ticket_id)
             else:
                 self.unapproved_tickets.append(ticket.ticket_id)
@@ -408,11 +398,9 @@ class ApprovalFinder:
             if status.startswith("2"):
                 self.summary_updated = True
                 self.logger.info("Summary comment added")
-                print("Summary comment added")
             else:
                 self.summary_updated = False
                 self.logger.info(f"Summary comment not added - Status: {status}")
-                print(f"Summary comment not added - Status: {status}")
         else:
             self.logger.info(f"No comment for {self.summary_ticket}")
             self.summary_updated = False
@@ -437,11 +425,9 @@ class ApprovalFinder:
 
             status = str(response.status_code)
             if status.startswith("2"):
-                self.logger.info("Comment added")
-                print("Summary comment added")
+                self.logger.info("Summary comment added")
             else:
-                self.logger.info(f"Comment not added - Status: {status}")
-                print(f"Summary comment not added - Status: {status}")
+                self.logger.info(f"Summary comment not added - Status: {status}")
         else:
             self.logger.info(f"No comment for {self.summary_ticket}")
 

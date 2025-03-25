@@ -48,10 +48,7 @@ class TicketResolver:
     def match_rule(self):
         if self.indicator.subdomain_only is False:
             if self.indicator.e_list_entry is False:
-                self.logger.info(
-                    f"Matching {self.indicator.fqdn} data against rule set"
-                )
-                print(f"Matching {self.indicator.fqdn} to rule set")
+                self.logger.info(f"Matching {self.indicator.fqdn} data against rule set")
                 group = self.rules.get(self.indicator.ticket.queue)
                 if group:
                     type_match = group.get(self.indicator.ticket.ticket_type)
@@ -156,45 +153,30 @@ class TicketResolver:
                                     )
                                     self.indicator.rule_response = response
                                 else:
-                                    print(
-                                        f"Error: No 'age' Value to Match Rule Set. age: {self.indicator.domain_age}"
-                                    )
                                     self.logger.info(
                                         f"Error: No 'age' Value to Match Rule Set. age: {self.indicator.domain_age}"
                                     )
                                     self.indicator.indicator_resolution = "In Progress"
                                     self.indicator.rule_response = "No Rule Match"
                             else:
-                                print(
-                                    f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.indicator.category_strength}"
-                                )
                                 self.logger.info(
                                     f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.indicator.category_strength}"
                                 )
                                 self.indicator.indicator_resolution = "In Progress"
                                 self.indicator.rule_response = "No Rule Match"
                         else:
-                            print(
-                                f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.indicator.is_filtered}"
-                            )
                             self.logger.info(
                                 f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.indicator.is_filtered}"
                             )
                             self.indicator.indicator_resolution = "In Progress"
                             self.indicator.rule_response = "No Rule Match"
                     else:
-                        print(
-                            f"Error: No Type Match in Rule Set. Type: {self.indicator.ticket_type}"
-                        )
                         self.logger.info(
                             f"Error: No Type Match in Rule Set. Type: {self.indicator.ticket_type}"
                         )
                         self.indicator.indicator_resolution = "In Progress"
                         self.indicator.rule_response = "No Rule Match"
                 else:
-                    print(
-                        f"Error: No Queue Match in Rule Set. Queue: {self.indicator.queue}"
-                    )
                     self.logger.info(
                         f"Error: No Queue Match in Rule Set. Queue: {self.indicator.queue}"
                     )

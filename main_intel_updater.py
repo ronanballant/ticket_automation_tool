@@ -92,7 +92,7 @@ if __name__ == "__main__":
         exit()
 
     key_handler = KeyHandler(
-        cert_path, key_path, ssh_key_path
+        logger, cert_path, key_path, ssh_key_path
     )
     key_handler.get_key_names()
     key_handler.get_personal_keys()
@@ -183,7 +183,7 @@ if __name__ == "__main__":
                                         else:
                                             retry_count += 1
                                     except json.JSONDecodeError as e:
-                                        print(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
+                                        logger.info(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
                                         retry_count += 1  
                                 else:
                                     retry_count += 1  
@@ -236,6 +236,7 @@ if __name__ == "__main__":
                     approval_finder.add_summary_comment(intel_processor.error_comment)
                 else:
                     branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H00")}'
+                    logger.info(f"Branch name: {branch_name}")
                     git_manager.create_new_branch(branch_name)
                     git_manager.git_add([whitelist_file, blacklist_file, secops_feed_file])
                     git_manager.git_commit("Ticket Automation")

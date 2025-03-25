@@ -87,7 +87,7 @@ class IntelUpdater:
 
         url = "https://fresh-milk-feeds.rad.nominum.com:51000/api/v1/entry/add"
         response = requests.post(url, data=self.command, verify=False)
-        print(response.text)
+        logger.info(f"Response text: {response.text}")
         self.response_text = response.text
         if str(response.status_code).startswith("2"):
             self.logger.info(f"{self.fqdn} added to {self.intel_feed}")

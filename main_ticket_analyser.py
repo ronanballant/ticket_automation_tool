@@ -101,29 +101,26 @@ def muc_server_process(fqdns, server_name):
 def run_process():
     intel_search_fqdns = []
     queue = args.queue.lower()
-    print(f"\n\n{queue.upper()} Ticket Automation In Progress...\n")
     logger.info(f"{queue.upper()} Process In Progress...")
     tickets_in_progress_file = sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
     server_name = os.uname().nodename 
 
-    print("\nFetching Keys")
+    logger.info("Fetching Keys")
     try:
         key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
         key_handler.get_key_names()
         key_handler.get_personal_keys()
     except Exception as e:
-        print(f"\nFailed to fetch keys: {e}")
         logger.error(f"Failed to fetch keys: {e}")
         return
 
-    print("\nFetching Tickets")
+    logger.info("Fetching Tickets")
     try:
         ticket_fetcher = TicketFetcher(logger, cert_path, key_path, queue)
         ticket_fetcher.get_tickets()
         ticket_fetcher.parse_tickets()
         tickets = ticket_fetcher.tickets
     except Exception as e:
-        print(f"\nFailed to fetch tickets: {e}")
         logger.error(f"Failed to fetch tickets: {e}")
         return
 
@@ -140,21 +137,17 @@ def run_process():
     try:
         rule_set = RuleFetcher(logger)
     except Exception as e:
-        print(f"\nFailed to load Rule-Set: {e}")
         logger.error(f"Failed to load Rule-Set: {e}")
         return
 
     if queue == "etp":
         try:
-            print("Initialising Mongo connection")
             logger.info("Initialising Mongo connection")
             mongo_connection = InitialiseMongo(logger)
         except Exception as e:
-            print(f"Failed to intialise Mongo connection: {e}")
             logger.error(f"Failed to intialise Mongo connection: {e}")
             return
 
-    print("Creating tickets")
     logger.info("Creating tickets")
     for ticket, values in tickets.items():
         in_progress = Ticket.tickets_in_progress.get(ticket, False)
@@ -191,7 +184,6 @@ def run_process():
 
     for ticket in Ticket.all_tickets:
         logger.info(f"Creating Indicator Instances for {ticket.ticket_id}")
-        print(f"\nCreating Indicator Instances for {ticket.ticket_id}")
         for fqdn in ticket.fqdns:
             indicator = Indicator(logger, fqdn, ticket, indicator_type)
             try:
@@ -206,7 +198,6 @@ def run_process():
                 if indicator.legitimate_indicator is True:
                     intel_search_fqdns.append(indicator.fqdn)
             except Exception as e:
-                print(f"Failed to create indicator for {fqdn}: {e}")
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
     if queue == "sps":
@@ -215,13 +206,11 @@ def run_process():
     responder = TicketResponder(logger, secops_member)
     try:
         for ticket in Ticket.all_tickets:
-            print(f"\nProcessing {ticket.ticket_id}")
+            logger.info(f"Processing {ticket.ticket_id}")
             for indicator in ticket.indicators:
-                print(f"\nProcessing {indicator.fqdn}")
                 logger.info(f"Processing {indicator.fqdn}")
 
                 try:
-                    print(f"Querying VT")
                     logger.info(f"Querying VT")
                     vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.fqdn)
                     vt_fetcher.prepare_indicator()
@@ -241,15 +230,12 @@ def run_process():
                     ):
                         vt_fetcher.write_vt_data()
 
-                    print(f"VT indications:\t{indicator.vt_indications}")
                     logger.info(f"VT indications:\t{indicator.vt_indications}")
                 except Exception as e:
-                    print(f"Failed to query VT for {indicator.fqdn}: {e}")
                     logger.error(f"Failed to query VT for {indicator.fqdn}: {e}")
 
                 if queue == "sps":
                     try:
-                        print("Querying SPS intel")
                         logger.info("Querying SPS intel")
                         intel_fetcher = SPSIntelFetcher(logger, indicator)
                         for candidate in indicator.candidates:
@@ -264,11 +250,9 @@ def run_process():
                                 indicator.matched_ioc = candidate
                                 break
                     except Exception as e:
-                        print(f"Failed to query intel for {indicator.fqdn}: {e}")
                         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
                 else:
                     try:
-                        print("Querying ETP intel")
                         logger.info("Querying ETP intel")
                         intel_fetcher = ETPIntelFetcher(logger, indicator, mongo_connection)
 
@@ -317,59 +301,45 @@ def run_process():
                                                 )
                                                 indicator.matched_ioc_type = "IPV4"
                     except Exception as e:
-                        print(f"Failed to query intel for {indicator.fqdn}: {e}")
                         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
 
                 try:
-                    print(f"Finding resolution")
                     logger.info("Finding resolution")
                     ticket_resolver = TicketResolver(logger, indicator, rule_set.rules)
                     ticket_resolver.prepare_fp_rule_query()
                     ticket_resolver.match_rule()
                 except Exception as e:
-                    print(f"Failed to find resolution for {indicator.fqdn}: {e}")
                     logger.error(
                         f"Failed to finding resolution for {indicator.fqdn}: {e}"
                     )
 
                 try:
-                    print(f"Generating indicator specific response")
                     logger.info("Generating indicator specific response")
                     response_creator = ResponseCreator(logger, indicator)
                     response_creator.generate_source_response()
                     response_creator.generate_comment_response()
-
-                    print(f"Response generated")
                     logger.info("Response generated")
                 except Exception as e:
-                    print(
-                        f"Failed to generating ticket response for {indicator.fqdn}: {e}"
-                    )
                     logger.error(
                         f"Failed to generating ticket response for {indicator.fqdn}: {e}"
                     )
             try:
-                print(f"Responding to {ticket.ticket_id}")
                 logger.info(f"Responding to {ticket.ticket_id}")
                 responder.update_ticket(ticket)
             except Exception as e:
-                print(f"Failed to respond to {ticket.ticket_id}: {e}")
                 logger.error(f"Failed to respond to {ticket.ticket_id}: {e}")
 
             try:
                 logger.info(f"Adding {ticket.ticket_id} to {tickets_in_progress_file}")
                 ticket.update_tickets_in_progress(tickets_in_progress_file)
             except Exception as e:
-                print(f"Failed to add {ticket.ticket_id} to {tickets_in_progress_file}: {e}")
                 logger.error(f"Failed to add {ticket.ticket_id} to {tickets_in_progress_file}: {e}")
     except Exception as e:
-        print(f"\nFailed to process entities: {e}")
         logger.error(f"Failed to process entities: {e}")
         return
 
     key_handler.remove_personal_keys()
 
-    logger.info("Process Finished...")
     logger.info(f"{queue.upper()} ticket automation Finished")
 
 
