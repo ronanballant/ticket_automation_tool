@@ -23,8 +23,8 @@ class TicketFetcher:
                 # jql_query = f'project="ReCat Sec Ops Requests" AND issue = "RCSOR-7408"'
 
             if self.queue.lower() == "etp":
-                jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14166"'
+                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
+                jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14250"'
                 # jql_query = 'project="ETPESC" AND issue = "ETPESC-9841"'
             params = {"jql": jql_query, "maxResults": 100}
 
@@ -123,6 +123,7 @@ def is_guardicore(customer, description):
 
 def clean_description(description):
     logger.info("Cleaning description")
+    description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
     pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
     description = re.sub(pattern, " ", description)
     pattern = r"\[([^\|]*)\|.*?\]"  

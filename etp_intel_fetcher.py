@@ -75,11 +75,11 @@ class ETPIntelFetcher:
                 else:
                     self.indicator.subdomain_only = False
 
-                ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
-                    "mongo_results": self.indicator.mongo_results,
-                    "subdomain_only": self.indicator.subdomain_only,
-                    "subdomain_count": self.indicator.subdomain_count,
-                }
+                # ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
+                #     "mongo_results": self.indicator.mongo_results,
+                #     "subdomain_only": self.indicator.subdomain_only,
+                #     "subdomain_count": self.indicator.subdomain_count,
+                # }
             except Exception as e:
                 print(f"Error querying ETP intel: {e}")
                 logger.error(f"Error querying ETP intel: {e}")
@@ -144,6 +144,22 @@ class ETPIntelFetcher:
                     self.indicator.is_in_intel = (
                         True if self.indicator.intel_category != "-" else False
                     )
+                    ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
+                        "intel_category": self.indicator.intel_category,
+                        "intel_source": self.indicator.intel_source,
+                        "is_internal": self.indicator.is_internal,
+                        "is_in_man_bl": self.indicator.is_in_man_bl,
+                        "intel_description": self.indicator.intel_description,
+                        "is_filtered": self.indicator.is_filtered,
+                        "filter_reason": self.indicator.filter_reason,
+                        "intel_threat_id": self.indicator.intel_threat_id,
+                        "intel_list_id": self.indicator.intel_list_id,
+                        "intel_category_strength": self.indicator.intel_category_strength,
+                        "is_in_intel": self.indicator.is_in_intel,
+                        "intel_category": self.indicator.intel_category,
+                        "subdomain_only": self.indicator.subdomain_only,
+                        "subdomain_count": self.indicator.subdomain_count,
+                    }
                 else:
                     self.no_intel()
             else:
@@ -168,22 +184,25 @@ class ETPIntelFetcher:
         ETPIntelFetcher.previous_queries[self.indicator.fqdn] = {}
     
     def query_resolved_ip(self):
-        ip_query = self.resolved_ip.strip() + "/32"
-        try:
-            cursor = self.mongo_connection.blacklist.find(
-                {"etp_record": ip_query}
-            )
-            self.indicator.mongo_results = [record for record in cursor]
+        for ip in self.indicator.resolved_ips:
+            ip_query = ip + "/32"
+            try:
+                cursor = self.mongo_connection.blacklist.find(
+                    {"etp_record": ip_query}
+                )
+                self.indicator.mongo_results = [record for record in cursor]
 
-            if self.indicator.mongo_results:
-                self.indicator.ip_in_intel = True
+                if self.indicator.mongo_results:
+                    self.indicator.ip_in_intel = True
 
-            ETPIntelFetcher.previous_queries[ip_query] = {
-                "mongo_results": self.indicator.mongo_results
-            }
-        except Exception as e:
-            print(f"Error querying ETP intel: {e}")
-            logger.error(f"Error querying ETP intel: {e}")
+                    ETPIntelFetcher.previous_queries[ip_query] = {
+                        "mongo_results": self.indicator.mongo_results
+                    }
+                    self.indicator.resolved_ip = ip_query
+                    break
+            except Exception as e:
+                print(f"Error querying ETP intel: {e}")
+                logger.error(f"Error querying ETP intel: {e}")
 
 def get_category_level(list_id):
     if list_id in [1, 2, 3]:

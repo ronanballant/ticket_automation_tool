@@ -5,7 +5,7 @@ from typing import List
 import tldextract as tld
 from config import logger
 from intel_entry import IntelEntry
-import socket
+import dns.resolver
 
 
 class Indicator:
@@ -180,8 +180,17 @@ class Indicator:
             self.etp_fqdn = self.fqdn + "."
 
     def get_resolved_ip(self):
+        resolver = dns.resolver.Resolver()
+        resolver.nameservers = ["8.8.8.8"]
         try:
-            resolved_ip = socket.gethostbyname(self.fqdn)
-            self.resolved_ip = resolved_ip.strip() + "/32" if resolved_ip else resolved_ip
-        except socket.gaierror:
-            self.resolved_ip = None
+            answer = resolver.resolve(self.fqdn, "A")
+            self.resolved_ips = [ip.address for ip in answer]
+        except dns.resolver.NXDOMAIN:
+            self.resolved_ips = []
+            return "Domain does not exist"
+        except dns.resolver.NoAnswer:
+            self.resolved_ips = []
+            return "No answer from DNS"
+        except dns.resolver.Timeout:
+            self.resolved_ips = []
+            return "DNS query timed out"

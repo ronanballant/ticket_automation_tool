@@ -8,6 +8,8 @@ from indicator import Indicator
 class Ticket:
     all_tickets = []
     ticket_ids = {}
+    tickets_in_progress = {}
+    previous_ticket_data = {}
     whitelist_domains = [
         "abuse.ch",
         "abuseipdb.com",
@@ -227,3 +229,19 @@ class Ticket:
             in_progress_dict.append(ticket_dict)
             
             json.dump(in_progress_dict, file, indent=4)
+
+    @classmethod
+    def load_ticket_data(cls, tickets_in_progress_file):
+        with open(tickets_in_progress_file, "r") as file:
+            if file:
+                Ticket.previous_ticket_data = json.load(file)
+
+    @classmethod
+    def create_tickets(cls):
+        for ticket in Ticket.previous_ticket_data:
+            Ticket.from_dict(ticket)
+
+    @classmethod
+    def get_tickets_in_progress(cls):
+        for ticket in Ticket.previous_ticket_data:
+            Ticket.tickets_in_progress[ticket.get("ticket_id")] = True

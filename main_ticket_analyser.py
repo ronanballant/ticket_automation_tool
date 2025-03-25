@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="sps",
+        default="etp",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -121,8 +121,14 @@ def run_process():
         logger.error(f"Failed to fetch tickets: {e}")
         return
 
+
+    logger.info(f"Loading ticket data from {tickets_in_progress_file}")
+    Ticket.load_ticket_data(tickets_in_progress_file)
+    logger.info(f"Creating ticket instances")
+    Ticket.get_tickets_in_progress()
+
     if not tickets:
-        logger.error(f"No tickets in {queue.upper()} queue")
+        logger.info(f"No tickets in {queue.upper()} queue... exiting script")
         return
 
     try:
@@ -145,6 +151,9 @@ def run_process():
     print("Creating tickets")
     logger.info("Creating tickets")
     for ticket, values in tickets.items():
+        in_progress = Ticket.tickets_in_progress.get(ticket, False)
+        if in_progress is True:
+            continue
         ips = values.get("ips")
         ticket_id = ticket
         fqdns = values.get("fqdns")
@@ -207,7 +216,7 @@ def run_process():
                 try:
                     print(f"Querying VT")
                     logger.info(f"Querying VT")
-                    vt_fetcher = VirusTotalFetcher(indicator)
+                    vt_fetcher = VirusTotalFetcher(indicator, indicator.fqdn)
                     vt_fetcher.prepare_indicator()
                     vt_fetcher.set_vt_link()
                     vt_fetcher.get_previous_query()
@@ -265,26 +274,41 @@ def run_process():
                             intel_fetcher.assign_results()
 
                             if indicator.is_in_intel is True:
-                                indicator.matched_ioc = indicator.candidate
+                                indicator.matched_ioc = indicator.candidate[:-1]
+                                if indicator.matched_ioc != indicator.fqdn:
+                                    vt_fetcher = VirusTotalFetcher(indicator, indicator.matched_ioc)
+                                    vt_fetcher.prepare_indicator()
+                                    vt_fetcher.set_vt_link()
+                                    vt_fetcher.get_previous_query()
+                                    if not vt_fetcher.previous_vt_query:
+                                        vt_fetcher.rescan = False
+                                        vt_fetcher.get_external_data()
+                                        vt_fetcher.scan_domain()
+                                        vt_fetcher.analyse_vt_rescan()
+                                        vt_fetcher.save_results()
+                                        if vt_fetcher.indicator.has_vt_data is True:
+                                            vt_fetcher.get_domain_attributions()
+                                    if (
+                                        not vt_fetcher.previous_vt_query
+                                        and vt_fetcher.indicator.has_vt_data
+                                    ):
+                                        vt_fetcher.write_vt_data()
                                 break
                             else:
-                                if candidate == indicator.candidates[-1]:
-                                    indicator.get_resolved_ip()
+                                if indicator.ticket.ticket_type.lower() == "fp":
+                                    if candidate == indicator.candidates[-1]:
+                                        indicator.get_resolved_ip()
 
-                                    if indicator.resolved_ip:
-                                        intel_fetcher.query_resolved_ip()
+                                        if indicator.resolved_ips:
+                                            intel_fetcher.query_resolved_ip()
 
-                                        if indicator.ip_in_intel is True:
-                                            intel_fetcher.attributes_assigned = False
-                                            intel_fetcher.assign_results()
-                                            indicator.matched_ioc = (
-                                                indicator.resolved_ip
-                                            )
-                                            indicator.matched_ioc_type = "IPV4"
-
-                        if intel_fetcher.previous_intel is None:
-                            intel_fetcher.write_intel_file()
-
+                                            if indicator.ip_in_intel is True:
+                                                intel_fetcher.attributes_assigned = False
+                                                intel_fetcher.assign_results()
+                                                indicator.matched_ioc = (
+                                                    indicator.resolved_ip
+                                                )
+                                                indicator.matched_ioc_type = "IPV4"
                     except Exception as e:
                         print(f"Failed to query intel for {indicator.fqdn}: {e}")
                         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")

@@ -15,17 +15,19 @@ class VirusTotalFetcher:
     vt_request_count = 0
     vt_api_threshold = 200
 
-    def __init__(self, indicator) -> None:
+    def __init__(self, indicator, ioc) -> None:
         self.indicator = indicator
+        self.ioc = ioc
         self.previous_vt_query = None
         
     def set_vt_link(self):
         self.indicator.vt_link = (
-            f"https://www.virustotal.com/gui/domain/{self.indicator.fqdn}/detection"
+            f"https://www.virustotal.com/gui/domain/{self.ioc}/detection"
         )
 
     def prepare_indicator(self) -> None:
         self.indicator.fqdn = self.indicator.fqdn.replace("[", "").replace("]", "")
+        self.ioc = self.ioc.replace("[", "").replace("]", "")
         if self.indicator.indicator_type.lower() == "domain":
             if self.indicator.fqdn[-1] == ".":
                 self.indicator.fqdn = self.indicator.fqdn[:-1]
@@ -76,7 +78,7 @@ class VirusTotalFetcher:
             
     def get_previous_query(self):
         try:
-            self.previous_vt_query = VirusTotalFetcher.previous_queries.get(self.indicator.fqdn)
+            self.previous_vt_query = VirusTotalFetcher.previous_queries.get(self.ioc)
 
             if self.previous_vt_query:
                 self.indicator.vt_indications = self.previous_vt_query.get("vt_indications")
@@ -97,7 +99,7 @@ class VirusTotalFetcher:
             raise
 
     def scan_domain(self):
-        self.vt_analysis_url = f"https://www.virustotal.com/api/v3/domains/{self.indicator.fqdn}/analyse"
+        self.vt_analysis_url = f"https://www.virustotal.com/api/v3/domains/{self.ioc}/analyse"
 
         headers = {
             "accept": "application/json",
@@ -147,7 +149,7 @@ class VirusTotalFetcher:
     def get_external_data(self):
         if VirusTotalFetcher.vt_request_count <= VirusTotalFetcher.vt_api_threshold:
             VirusTotalFetcher.vt_request_count += 1
-            fqdn = self.indicator.fqdn
+            fqdn = self.ioc
             request_headers = {
                 "Accept": "application/json",
                 "x-apikey": vt_api_key,
@@ -175,7 +177,7 @@ class VirusTotalFetcher:
             logger.error("VT query failed - API quota reached")
 
     def save_results(self):
-        VirusTotalFetcher.previous_queries[self.indicator.fqdn] = {
+        VirusTotalFetcher.previous_queries[self.ioc] = {
             "vt_indications": self.indicator.vt_indications,
             "creation_date": self.indicator.creation_date,
             "last_scanned": self.indicator.last_scanned,

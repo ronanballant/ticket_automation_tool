@@ -101,7 +101,7 @@ if __name__ == "__main__":
             summary_ticket, {}
         )
 
-        logger.info(f"Changes approved - fetching {summary_ticket}")
+        logger.info(f"Fetching {summary_ticket}")
         approval_finder.open_jira_ticket()
         logger.info(f"Parsing {summary_ticket} description")
         approval_finder.parse_ticket()

@@ -29,6 +29,8 @@ class ResponseCreator:
             "PARTIALLY_MALICIOUS_MALWARE",
             "SOPHOS_REPOSITORY",
             "VIRUS_TOTAL_MALWARE",
+            "NOMINUM_IP_FRESH_MILK_TPS_MALWARE_IPS",
+            "NOMINUM_IP_FRESH_MILK_TPS_UNIDENTIFIED_IPS"
         ]
 
         phishing_source_list = [
@@ -129,7 +131,8 @@ class ResponseCreator:
 
     def generate_comment_response(self):
         self.indicator.is_resolved = True
-
+        if self.indicator.ip_in_intel is True:
+            self.indicator.indicator_resolution = "In Progress"
         if self.indicator.indicator_resolution.lower() == "in progress":
             self.indicator.is_resolved = False
             self.indicator.ticket.requires_approval = True
