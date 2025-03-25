@@ -79,7 +79,7 @@ if __name__ == "__main__":
         logger.info(f"No open summary tickets. Exiting Script")
         exit()
 
-    logger.info(f"Getting open summary tickets")
+    logger.info(f"Opening current tickets")
     approval_finder.open_current_tickets()
     approval_finder.create_tickets()
 
