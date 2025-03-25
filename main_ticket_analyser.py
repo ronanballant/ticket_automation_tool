@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="etp",
+        default="sps",
         type=str,
         help="Enter sps or etp to choose a queue",
     )

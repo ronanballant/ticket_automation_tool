@@ -150,7 +150,14 @@ class TicketResponder:
         description = "\n".join(description_list)
 
         headers = {"Content-Type": "application/json"}
-        date = datetime.strftime(datetime.fromtimestamp(self.time), "%Y-%m-%d %H:00")
+        
+        server_name = os.uname().nodename 
+        if "t4tools" in server_name:
+            date = datetime.strftime(datetime.fromtimestamp(self.time) + timedelta(hours=2), "%Y-%m-%d %H:00")
+        elif "muc" in server_name:    
+            date = datetime.strftime(datetime.fromtimestamp(self.time) - timedelta(hours=1), "%Y-%m-%d %H:00")
+        else:
+            date = datetime.strftime(datetime.fromtimestamp(self.time), "%Y-%m-%d %H:00")
 
         data = {
             "fields": {
