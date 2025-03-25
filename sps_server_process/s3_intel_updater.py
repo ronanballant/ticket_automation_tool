@@ -7,7 +7,7 @@ import re
 import requests
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-from config import (api_key, destination_region, directory_prefix, get_logger,
+from config import (api_key, destination_region, directory_prefix, empty_file_path, get_logger,
                     secops_s3_aws_access_key, secops_s3_aws_secret_key,
                     secops_s3_bucket, secops_s3_endpoint,
                     sps_intel_update_s3_path, update_responses_s3_path)
@@ -141,9 +141,16 @@ if __name__ == "__main__":
         secops_s3_aws_secret_key,
         directory_prefix,
     )
+
     s3_client.initialise_client()
+    s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
     s3_client.read_s3_file(sps_intel_update_s3_path)
     data = s3_client.file_content.strip().split("\n")
+
+    if data[0] == "empty":
+        logger.info("No updates to process... Exiting process")
+        exit()
+
     logger.info(f"FQDNs to search: {data}")
     intel_updates = [row.strip().replace("'","") for row in data]
     logger.info(f"intel_updates: {intel_updates}")
@@ -166,3 +173,4 @@ if __name__ == "__main__":
             json.dump(responses, file, indent=4)
 
         s3_client.write_file("intel_update_responses.json", update_responses_s3_path)
+        s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
