@@ -2,7 +2,7 @@ from s3_client import S3Client
 import csv
 import json
 from ioc_query import IocQuery
-from config import (destination_region, directory_prefix, get_logger, results_path,
+from config import (destination_region, directory_prefix, empty_file_path, get_logger, results_path,
                     search_fqdns_path, secops_s3_aws_access_key,
                     secops_s3_aws_secret_key, secops_s3_bucket, secops_s3_endpoint, 
                     sps_intel_results_local_file, search_fqdns_local_file)
@@ -58,6 +58,7 @@ logger.info(f"Reading S3 file {search_fqdns_path}")
 s3_client.read_s3_file(search_fqdns_path)
 data = s3_client.file_content.strip().split("\n")
 fqdns = [fqdn.strip().replace("[.]", ".") for fqdn in data]
+
 if fqdns[0] == "empty":
     with open("is_s3_running.csv", "w") as file:
         file.writelines("false")
@@ -82,8 +83,8 @@ logger.info(f"Writing results file to /home/azuser/secops_scripts/sps_ticket_aut
 with open("/home/azuser/secops_scripts/sps_ticket_automation/s3_results.json", "a") as file:
     json.dump(results, file, indent=4)
 
-logger.info(f"Writing empty S3 file to {results_path}")
 s3_client.write_file("/home/azuser/secops_scripts/sps_ticket_automation/s3_results.json", results_path)
+s3_client.write_file(empty_file_path, search_fqdns_path)
 
 
 logger.info(f"Writing 'false' to is_s3_running.csv")
