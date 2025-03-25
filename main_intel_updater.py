@@ -220,6 +220,8 @@ if __name__ == "__main__":
                 key_handler.get_ssh_key()
 
                 git_manager = GitRepoManager(logger, etp_intel_repo)
+                logger.info("Starting SSH Agent")
+                git_manager.start_ssh_agent()
                 logger.info("Adding SSH Keys")
                 git_manager.add_ssh_key(ssh_key_path)
                 logger.info("Checkout master...")
@@ -243,6 +245,7 @@ if __name__ == "__main__":
                     git_manager.push_changes(branch_name)
                     git_manager.get_pr_link()
                     approval_finder.add_summary_comment(git_manager.pr_comment)
+                    git_manager.kill_ssh_agent()
                     key_handler.remove_ssh_keys()
             else:
                 intel_processor.update_triggered = True

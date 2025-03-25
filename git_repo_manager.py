@@ -106,3 +106,6 @@ class GitRepoManager:
         except Exception as e:
             self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
             sys.exit(1)
+
+    def kill_ssh_agent(self):
+        subprocess.run(["ssh-agent", "-k"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
