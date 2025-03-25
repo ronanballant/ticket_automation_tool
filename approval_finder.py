@@ -68,9 +68,8 @@ class ApprovalFinder:
     def get_open_summary_tickets(self):
         with open(self.open_summary_tickets_file, "r") as file:
             reader = csv.reader(file)
-            for x in reader:
-                print(x)
-            self.open_summary_tickets = [ticket[0] for ticket in reader]
+            self.open_summary_tickets = [ticket[0] for ticket in reader if ticket[0]]
+            print(self.open_summary_tickets)
 
     def group_tickets(self):
         self.grouped_tickets = {}
