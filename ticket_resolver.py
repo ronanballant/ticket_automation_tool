@@ -1,15 +1,15 @@
-from config import logger
 
 
 class TicketResolver:
     DAYS_SINCE_CREATION = 30  # days since creation
 
-    def __init__(self, indicator, rules) -> None:
+    def __init__(self, logger, indicator, rules) -> None:
+        self.logger = logger
         self.indicator = indicator
         self.rules = rules
 
     def prepare_fp_rule_query(self):
-        logger.info("Preparing data for rule matching")
+        self.logger.info("Preparing data for rule matching")
 
         if self.indicator.ticket.queue == "SPS":
             self.indicator.is_filtered = "-"
@@ -48,7 +48,7 @@ class TicketResolver:
     def match_rule(self):
         if self.indicator.subdomain_only is False:
             if self.indicator.e_list_entry is False:
-                logger.info(
+                self.logger.info(
                     f"Matching {self.indicator.fqdn} data against rule set"
                 )
                 print(f"Matching {self.indicator.fqdn} to rule set")
@@ -159,7 +159,7 @@ class TicketResolver:
                                     print(
                                         f"Error: No 'age' Value to Match Rule Set. age: {self.indicator.domain_age}"
                                     )
-                                    logger.info(
+                                    self.logger.info(
                                         f"Error: No 'age' Value to Match Rule Set. age: {self.indicator.domain_age}"
                                     )
                                     self.indicator.indicator_resolution = "In Progress"
@@ -168,7 +168,7 @@ class TicketResolver:
                                 print(
                                     f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.indicator.category_strength}"
                                 )
-                                logger.info(
+                                self.logger.info(
                                     f"Error: No 'category_strength' Value to Match Rule Set. category_strength: {self.indicator.category_strength}"
                                 )
                                 self.indicator.indicator_resolution = "In Progress"
@@ -177,7 +177,7 @@ class TicketResolver:
                             print(
                                 f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.indicator.is_filtered}"
                             )
-                            logger.info(
+                            self.logger.info(
                                 f"Error: No 'is_filtered' Value to Match Rule Set. is_filtered: {self.indicator.is_filtered}"
                             )
                             self.indicator.indicator_resolution = "In Progress"
@@ -186,7 +186,7 @@ class TicketResolver:
                         print(
                             f"Error: No Type Match in Rule Set. Type: {self.indicator.ticket_type}"
                         )
-                        logger.info(
+                        self.logger.info(
                             f"Error: No Type Match in Rule Set. Type: {self.indicator.ticket_type}"
                         )
                         self.indicator.indicator_resolution = "In Progress"
@@ -195,7 +195,7 @@ class TicketResolver:
                     print(
                         f"Error: No Queue Match in Rule Set. Queue: {self.indicator.queue}"
                     )
-                    logger.info(
+                    self.logger.info(
                         f"Error: No Queue Match in Rule Set. Queue: {self.indicator.queue}"
                     )
                     self.indicator.indicator_resolution = "In Progress"
@@ -204,7 +204,7 @@ class TicketResolver:
                 self.indicator.indicator_resolution = "In Progress"
                 self.indicator.rule_response = f"FQDN in exact match lists with {self.indicator.url_count} paths"
         else:
-            logger.info(
+            self.logger.info(
                 f"{self.indicator.fqdn} only has {self.indicator.subdomain_count} sudomains in intel"
             )
             self.indicator.indicator_resolution = "In Progress"

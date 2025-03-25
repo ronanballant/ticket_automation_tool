@@ -2,13 +2,14 @@ import ast
 import subprocess
 
 from config import (destination_ip, destination_username, intel_fetcher_path,
-                    jump_host_ip, jump_host_username, logger, private_key_path)
+                    jump_host_ip, jump_host_username, private_key_path)
 
 
 class SPSIntelFetcher:
     previous_queries = {}
 
-    def __init__(self, indicator) -> None:
+    def __init__(self, logger, indicator) -> None:
+        self.logger = logger
         self.indicator = indicator
         self.results = {}
 
@@ -19,7 +20,7 @@ class SPSIntelFetcher:
             )
         except Exception as e:
             print(f"Failed to read previous Intel query: {e}")
-            logger.error(f"Failed to read previous Intel query: {e}")
+            self.logger.error(f"Failed to read previous Intel query: {e}")
             raise
 
     def fetch_intel(self):
@@ -36,17 +37,17 @@ class SPSIntelFetcher:
             result = subprocess.run(
                 ssh_command, check=True, capture_output=True, text=True
             )
-            logger.info(f"SPS Intel query sent for {self.indicator.candidate}")
+            self.logger.info(f"SPS Intel query sent for {self.indicator.candidate}")
             self.results = ast.literal_eval(result.stdout)
             SPSIntelFetcher.previous_queries[self.indicator.candidate] = self.results
         except Exception as e:
             print(f"Error querying SPS intel: {e}")
-            logger.error(f"Error querying SPS intel: {e}")
+            self.logger.error(f"Error querying SPS intel: {e}")
             self.results = None
 
     def assign_results(self):
         try:
-            logger.info(f"Attributing intel to {self.indicator.fqdn}")
+            self.logger.info(f"Attributing intel to {self.indicator.fqdn}")
             result = self.results.get(self.indicator.candidate)
             if result:
                 self.indicator.is_in_intel = str_to_bool(result.get("is_in_intel", "-"))
@@ -74,7 +75,7 @@ class SPSIntelFetcher:
                 self.no_intel()
         except Exception as e:
             print(f"Error attributing SPS intel: {e}")
-            logger.error(f"Error attributing SPS intel: {e}")
+            self.logger.error(f"Error attributing SPS intel: {e}")
             raise
 
     def no_intel(self):

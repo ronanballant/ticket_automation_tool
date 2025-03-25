@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from config import (blacklist_file, cert_path, jira_ticket_api, key_path, logger)
+from config import (blacklist_file, cert_path, jira_ticket_api, key_path)
 from intel_entry import IntelEntry
 from ticket import Ticket
 
@@ -18,7 +18,8 @@ class TicketResponder:
     service_type_sent = []
     resolved_tickets = []
 
-    def __init__(self, secops_member):
+    def __init__(self, logger, secops_member):
+        self.logger = logger
         self.assignee = secops_member
         self.label = ""
         self.time = int(time.time())
@@ -51,20 +52,20 @@ class TicketResponder:
                 self.add_comment()
                 ticket.comment_failed = False
                 print(f"Responded to {ticket.ticket_id}")
-                logger.info(f"Responded to {ticket.ticket_id}")
+                self.logger.info(f"Responded to {ticket.ticket_id}")
             except Exception as e:
                 ticket.comment_failed = True
                 print(f"Failed to respond to {ticket.ticket_id}: {e}")
-                logger.info(f"Failed to respond to {ticket.ticket_id}: {e}")
+                self.logger.info(f"Failed to respond to {ticket.ticket_id}: {e}")
         else:
             print(f"No resolution for {ticket.ticket_id} - Open to analyse")
-            logger.info(f"No resolution for {ticket.ticket_id} - Open to analyse")
+            self.logger.info(f"No resolution for {ticket.ticket_id} - Open to analyse")
 
         self.close_ticket()
 
     def create_sps_ticket(self, tickets):
         print("\nCreating SPS ticket")
-        logger.info("Creating SPS ticket")
+        self.logger.info("Creating SPS ticket")
 
         for ticket in tickets:
             for indicator in ticket.indicators:
@@ -174,7 +175,7 @@ class TicketResponder:
             )
         except Exception as e:
             self.summary_ticket_created = False
-            logger.error(f"Failed to create SPS jira ticket - Error: {e}")
+            self.logger.error(f"Failed to create SPS jira ticket - Error: {e}")
             print(f"\nFailed to create SPS jira ticket - Error: {e}\n")
         else:
             issue_decoded = response.content.decode("utf-8")
@@ -194,11 +195,11 @@ class TicketResponder:
                     None,
                     None,
                 )
-                logger.info(f"SPS ticket {self.ticket.ticket_id} created succesfully")
+                self.logger.info(f"SPS ticket {self.ticket.ticket_id} created succesfully")
                 print(f"\nSPS ticket {self.ticket.ticket_id} created succesfully\n")
             else:
                 self.summary_ticket_created = False
-                logger.info(f"Failed to create SPS ticket. Status code: {status}")
+                self.logger.info(f"Failed to create SPS ticket. Status code: {status}")
                 print(f"\nFailed to create SPS ticket. Status code: {status}\n")
 
             self.ticket.comment = (
@@ -210,7 +211,7 @@ class TicketResponder:
 
     def create_etp_ticket(self, tickets):
         print("\nCreating ETP ticket")
-        logger.info("Creating ETP ticket")
+        self.logger.info("Creating ETP ticket")
         whitelist_additions = []
         blacklist_removals = []
         blacklist_additions = []
@@ -353,7 +354,7 @@ class TicketResponder:
             )
         except Exception as e:
             self.summary_ticket_created = False
-            logger.error(f"Failed to create ETP jira ticket - Error: {e}")
+            self.logger.error(f"Failed to create ETP jira ticket - Error: {e}")
             print(f"\nFailed to create ETP jira ticket - Error: {e}\n")
         else:
             issue_decoded = response.content.decode("utf-8")
@@ -374,10 +375,10 @@ class TicketResponder:
                     None,
                 )
                 print(f"\nETP ticket {self.summary_ticket} created succesfully\n")
-                logger.info(f"ETP ticket {self.summary_ticket} created succesfully")
+                self.logger.info(f"ETP ticket {self.summary_ticket} created succesfully")
             else:
                 self.summary_ticket_created = False
-                logger.info(f"Failed to create ETP ticket. Status code: {status}")
+                self.logger.info(f"Failed to create ETP ticket. Status code: {status}")
                 print(f"\nFailed to create ETP ticket. Status code: {status}\n")
             self.ticket.comment = (
                 "*Open Cases*\n"
@@ -387,7 +388,7 @@ class TicketResponder:
             )
 
     def add_comment(self):
-        logger.info(f"Adding comment to {self.ticket.ticket_id}")
+        self.logger.info(f"Adding comment to {self.ticket.ticket_id}")
         url = jira_ticket_api + self.ticket.ticket_id
 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
@@ -445,7 +446,7 @@ class TicketResponder:
             ):
                 new_status = "Closed"
                 print(f"Changing {self.ticket.ticket_id} status to '{new_status}'")
-                logger.info(
+                self.logger.info(
                     f"Changing {self.ticket.ticket_id} status to '{new_status}'"
                 )
                 try:
@@ -453,7 +454,7 @@ class TicketResponder:
                     pass
                 except Exception as e:
                     print(f"Failed to close {self.ticket.ticket_id}: {e}")
-                    logger.info(f"Failed to close {self.ticket.ticket_id}: {e}")
+                    self.logger.info(f"Failed to close {self.ticket.ticket_id}: {e}")
                 else:
                     self.ticket.time_to_resolution = (
                         self.current_time
@@ -461,13 +462,13 @@ class TicketResponder:
                     )
             else:
                 print(f"Changing {self.ticket.ticket_id} status to 'In Progress'")
-                logger.info(f"Changing {self.ticket.ticket_id} status to 'In Progress'")
+                self.logger.info(f"Changing {self.ticket.ticket_id} status to 'In Progress'")
                 try:
                     self.transition_ticket(transitions[:-1])
                     pass
                 except Exception as e:
                     print(f"Failed to change {self.ticket.ticket_id} status: {e}")
-                    logger.info(f"Failed to change {self.ticket.ticket_id} status: {e}")
+                    self.logger.info(f"Failed to change {self.ticket.ticket_id} status: {e}")
         else:
             ticket_triaged = "31"
             ticket_in_progress = "221"
@@ -483,11 +484,11 @@ class TicketResponder:
                 self.add_service_type()
                 try:
                     print(f"Changing {self.ticket.ticket_id} status to 'Closed'")
-                    logger.info(f"Updating {self.ticket.ticket_id} status to 'Closed'")
+                    self.logger.info(f"Updating {self.ticket.ticket_id} status to 'Closed'")
                     self.transition_ticket(transitions)
                 except Exception as e:
                     print(f"Failed to close {self.ticket.ticket_id}: {e}")
-                    logger.info(f"Failed to close {self.ticket.ticket_id}: {e}")
+                    self.logger.info(f"Failed to close {self.ticket.ticket_id}: {e}")
                 else:
                     self.ticket.time_to_resolution = (
                         self.current_time
@@ -496,13 +497,13 @@ class TicketResponder:
             else:
                 try:
                     print(f"Changing {self.ticket.ticket_id} status to 'In Progress'")
-                    logger.info(
+                    self.logger.info(
                         f"Updating {self.ticket.ticket_id} status to 'In Progress'"
                     )
                     self.transition_ticket(transitions[:-1])
                 except Exception as e:
                     print(f"Failed to update {self.ticket.ticket_id} status: {e}")
-                    logger.info(f"Failed to update {self.ticket.ticket_id} status: {e}")
+                    self.logger.info(f"Failed to update {self.ticket.ticket_id} status: {e}")
 
     def process_attributes(self, indicator):
         for attribute, value in vars(indicator).items():
@@ -532,7 +533,7 @@ class TicketResponder:
             }
 
             print(f"Adding service type")
-            logger.info(f"Adding service type {self.ticket.ticket_id}")
+            self.logger.info(f"Adding service type {self.ticket.ticket_id}")
             try:
                 response = requests.put(
                     url,
@@ -544,7 +545,7 @@ class TicketResponder:
                 pass
             except Exception as e:
                 print(f"Failed to add service type: {e}")
-                logger.info(f"Failed to add service type: {e}")
+                self.logger.info(f"Failed to add service type: {e}")
             else:
                 status = str(response.status_code)
                 if status.startswith("2"):
@@ -553,7 +554,7 @@ class TicketResponder:
                     print(
                         f"\nFailed to add service type to {self.ticket.ticket_id}. Status code: {status}"
                     )
-                    logger.error(
+                    self.logger.error(
                         f"Failed to add service type to {self.ticket.ticket_id}. Status code: {status}"
                     )
 
@@ -572,7 +573,7 @@ class TicketResponder:
                 )
                 pass
             except Exception as e:
-                logger.error(
+                self.logger.error(
                     f"Failed to transition {self.ticket.ticket_id} status - Error: {e}"
                 )
                 print(
@@ -582,10 +583,10 @@ class TicketResponder:
             else:
                 status = str(response.status_code)
                 if status.startswith("2"):
-                    logger.info(f"Status updated succesfully")
+                    self.logger.info(f"Status updated succesfully")
                     print(f"Status updated succesfully")
                 else:
-                    logger.info(
+                    self.logger.info(
                         f"Failed to update status {self.ticket.ticket_id}. Status code: {status}"
                     )
                     print(
@@ -606,7 +607,7 @@ class TicketResponder:
                     break
 
             print(f"{self.manual_blacklist_entry} removed from the blacklist")
-            logger.info(f"{self.manual_blacklist_entry} removed from the blacklist")
+            self.logger.info(f"{self.manual_blacklist_entry} removed from the blacklist")
         except FileNotFoundError:
             print(f"Error: File '{blacklist_file}' not found.")
         except Exception as e:

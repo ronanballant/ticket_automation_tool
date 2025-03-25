@@ -2,12 +2,12 @@ import csv
 import json
 import time
 
-from config import logger
 from ticket import Ticket
 
 
 class SummaryCreator:
-    def __init__(self, tickets_in_progress_file, open_summary_tickets_file) -> None:
+    def __init__(self, logger, tickets_in_progress_file, open_summary_tickets_file) -> None:
+        self.logger = logger
         self.tickets_in_progress_file = tickets_in_progress_file
         self.open_summary_tickets_file = open_summary_tickets_file
 

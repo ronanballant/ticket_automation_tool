@@ -11,11 +11,12 @@ from config import (asheik_cert_name, asheik_key_name, asheik_ssh_key_name,
 
 
 class KeyHandler:
-    def __init__(self, cert_path, key_path, ssh_key_path, analyst="rballant") -> None:
+    def __init__(self, logger, cert_path, key_path, ssh_key_path, analyst="rballant") -> None:
         self.analyst = "rballant"
         self.cert_path = cert_path
         self.key_path = key_path
         self.ssh_key_path = ssh_key_path
+        self.logger = logger
 
     def remove_personal_keys(self):
         os.remove(self.cert_path)

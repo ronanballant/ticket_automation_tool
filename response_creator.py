@@ -1,14 +1,13 @@
 import re
 
-from config import logger
-
 
 class ResponseCreator:
-    def __init__(self, indicator) -> None:
+    def __init__(self, logger, indicator) -> None:
+        self.logger = logger
         self.indicator = indicator
 
     def generate_source_response(self):
-        logger.info(f"Generating source based response for {self.indicator.fqdn}")
+        self.logger.info(f"Generating source based response for {self.indicator.fqdn}")
         external_source_list = [
             "SOPHOS",
             "SURBL",

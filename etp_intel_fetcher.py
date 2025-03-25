@@ -1,11 +1,11 @@
-from config import logger
 from typing import List
 
 
 class ETPIntelFetcher:
     previous_queries = {}
 
-    def __init__(self, indicator, mongo_connection) -> None:
+    def __init__(self, logger, indicator, mongo_connection) -> None:
+        self.logger = logger
         self.indicator = indicator
         self.mongo_connection = mongo_connection
         self.attributes_assigned: bool = False
@@ -31,7 +31,7 @@ class ETPIntelFetcher:
             )
         except Exception as e:
             print(f"Failed to read previous Intel query: {e}")
-            logger.error(f"Failed to read previous Intel query: {e}")
+            self.logger.error(f"Failed to read previous Intel query: {e}")
             raise
 
     def query_intel(self):
@@ -82,7 +82,7 @@ class ETPIntelFetcher:
                 # }
             except Exception as e:
                 print(f"Error querying ETP intel: {e}")
-                logger.error(f"Error querying ETP intel: {e}")
+                self.logger.error(f"Error querying ETP intel: {e}")
                 self.no_intel()
 
     def assign_results(self):
@@ -90,7 +90,7 @@ class ETPIntelFetcher:
             sources = []
             etp_fqdn_status_list = []
             self.indicator.intel_source_list = []
-            logger.info(f"Attributing intel to {self.indicator.fqdn}")
+            self.logger.info(f"Attributing intel to {self.indicator.fqdn}")
             if self.indicator.mongo_results:
                 for record in self.indicator.mongo_results:
                     sources.append(", ".join(record.get("source_feed", [])))
@@ -202,7 +202,7 @@ class ETPIntelFetcher:
                     break
             except Exception as e:
                 print(f"Error querying ETP intel: {e}")
-                logger.error(f"Error querying ETP intel: {e}")
+                self.logger.error(f"Error querying ETP intel: {e}")
 
 def get_category_level(list_id):
     if list_id in [1, 2, 3]:

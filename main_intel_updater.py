@@ -8,7 +8,7 @@ from config import (blacklist_file, cert_path, destination_region,
                     directory_prefix, etp_intel_repo,
                     etp_processed_tickets_file, etp_tickets_in_progress_file,
                     intel_processor_path, jira_search_api, jira_ticket_api,
-                    key_path, logger, open_etp_summary_tickets_file,
+                    key_path, get_logger, open_etp_summary_tickets_file,
                     open_sps_summary_tickets_file, search_fqdns_local_file,
                     secops_feed_file, secops_s3_aws_access_key, secops_s3_aws_secret_key,
                     secops_s3_bucket, secops_s3_endpoint,
@@ -23,7 +23,10 @@ from s3_client import S3Client
 from ticket import Ticket
 
 
-def close_summary(approval_finder, summary_ticket):
+logger = get_logger("logs_intel_updater.txt")
+
+
+def close_summary(logger, approval_finder, summary_ticket):
     logger.info(f"Removing {summary_ticket} from {open_summary_tickets_file}")
     approval_finder.clear_processed_summary_ticket()
 
@@ -65,6 +68,7 @@ if __name__ == "__main__":
     logger.info(f"open_summary_tickets_file path = {open_summary_tickets_file}")
 
     approval_finder = ApprovalFinder(
+        logger,
         tickets_in_progress_file,
         open_summary_tickets_file,
         processed_tickets_file,
@@ -126,16 +130,15 @@ if __name__ == "__main__":
         logger.info(f"Finding resolved tickets")
         approval_finder.find_approved_intel_changes()
         logger.info(f"Closing resolved tickets")
-        approval_finder.close_resolved_tickets()
+        # approval_finder.close_resolved_tickets()
         logger.info(f"Summarising closed tickets")
         approval_finder.generate_approval_summary()
         logger.info(f"Sending summary comment to {summary_ticket}")
-        approval_finder.update_summary()
+        # approval_finder.update_summary()
 
         logger.info(f"Processing Intel changes")
-        intel_processor = IntelProcessor(IntelEntry.all_intel_entries)
+        intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries)
         intel_processor.process_indicators()
-        logger.info(f"Adding Intel changes to {sps_intel_update_file}")
 
         if queue == "SPS":
             if intel_processor.intel_entries:
@@ -213,11 +216,15 @@ if __name__ == "__main__":
                 intel_processor.update_triggered = True
         elif queue == "ETP":
             if intel_processor.intel_entries:
+                logger.info("Loading SSH Keys")
                 key_handler.get_ssh_key()
 
-                git_manager = GitRepoManager(etp_intel_repo)
+                git_manager = GitRepoManager(logger, etp_intel_repo)
+                logger.info("Adding SSH Keys")
                 git_manager.add_ssh_key(ssh_key_path)
+                logger.info("Checkout master...")
                 git_manager.checkout_master()
+                logger.info("Pulling repo...")
                 git_manager.git_pull()
 
                 intel_processor.add_to_etp_whitelist()

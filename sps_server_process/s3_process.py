@@ -2,12 +2,16 @@ from s3_client import S3Client
 import csv
 import json
 from ioc_query import IocQuery
-from config import (destination_region, directory_prefix, logger, results_path,
+from config import (destination_region, directory_prefix, get_logger, results_path,
                     search_fqdns_path, secops_s3_aws_access_key,
                     secops_s3_aws_secret_key, secops_s3_bucket, secops_s3_endpoint, 
                     sps_intel_results_local_file, search_fqdns_local_file)
 
-def get_domain_data(domains):
+
+logger = get_logger("logs_s3_ticket_analyser.txt")
+
+
+def get_domain_data(logger, domains):
     results = {}
     for domain in domains:
         logger.info(f"Searching intel for {domain}")
@@ -41,6 +45,7 @@ with open("is_s3_running.csv", "w") as file:
 
 logger.info(f"Initialising S3 client")
 s3_client = S3Client(
+    logger,
     destination_region,
     secops_s3_endpoint,
     secops_s3_bucket,
@@ -63,7 +68,7 @@ logger.info(f"FQDNs found... \n{fqdns}")
 with open("/home/azuser/secops_scripts/sps_ticket_automation/s3_results.json", "w") as file:
     file.writelines("")
 
-results = get_domain_data(fqdns)
+results = get_domain_data(logger, fqdns)
 
 logger.info(f"Writing empty file to {search_fqdns_local_file}")
 with open(search_fqdns_local_file, "w") as file:

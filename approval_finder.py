@@ -6,7 +6,7 @@ from typing import Dict, List
 import Levenshtein 
 from datetime import datetime
 import requests
-from config import cert_path, key_path, logger
+from config import cert_path, key_path
 from ticket import Ticket
 
 
@@ -19,12 +19,14 @@ class ApprovalFinder:
 
     def __init__(
         self,
+        logger,
         tickets_in_progress_file: str,
         open_summary_tickets_file: str,
         processed_tickets_file: str,
         jira_search_api: str,
         jira_ticket_api: str
     ) -> None:
+        self.logger = logger
         self.tickets_in_progress_file: str = tickets_in_progress_file
         self.open_summary_tickets_file: str = open_summary_tickets_file
         self.processed_tickets_file: str = processed_tickets_file
@@ -107,7 +109,7 @@ class ApprovalFinder:
             )
         except Exception as e:
             print(f"JIRA ticket API Failed: {e}")
-            logger.error(f"JIRA ticket API Failed: {e}")
+            self.logger.error(f"JIRA ticket API Failed: {e}")
             raise
 
     def get_comments(self):
@@ -134,8 +136,8 @@ class ApprovalFinder:
             if len(comment_words) < 3:
                 if any(Levenshtein.distance(self.approval_word, word) <= 1 for word in comment_words):
                     self.intel_changes_approved = True
-                    logger.info(f"Changes approved by {self.comment_owner}")
-                    logger.info(f"Approval comment: {comment_text}")
+                    self.logger.info(f"Changes approved by {self.comment_owner}")
+                    self.logger.info(f"Approval comment: {comment_text}")
                     break
 
     def parse_reviewed_changes(self):
@@ -188,8 +190,8 @@ class ApprovalFinder:
     def parse_ticket(self):
         try:
             if self.req.status_code == 200:
-                logger.info(f"Retrieved {self.summary_ticket}")
-                logger.info(f"Parsing {self.summary_ticket}")
+                self.logger.info(f"Retrieved {self.summary_ticket}")
+                self.logger.info(f"Parsing {self.summary_ticket}")
                 result_dict = json.loads(self.req.text)
                 issues = result_dict.get("issues")
                 if issues:
@@ -218,12 +220,12 @@ class ApprovalFinder:
                 print(
                     f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
                 )
-                logger.info(
+                self.logger.info(
                     f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
                 )
         except Exception as e:
             print(f"Failed to parse ticket response: {e}")
-            logger.error(f"Failed to parse ticket response: {e}")
+            self.logger.error(f"Failed to parse ticket response: {e}")
             raise
 
     def find_approved_intel_changes(self):
@@ -306,15 +308,15 @@ class ApprovalFinder:
                 verify=False,
             )
         except Exception as e:
-            logger.error(f"Failed to assign {ticket_id} - Error: {e}")
-            logger.info(f"Response text: {response.text}")
+            self.logger.error(f"Failed to assign {ticket_id} - Error: {e}")
+            self.logger.info(f"Response text: {response.text}")
         else:
             status = str(response.status_code)
             if status.startswith("2"):
-                logger.info(f"{ticket_id} assigned to {self.comment_owner} succesfully")
+                self.logger.info(f"{ticket_id} assigned to {self.comment_owner} succesfully")
             else:
-                logger.error(f"Failed to assign {ticket_id} Error - {response.text}")
-                logger.info(f"Response text: {response.text}")
+                self.logger.error(f"Failed to assign {ticket_id} Error - {response.text}")
+                self.logger.info(f"Response text: {response.text}")
 
     def close_resolved_tickets(self):
         self.current_time = datetime.now()
@@ -334,12 +336,12 @@ class ApprovalFinder:
 
                 else:
                     print(f"Unknown queue for ticket: {ticket.ticket_id}")
-                    logger.info(f"Unknown queue for ticket: {ticket.ticket_id}")
+                    self.logger.info(f"Unknown queue for ticket: {ticket.ticket_id}")
 
                 headers = {"Content-Type": "application/json"}
 
                 print(f"Closing {ticket.ticket_id}")
-                logger.info(f"Closing {ticket.ticket_id}")
+                self.logger.info(f"Closing {ticket.ticket_id}")
                 try:
                     for transition in transitions:
                         payload = {
@@ -354,18 +356,18 @@ class ApprovalFinder:
                         )
                 except Exception as e:
                     self.unapproved_tickets.append(ticket.ticket_id)
-                    logger.error(f"Failed to close {ticket.ticket_id} - Error: {e}")
-                    logger.info(f"Response text: {response.text}")
+                    self.logger.error(f"Failed to close {ticket.ticket_id} - Error: {e}")
+                    self.logger.info(f"Response text: {response.text}")
                     print(f"\nFailed to close {ticket.ticket_id} - Error: {e}\n")
 
                 self.approved_tickets.append(ticket.ticket_id)
                 ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
-                logger.info(f"{ticket.ticket_id} closed succesfully")
+                self.logger.info(f"{ticket.ticket_id} closed succesfully")
                 print(f"{ticket.ticket_id} closed succesfully")
                 self.update_assignee(ticket.ticket_id)
             else:
                 self.unapproved_tickets.append(ticket.ticket_id)
-                logger.info(f"{ticket.ticket_id} not approved.")
+                self.logger.info(f"{ticket.ticket_id} not approved.")
 
     def generate_approval_summary(self):
         start = f"Hi {self.analyst_handle},\n\n*Closed Tickets:*\n"
@@ -387,7 +389,7 @@ class ApprovalFinder:
 
     def update_summary(self):
         if self.send_comment is True:
-            logger.info(f"Adding comment to {self.summary_ticket}")
+            self.logger.info(f"Adding comment to {self.summary_ticket}")
             url = self.jira_ticket_api + self.summary_ticket
 
             headers = {"Accept": "application/json", "Content-Type": "application/json"}
@@ -405,20 +407,20 @@ class ApprovalFinder:
             status = str(response.status_code)
             if status.startswith("2"):
                 self.summary_updated = True
-                logger.info("Summary comment added")
+                self.logger.info("Summary comment added")
                 print("Summary comment added")
             else:
                 self.summary_updated = False
-                logger.info(f"Summary comment not added - Status: {status}")
+                self.logger.info(f"Summary comment not added - Status: {status}")
                 print(f"Summary comment not added - Status: {status}")
         else:
-            logger.info(f"No comment for {self.summary_ticket}")
+            self.logger.info(f"No comment for {self.summary_ticket}")
             self.summary_updated = False
 
     def add_summary_comment(self, comment):
         if self.send_comment is True:
             self.comment_sent = True
-            logger.info(f"Adding comment to {self.summary_ticket}")
+            self.logger.info(f"Adding comment to {self.summary_ticket}")
             url = self.jira_ticket_api + self.summary_ticket
 
             headers = {"Accept": "application/json", "Content-Type": "application/json"}
@@ -435,13 +437,13 @@ class ApprovalFinder:
 
             status = str(response.status_code)
             if status.startswith("2"):
-                logger.info("Comment added")
+                self.logger.info("Comment added")
                 print("Summary comment added")
             else:
-                logger.info(f"Comment not added - Status: {status}")
+                self.logger.info(f"Comment not added - Status: {status}")
                 print(f"Summary comment not added - Status: {status}")
         else:
-            logger.info(f"No comment for {self.summary_ticket}")
+            self.logger.info(f"No comment for {self.summary_ticket}")
 
     def to_dict(self):
         tickets_dict = [ticket.to_dict() for ticket in self.tickets]
@@ -470,7 +472,7 @@ class ApprovalFinder:
                 if not processed_tickets_dict:
                     processed_tickets_dict = []
             except json.JSONDecodeError:
-                logger.error(f"Error loading {self.processed_tickets_file}")
+                self.logger.error(f"Error loading {self.processed_tickets_file}")
                 processed_tickets_dict = []
 
         with open(self.processed_tickets_file, "w") as file:
@@ -500,7 +502,7 @@ class ApprovalFinder:
             try:
                 tickets_in_progress = json.load(file) or []
             except json.JSONDecodeError:
-                logger.error(f"Error loading {self.tickets_in_progress_file}")
+                self.logger.error(f"Error loading {self.tickets_in_progress_file}")
                 tickets_in_progress = []
 
         tickets_in_progress = [
@@ -517,7 +519,7 @@ class ApprovalFinder:
     #         if .ticket.queue = "sps":
 
     def generate_data_string(self, indicator):
-        logger.info(f"Creating intel data string for {indicator.fqdn}")
+        self.logger.info(f"Creating intel data string for {indicator.fqdn}")
         date = datetime.today().strftime("%m/%d/%Y")
         reason = f"Internal|Carrier|SecOps|{indicator.ticket.ticket_id}"
 

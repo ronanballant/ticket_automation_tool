@@ -4,7 +4,8 @@ import tb_cred
 
 
 class InitialiseMongo:
-    def __init__(self) -> None:
+    def __init__(self, logger) -> None:
+        self.logger = logger
         self.mongo_db_cred = tb_cred.login["mongo_int"]
         self.client = MongoClient(self.mongo_db_cred)
         self.client.server_info()

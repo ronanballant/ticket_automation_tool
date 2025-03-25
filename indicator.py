@@ -3,7 +3,6 @@ from datetime import timedelta
 from typing import List
 
 import tldextract as tld
-from config import logger
 from intel_entry import IntelEntry
 import dns.resolver
 
@@ -11,10 +10,12 @@ import dns.resolver
 class Indicator:
     def __init__(
         self,
+        logger,
         fqdn: str,
         ticket,
         indicator_type: str,
     ) -> None:
+        self.logger = logger
         self.fqdn: str = fqdn
         self.indicator_type: str = indicator_type
         self.ticket = ticket
@@ -64,7 +65,7 @@ class Indicator:
         self.matched_ioc: str = "-"
 
     def clean_fqdn(self):
-        logger.info(f"Cleaning {self.fqdn}")
+        self.logger.info(f"Cleaning {self.fqdn}")
         characters_to_remove = [
             "[",
             "]",
@@ -94,7 +95,7 @@ class Indicator:
                 self.whitelisted_domain = False
         else:
             print(f"Skipping {self.fqdn} - Could not identify parent domain")
-            logger.info(f"Skipping {self.fqdn} - Could not identify parent domain")
+            self.logger.info(f"Skipping {self.fqdn} - Could not identify parent domain")
 
     def is_file_extension(self):
         file_extension_pattern = r"\.(txt|exc|tsv|csv|py|json|ext)$"
@@ -107,13 +108,13 @@ class Indicator:
             if self.file_extension is False:
                 self.legitimate_indicator = True
                 print(f"Indicator Found: {self.fqdn}")
-                logger.info(f"{self.fqdn} indicator instance created")
+                self.logger.info(f"{self.fqdn} indicator instance created")
             else:
                 print(f"Skipping {self.fqdn} - File extension detected")
-                logger.info(f"Skipping {self.fqdn} - File extension detected")
+                self.logger.info(f"Skipping {self.fqdn} - File extension detected")
         else:
             print(f"Skipping {self.fqdn} - Whitelisted domain")
-            logger.info(f"Skipping {self.fqdn} - Whitelisted domain")
+            self.logger.info(f"Skipping {self.fqdn} - Whitelisted domain")
 
     def add_indicator_to_ticket(self):
         if self.legitimate_indicator is True:

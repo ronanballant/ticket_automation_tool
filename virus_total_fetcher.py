@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 import requests
-from config import logger, previous_queries_file, vt_api_key
+from config import previous_queries_file, vt_api_key
 
 
 class VirusTotalFetcher:
@@ -15,7 +15,8 @@ class VirusTotalFetcher:
     vt_request_count = 0
     vt_api_threshold = 200
 
-    def __init__(self, indicator, ioc) -> None:
+    def __init__(self, logger, indicator, ioc) -> None:
+        self.logger = logger
         self.indicator = indicator
         self.ioc = ioc
         self.previous_vt_query = None
@@ -95,7 +96,7 @@ class VirusTotalFetcher:
                 self.indicator.attribution_description = "-"
         except Exception as e:
             print(f"Failed to read previous VT query: {e}")
-            logger.error(f"Failed to read previous VT query: {e}")
+            self.logger.error(f"Failed to read previous VT query: {e}")
             raise
 
     def scan_domain(self):
@@ -156,12 +157,12 @@ class VirusTotalFetcher:
             }
             fqdn_vt_api = f"https://www.virustotal.com/api/v3/domains/{fqdn}"
             try:
-                logger.info(f"{fqdn}: Fetching VT data")
+                self.logger.info(f"{fqdn}: Fetching VT data")
                 response = requests.get(fqdn_vt_api, headers=request_headers)
             except Exception as e:
                 self.no_data()
                 print(f"Error querying VT API: {e}")
-                logger.error(f"Error querying VT API: {e}")
+                self.logger.error(f"Error querying VT API: {e}")
                 raise
             else:
                 if response.status_code == 200:
@@ -170,11 +171,11 @@ class VirusTotalFetcher:
                 else:
                     self.no_data()
                     print(f"Bad VT Response for: {response.status_code}")
-                    logger.error(f"Bad VT Response for: {response.status_code}")
+                    self.logger.error(f"Bad VT Response for: {response.status_code}")
         else:
             self.no_data()
             print("VT query failed - API quota reached")
-            logger.error("VT query failed - API quota reached")
+            self.logger.error("VT query failed - API quota reached")
 
     def save_results(self):
         VirusTotalFetcher.previous_queries[self.ioc] = {
@@ -210,7 +211,7 @@ class VirusTotalFetcher:
                 else:
                     self.indicator.days_since_last_scanned = 365
             else:
-                logger.info(f"Attributing VT data")
+                self.logger.info(f"Attributing VT data")
                 data_response = self.decoded_response.get("data", {})
                 filtered_response = data_response.get("attributes", {})
                 last_analysis_stats = filtered_response.get("last_analysis_stats", {})
@@ -242,12 +243,12 @@ class VirusTotalFetcher:
                     self.indicator.days_since_last_scanned = 365
         except Exception as e:
             print(f"Error attributing VT data to {self.indicator.fqdn}: {e}")
-            logger.error(f"Error attributing VT data to {self.indicator.fqdn}: {e}")
+            self.logger.error(f"Error attributing VT data to {self.indicator.fqdn}: {e}")
             self.no_data()
             raise
 
     def no_data(self):
-        logger.info(f"Assigning no data to {self.indicator.fqdn}")
+        self.logger.info(f"Assigning no data to {self.indicator.fqdn}")
         self.indicator.has_vt_data = False
         self.indicator.vt_indications = "-"
         self.indicator.creation_date = "-"

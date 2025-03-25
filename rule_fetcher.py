@@ -1,42 +1,43 @@
 import csv
 
-from config import logger, rule_path
+from config import rule_path
 
 
 class RuleFetcher:
-    def __init__(self) -> None:
+    def __init__(self, logger) -> None:
+        self.logger = logger
         try:
             self.open_file()
             self.create_rule_table()
         except Exception as e:
-            logger.error(f"Failed to initialize RuleFetcher: {e}")
+            self.logger.error(f"Failed to initialize RuleFetcher: {e}")
             raise
 
     def open_file(self):
         print("Loading Rule-Set")
-        logger.info("Loading Rule-Set")
+        self.logger.info("Loading Rule-Set")
         try:
             with open(rule_path, "r", newline="", encoding="utf-8") as csv_file:
                 file = csv.DictReader(csv_file, delimiter=",")
                 self.file = [row for row in file]
             print("Rule-Set loaded successfully")
-            logger.info("Rule-Set loaded successfully")
+            self.logger.info("Rule-Set loaded successfully")
         except FileNotFoundError:
             print(f"File not found: {rule_path}")
-            logger.error(f"File not found: {rule_path}")
+            self.logger.error(f"File not found: {rule_path}")
             raise
         except csv.Error as e:
             print(f"CSV parsing error: {e}")
-            logger.error(f"CSV parsing error: {e}")
+            self.logger.error(f"CSV parsing error: {e}")
             raise
         except Exception as e:
             print(f"Unexpected error while loading Rule-Set: {e}")
-            logger.error(f"Unexpected error while loading Rule-Set: {e}")
+            self.logger.error(f"Unexpected error while loading Rule-Set: {e}")
             raise
 
     def create_rule_table(self):
         print("Generating rule table")
-        logger.info("Generating rule table")
+        self.logger.info("Generating rule table")
         try:
             transformed_data = {}
 
@@ -121,14 +122,14 @@ class RuleFetcher:
 
             self.rules = transformed_data
             print("Rule table generated successfully")
-            logger.info("Rule table generated successfully")
+            self.logger.info("Rule table generated successfully")
         except KeyError as e:
             print(f"Missing expected key in CSV data: {e}")
-            logger.error(f"Missing expected key in CSV data: {e}")
+            self.logger.error(f"Missing expected key in CSV data: {e}")
             raise
         except Exception as e:
             print(f"Unexpected error while generating rule table: {e}")
-            logger.error(f"Unexpected error while generating rule table: {e}")
+            self.logger.error(f"Unexpected error while generating rule table: {e}")
             raise
 
 

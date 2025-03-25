@@ -1,18 +1,18 @@
 import subprocess
 import os
 import sys
-from config import logger
 import re
 
 
 class GitRepoManager:
-    def __init__(self, repo_path):
+    def __init__(self, logger, repo_path):
+        self.logger = logger
         self.repo_path = repo_path
 
     def run_command(self, command):
         result = subprocess.run(command, cwd=self.repo_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.returncode != 0:
-            logger.error(f"Github error: {' '.join(command)}\n{result.stderr}")
+            self.logger.error(f"Github error: {' '.join(command)}\n{result.stderr}")
             raise Exception(f"Command failed: {' '.join(command)}\n{result.stderr}")
         
         self.result = result.stdout.strip()

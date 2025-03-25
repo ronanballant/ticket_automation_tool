@@ -1,14 +1,15 @@
 import fileinput
 import csv
 from config import (destination_ip, destination_username, 
-                    intel_processor_path, jump_host_ip, jump_host_username, logger, private_key_path,
+                    intel_processor_path, jump_host_ip, jump_host_username, private_key_path,
                     destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_file, sps_intel_update_file)
 from typing import List
 import subprocess
 
 
 class IntelProcessor:
-    def __init__(self, intel_entries) -> None:
+    def __init__(self, logger, intel_entries) -> None:
+        self.logger = logger
         self.intel_entries = intel_entries
         self.whitelist: List[str] = []
         self.whitelist_removal: List[str] = []
@@ -26,17 +27,17 @@ class IntelProcessor:
                     if intel_entry.intel_list.lower() == "whitelist":
                         if intel_entry.operation.lower() == "add":
                             self.whitelist.append(intel_entry.approved_intel_change)
-                            logger.info(f"{intel_entry.indicator.fqdn} identified for the allow list.")
+                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the allow list.")
                         elif intel_entry.operation.lower() == "remove":
                             self.whitelist_removal.append(intel_entry.approved_intel_change)
-                            logger.info(f"{intel_entry.indicator.fqdn} identified for whitelist removal.")
+                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for whitelist removal.")
                     elif intel_entry.intel_list.lower() == "blacklist":
                         if intel_entry.operation.lower() == "add":
                             self.blacklist.append(intel_entry.approved_intel_change)
-                            logger.info(f"{intel_entry.indicator.fqdn} identified for the block list.")
+                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the block list.")
                         elif intel_entry.operation.lower() == "remove":
                             self.manual_blacklist.append(intel_entry.approved_intel_change)
-                            logger.info(f"{intel_entry.indicator.fqdn} identified for manual blacklist removal.")
+                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for manual blacklist removal.")
 
         self.whitelist = list(set(self.whitelist))
         self.blacklist = list(set(self.blacklist))
@@ -44,30 +45,39 @@ class IntelProcessor:
     
     def add_to_etp_whitelist(self):
         if self.whitelist:
+            self.logger.info("Adding to manual whitelist")
             with open(whitelist_file, "a", newline="") as file:
                 writer = csv.writer(file, lineterminator="\n")
                 for intel_entry in self.whitelist:
-                    logger.info(f"Adding {intel_entry} to {whitelist_file}")
+                    self.logger.info(f"Adding {intel_entry} to {whitelist_file}")
                     entry = [x.strip() for x in intel_entry.strip().split(",")]
                     writer.writerow(entry)
+        else:
+            self.logger.info("No additions for manual whitelist")
 
     def add_to_etp_blacklist(self):
         if self.blacklist:
+            self.logger.info("Adding to SecOps Feed")
             with open(secops_feed_file, "a", newline="") as file:
                 writer = csv.writer(file, lineterminator="\n")
                 for intel_entry in self.blacklist:
-                    logger.info(f"Adding {intel_entry} to {secops_feed_file}")
+                    self.logger.info(f"Adding {intel_entry} to {secops_feed_file}")
                     entry = [x.strip() for x in intel_entry.strip().split(",")]
                     writer.writerow(entry)
+        else:
+            self.logger.info("No additions for SecOps Feed")
 
     def remove_from_etp_manual_blacklist(self):
         if self.manual_blacklist:
+            self.logger.info("Removing from manual blacklist")
             with fileinput.input(blacklist_file, inplace=True) as file:
                 for line in file:
                     if line.strip() in self.manual_blacklist:
-                        logger.info(f"Removing {line} from {blacklist_file}")
+                        self.logger.info(f"Removing {line} from {blacklist_file}")
                     else:
                         print(line, end="")
+        else:
+            self.logger.info("No removals for manual blacklist")
 
     def add_to_sps_intel_file(self):
         if self.whitelist or self.blacklist:
@@ -94,12 +104,12 @@ class IntelProcessor:
             try:
                 result = subprocess.run(scp_command, check=True, capture_output=True, text=True)
                 print("File copied successfully.")
-                logger.debug(result.stdout)
+                self.logger.debug(result.stdout)
             except subprocess.CalledProcessError as e:
-                logger.error(f"ERROR Processing Whitelist Entities: {e}")
-                logger.error(f"SCP command failed!")
-                logger.error(f"Error message: {e.stderr}")
-                logger.error(f"Return code: {e.returncode}")
+                self.logger.error(f"ERROR Processing Whitelist Entities: {e}")
+                self.logger.error(f"SCP command failed!")
+                self.logger.error(f"Error message: {e.stderr}")
+                self.logger.error(f"Return code: {e.returncode}")
                 self.add_error_comment = True
                 self.error_comment = (
                     "Failed to transfer intel updates to VM.\n"
@@ -130,13 +140,13 @@ class IntelProcessor:
                             + intel_update_results
                             + "{code}"
                         )
-                    logger.debug(result.stdout)
+                    self.logger.debug(result.stdout)
                 except subprocess.CalledProcessError as e:
                     self.update_triggered = False
-                    logger.error(f"ERROR Processing Whitelist Entities: {e}")
-                    logger.error(f"SSH command failed!")
-                    logger.error(f"Error message: {e.stderr}")
-                    logger.error(f"Return code: {e.returncode}")
+                    self.logger.error(f"ERROR Processing Whitelist Entities: {e}")
+                    self.logger.error(f"SSH command failed!")
+                    self.logger.error(f"Error message: {e.stderr}")
+                    self.logger.error(f"Return code: {e.returncode}")
                     self.add_error_comment = True
                     self.error_comment = (
                         "*{color:#de350b}!!! Failed to trigger intel update !!!{color}*"

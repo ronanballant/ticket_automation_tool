@@ -1,11 +1,11 @@
-from config import logger
 from typing import List
 
 
 class IntelEntry:
     all_intel_entries = []
 
-    def __init__(self, indicator, entry, intel_list, operation) -> None:
+    def __init__(self, logger, indicator, entry, intel_list, operation) -> None:
+        self.logger = logger
         self.indicator = indicator
         self.entry = entry
         self.intel_list = intel_list

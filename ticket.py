@@ -59,6 +59,7 @@ class Ticket:
 
     def __init__(
         self, 
+        logger,
         ticket_id: str,
         ticket_type: str,
         queue: str,
@@ -69,6 +70,7 @@ class Ticket:
         ips: List[str],
         creation_time: str,
     ) -> None:
+        self.logger = logger
         self.ticket_id: str = ticket_id
         self.ticket_type: str = ticket_type
         self.queue: str = queue

@@ -4,13 +4,14 @@ from datetime import datetime
 import requests
 import tldextract as tld
 
-from config import jira_search_api, logger
+from config import jira_search_api
 
 class TicketFetcher:
     requests.packages.urllib3.disable_warnings(
         requests.urllib3.exceptions.InsecureRequestWarning
     )
-    def __init__(self, cert_path, key_path, queue="sps") -> None:
+    def __init__(self, logger, cert_path, key_path, queue="sps") -> None:
+        self.logger = logger
         self.cert_path = cert_path
         self.key_path = key_path
         self.queue = queue
@@ -36,14 +37,14 @@ class TicketFetcher:
             )
         except Exception as e:
             print(f"JIRA ticket API Failed: {e}")
-            logger.error(f"JIRA ticket API Failed: {e}")
+            self.logger.error(f"JIRA ticket API Failed: {e}")
             raise
 
     def parse_tickets(self):
         try:
             if self.req.status_code == 200:
-                logger.info("Tickets Retrieved")
-                logger.info("Parsing tickets")
+                self.logger.info("Tickets Retrieved")
+                self.logger.info("Parsing tickets")
                 result_dict = json.loads(self.req.text)
                 issues = result_dict.get("issues")
                 self.tickets = {}
@@ -106,12 +107,12 @@ class TicketFetcher:
                 print(
                     f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
                 )
-                logger.info(
+                self.logger.info(
                     f"Error Fetching Tickets - Bad Status code: {self.req.status_code}"
                 )
         except Exception as e:
             print(f"Failed to parse ticket response: {e}")
-            logger.error(f"Failed to parse ticket response: {e}")
+            self.logger.error(f"Failed to parse ticket response: {e}")
             raise
 
 def is_guardicore(customer, description):
@@ -122,7 +123,7 @@ def is_guardicore(customer, description):
     return True if "guardicore" in text.lower() else False
 
 def clean_description(description):
-    logger.info("Cleaning description")
+    self.logger.info("Cleaning description")
     description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
     pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
     description = re.sub(pattern, " ", description)
@@ -151,7 +152,7 @@ def clean_description(description):
     if "carrier support team" in description:
         description = description.split("carrier support team")[0]
 
-    logger.info("Description cleaned")
+    self.logger.info("Description cleaned")
     return description
 
 def collect_urls(description):
@@ -193,7 +194,7 @@ def collect_fqdns(description):
         if tld.extract(fqdn).suffix:
             fqdns.append(fqdn)
         else:
-            logger.info(f"Invalid Suffix for {fqdn}")
+            self.logger.info(f"Invalid Suffix for {fqdn}")
 
     return list(set(fqdns))
 
@@ -213,12 +214,12 @@ def collect_indicators(summary, desc, ticket):
     summary = summary.lower()
     desc = desc.lower()
     text = summary + " " + desc
-    logger.info("Extracting entities from tickets")
+    self.logger.info("Extracting entities from tickets")
     desc = clean_description(text)
     desc, urls = collect_urls(desc)
     fqdns = collect_fqdns(desc)
     ips = collect_ips(desc)
-    logger.info(
+    self.logger.info(
         f"Extracted {len(set(fqdns))} FQDNs, {len(set(ips))} IPs and {len(set(urls))} URLs from {ticket}"
     )
     return fqdns, urls, ips

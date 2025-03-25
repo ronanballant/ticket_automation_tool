@@ -6,7 +6,7 @@ import json
 import os
 import time
 
-from config import (cert_path, etp_tickets_in_progress_file, key_path, logger,
+from config import (cert_path, etp_tickets_in_progress_file, key_path, get_logger,
                     secops_member, sps_tickets_in_progress_file, ssh_key_path,
                     destination_region, directory_prefix, results_path,
                     search_fqdns_path, secops_s3_aws_access_key,
@@ -25,6 +25,9 @@ from ticket_fetcher import TicketFetcher
 from ticket_resolver import TicketResolver
 from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
+
+
+logger = get_logger("logs_ticket_analyser.txt")
 
 
 def parse_args():
@@ -49,12 +52,13 @@ def muc_server_process(fqdns, server_name):
     fqdns = list(set(fqdns))
     if "muc" in server_name:    
         s3_client = S3Client(
+            logger,
             destination_region,
             secops_s3_endpoint,
             secops_s3_bucket,
             secops_s3_aws_access_key,
             secops_s3_aws_secret_key,
-            directory_prefix,
+            directory_prefix
         )
         s3_client.initialise_client()
 
@@ -63,7 +67,7 @@ def muc_server_process(fqdns, server_name):
             for fqdn in fqdns:
                 writer.writerow([fqdn])
 
-        print(f"\nwriting s3 file to {search_fqdns_path}")
+        logger.info(f"\nWriting s3 file to {search_fqdns_path}")
         s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
         s3_client.write_file(search_fqdns_local_file, results_path)
         
@@ -72,8 +76,8 @@ def muc_server_process(fqdns, server_name):
         retry_count = 0
         while recheck and retry_count < max_retries:
             time.sleep(60) 
-            print(f"Atttempt {retry_count+1}")
-            print(f"Reading S3 file")
+            logger.info(f"Atttempt {retry_count+1}")
+            logger.info(f"Reading S3 file")
             s3_client.read_s3_file(results_path)
             
             if s3_client.file_content:
@@ -84,10 +88,12 @@ def muc_server_process(fqdns, server_name):
                     else:
                         retry_count += 1
                 except json.JSONDecodeError as e:
-                    print(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
                     retry_count += 1  # Keep retrying if JSON is invalid
             else:
                 retry_count += 1  
+        
+        if retry_count > max_retries:
+            logger.info("Retry count exceeded... Exiting script")
 
         SPSIntelFetcher.previous_queries = json_results.copy()
 
@@ -102,7 +108,7 @@ def run_process():
 
     print("\nFetching Keys")
     try:
-        key_handler = KeyHandler(cert_path, key_path, ssh_key_path)
+        key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
         key_handler.get_key_names()
         key_handler.get_personal_keys()
     except Exception as e:
@@ -112,7 +118,7 @@ def run_process():
 
     print("\nFetching Tickets")
     try:
-        ticket_fetcher = TicketFetcher(cert_path, key_path, queue)
+        ticket_fetcher = TicketFetcher(logger, cert_path, key_path, queue)
         ticket_fetcher.get_tickets()
         ticket_fetcher.parse_tickets()
         tickets = ticket_fetcher.tickets
@@ -132,7 +138,7 @@ def run_process():
         return
 
     try:
-        rule_set = RuleFetcher()
+        rule_set = RuleFetcher(logger)
     except Exception as e:
         print(f"\nFailed to load Rule-Set: {e}")
         logger.error(f"Failed to load Rule-Set: {e}")
@@ -142,7 +148,7 @@ def run_process():
         try:
             print("Initialising Mongo connection")
             logger.info("Initialising Mongo connection")
-            mongo_connection = InitialiseMongo()
+            mongo_connection = InitialiseMongo(logger)
         except Exception as e:
             print(f"Failed to intialise Mongo connection: {e}")
             logger.error(f"Failed to intialise Mongo connection: {e}")
@@ -166,6 +172,7 @@ def run_process():
 
         if ticket_type == "FN" or ticket_type == "FP":
             new_ticket = Ticket(
+                logger,
                 ticket_id,
                 ticket_type,
                 queue.upper(),
@@ -186,7 +193,7 @@ def run_process():
         logger.info(f"Creating Indicator Instances for {ticket.ticket_id}")
         print(f"\nCreating Indicator Instances for {ticket.ticket_id}")
         for fqdn in ticket.fqdns:
-            indicator = Indicator(fqdn, ticket, indicator_type)
+            indicator = Indicator(logger, fqdn, ticket, indicator_type)
             try:
                 indicator.clean_fqdn()
                 indicator.get_domain()
@@ -205,7 +212,7 @@ def run_process():
     if queue == "sps":
         muc_server_process(intel_search_fqdns, server_name)
 
-    responder = TicketResponder(secops_member)
+    responder = TicketResponder(logger, secops_member)
     try:
         for ticket in Ticket.all_tickets:
             print(f"\nProcessing {ticket.ticket_id}")
@@ -216,7 +223,7 @@ def run_process():
                 try:
                     print(f"Querying VT")
                     logger.info(f"Querying VT")
-                    vt_fetcher = VirusTotalFetcher(indicator, indicator.fqdn)
+                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.fqdn)
                     vt_fetcher.prepare_indicator()
                     vt_fetcher.set_vt_link()
                     vt_fetcher.get_previous_query()
@@ -244,7 +251,7 @@ def run_process():
                     try:
                         print("Querying SPS intel")
                         logger.info("Querying SPS intel")
-                        intel_fetcher = SPSIntelFetcher(indicator)
+                        intel_fetcher = SPSIntelFetcher(logger, indicator)
                         for candidate in indicator.candidates:
                             indicator.matched_ioc_type = "DOMAIN"
                             indicator.candidate = candidate
@@ -263,7 +270,7 @@ def run_process():
                     try:
                         print("Querying ETP intel")
                         logger.info("Querying ETP intel")
-                        intel_fetcher = ETPIntelFetcher(indicator, mongo_connection)
+                        intel_fetcher = ETPIntelFetcher(logger, indicator, mongo_connection)
 
                         for candidate in indicator.candidates:
                             indicator.matched_ioc_type = "DOMAIN"
@@ -276,7 +283,7 @@ def run_process():
                             if indicator.is_in_intel is True:
                                 indicator.matched_ioc = indicator.candidate[:-1]
                                 if indicator.matched_ioc != indicator.fqdn:
-                                    vt_fetcher = VirusTotalFetcher(indicator, indicator.matched_ioc)
+                                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.matched_ioc)
                                     vt_fetcher.prepare_indicator()
                                     vt_fetcher.set_vt_link()
                                     vt_fetcher.get_previous_query()
@@ -316,7 +323,7 @@ def run_process():
                 try:
                     print(f"Finding resolution")
                     logger.info("Finding resolution")
-                    ticket_resolver = TicketResolver(indicator, rule_set.rules)
+                    ticket_resolver = TicketResolver(logger, indicator, rule_set.rules)
                     ticket_resolver.prepare_fp_rule_query()
                     ticket_resolver.match_rule()
                 except Exception as e:
@@ -328,7 +335,7 @@ def run_process():
                 try:
                     print(f"Generating indicator specific response")
                     logger.info("Generating indicator specific response")
-                    response_creator = ResponseCreator(indicator)
+                    response_creator = ResponseCreator(logger, indicator)
                     response_creator.generate_source_response()
                     response_creator.generate_comment_response()
 

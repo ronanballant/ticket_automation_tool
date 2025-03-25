@@ -1,16 +1,19 @@
 #!/usr/bin/python3
 
 import csv
-import datetime
 import re
 
 import requests
-from config import api_key, logger, sps_intel_update_file
+from config import api_key, get_logger, sps_intel_update_file
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 
+logger = get_logger("logs_intel_updater.txt")
+
+
 class IntelUpdater:
-    def __init__(self, update_line) -> None:
+    def __init__(self, logger, update_line) -> None:
+        self.logger = logger
         self.update_line = update_line
         self.fqdn = ""
         self.ticket_id = ""
@@ -33,16 +36,16 @@ class IntelUpdater:
             if self.fqdn and self.ticket_id and self.feed:
                 self.valid_update = True
             else:
-                logger.info(f"Skipped - missing data: {update_data}")
+                self.logger.info(f"Skipped - missing data: {update_data}")
         else:
-            logger.info(f"Skipped - Not valid format: {update_data}")
+            self.logger.info(f"Skipped - Not valid format: {update_data}")
 
     def get_reason(self):
         self.reason = f"Internal|Carrier|SecOps|{self.ticket_id}"
-        logger.info(f"Created reason string: {self.reason}")
+        self.logger.info(f"Created reason string: {self.reason}")
 
     def get_update_parameters(self):
-        logger.info(f"Updating parameters")
+        self.logger.info(f"Updating parameters")
         if self.feed.lower() == "whitelist":
             self.intel_feed = "alexa-whitelist-additions"
             self.expiration_time = "3650 days"
@@ -63,7 +66,7 @@ class IntelUpdater:
             self.intel_feed = ""
             self.expiration_time = ""
             self.threat_id = ""
-        logger.info(f"Created parameters - feed: {self.intel_feed}, expiration: {self.expiration_time}, threat_id: {self.threat_id}")
+        self.logger.info(f"Created parameters - feed: {self.intel_feed}, expiration: {self.expiration_time}, threat_id: {self.threat_id}")
 
 
     def create_update_command(self):
@@ -76,10 +79,10 @@ class IntelUpdater:
             "confidence": 0.95,
             "api_key": api_key,
         }
-        logger.info(f"Created command: {self.command}")
+        self.logger.info(f"Created command: {self.command}")
 
     def execute_command(self):
-        logger.info(f"Executing command")
+        self.logger.info(f"Executing command")
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
         url = "https://fresh-milk-feeds.rad.nominum.com:51000/api/v1/entry/add"
@@ -87,12 +90,12 @@ class IntelUpdater:
         print(response.text)
         self.response_text = response.text
         if str(response.status_code).startswith("2"):
-            logger.info(f"{self.fqdn} added to {self.intel_feed}")
+            self.logger.info(f"{self.fqdn} added to {self.intel_feed}")
         else:
-            logger.info(f"Failed to add {self.fqdn} to {self.intel_feed}")
+            self.logger.info(f"Failed to add {self.fqdn} to {self.intel_feed}")
 
     def clean_domain(self):
-        logger.info(f"Cleaning {self.fqdn}")
+        self.logger.info(f"Cleaning {self.fqdn}")
         pattern = re.compile(
             r"^(?=.{1,253}$)((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}\.?$",
             re.IGNORECASE
@@ -118,10 +121,10 @@ class IntelUpdater:
             .replace("https:", "")
             .replace("www.", "")
         )
-        logger.info(f"Cleaned {self.fqdn}")
+        self.logger.info(f"Cleaned {self.fqdn}")
 
         if not pattern.match(self.fqdn):
-            logger.info(f"{self.fqdn} not a valid FQDN")
+            self.logger.info(f"{self.fqdn} not a valid FQDN")
             self.valid_update = False
 
 
@@ -133,7 +136,7 @@ if __name__ == "__main__":
 
     for row in intel_updates:
         if row[0]:
-            intel_updater = IntelUpdater(row[0])
+            intel_updater = IntelUpdater(logger, row[0])
             intel_updater.parse_update()
             intel_updater.clean_domain()
             intel_updater.get_update_parameters()
