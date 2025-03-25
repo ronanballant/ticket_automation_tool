@@ -48,8 +48,14 @@ def parse_args():
     else:
         return args
 
-def muc_server_process(fqdns, server_name):
+def muc_server_process(fqdns, server_name, key_handler):
     fqdns = list(set(fqdns))
+
+    if len(fqdns) < 1:
+        logger.info("No IOCs to process... Exiting Process")
+        key_handler.remove_personal_keys()
+        exit()
+        
     if "muc" in server_name:    
         s3_client = S3Client(
             logger,
@@ -67,7 +73,6 @@ def muc_server_process(fqdns, server_name):
             for fqdn in fqdns:
                 writer.writerow([fqdn])
 
-        logger.info(f"\nWriting s3 file to {search_fqdns_path}")
         s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
         s3_client.write_file(search_fqdns_local_file, results_path)
         
@@ -195,13 +200,14 @@ def run_process():
                 indicator.is_legitimate_indicator()
                 indicator.add_indicator_to_ticket()
                 indicator.get_candidates()
+                logger.info(f"Adding {indicator.fqdn} to intel search fqdns")
                 if indicator.legitimate_indicator is True:
                     intel_search_fqdns.append(indicator.fqdn)
             except Exception as e:
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
     if queue == "sps":
-        muc_server_process(intel_search_fqdns, server_name)
+        muc_server_process(intel_search_fqdns, server_name, key_handler)
 
     responder = TicketResponder(logger, secops_member)
     try:
