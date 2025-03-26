@@ -128,6 +128,7 @@ class Indicator:
         indicator_dict.pop("ticket", None)  
         indicator_dict.pop("mongo_results", None)  
         indicator_dict.pop("analysis_results", None)  
+        indicator_dict.pop("logger", None)  
 
         indicator_dict["intel_entries"] = intel_entries_dict 
 

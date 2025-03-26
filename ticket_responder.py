@@ -49,7 +49,7 @@ class TicketResponder:
         ticket.set_ticket_comment()
         if ticket.send_comment is True and ticket.block_comment is False:
             try:
-                self.add_comment()
+                # self.add_comment()
                 ticket.comment_failed = False
                 self.logger.info(f"Responded to {ticket.ticket_id}")
             except Exception as e:
@@ -58,7 +58,7 @@ class TicketResponder:
         else:
             self.logger.info(f"No resolution for {ticket.ticket_id} - Open to analyse")
 
-        self.close_ticket()
+        # self.close_ticket()
 
     def create_sps_ticket(self, tickets):
         self.logger.info("Creating SPS ticket")

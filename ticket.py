@@ -148,6 +148,7 @@ class Ticket:
             ticket_dict["time_to_resolution"] = self.time_to_resolution.total_seconds()  
 
         ticket_dict.pop("indicators", None)  
+        ticket_dict.pop("logger", None)  
 
         ticket_dict["indicators"] = indicators_dict 
 
