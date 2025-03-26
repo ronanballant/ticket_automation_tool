@@ -91,4 +91,5 @@ if __name__ == "__main__":
         )
         summary_creator.save_open_summary_ticket(responder.summary_ticket)
     
+    logger.info("Removing personal keys")
     key_handler.remove_personal_keys()

@@ -130,11 +130,11 @@ if __name__ == "__main__":
         logger.info(f"Finding resolved tickets")
         approval_finder.find_approved_intel_changes()
         logger.info(f"Closing resolved tickets")
-        # approval_finder.close_resolved_tickets()
+        approval_finder.close_resolved_tickets()
         logger.info(f"Summarising closed tickets")
         approval_finder.generate_approval_summary()
         logger.info(f"Sending summary comment to {summary_ticket}")
-        # approval_finder.update_summary()
+        approval_finder.update_summary()
 
         logger.info(f"Processing Intel changes")
         intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries)

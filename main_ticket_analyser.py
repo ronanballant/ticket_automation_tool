@@ -271,9 +271,9 @@ def run_process():
                             intel_fetcher.assign_results()
 
                             if indicator.is_in_intel is True:
-                                indicator.matched_ioc = indicator.candidate[:-1]
+                                indicator.matched_ioc = indicator.candidate
                                 if indicator.matched_ioc != indicator.fqdn:
-                                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.matched_ioc)
+                                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.matched_ioc[:-1])
                                     vt_fetcher.prepare_indicator()
                                     vt_fetcher.set_vt_link()
                                     vt_fetcher.get_previous_query()

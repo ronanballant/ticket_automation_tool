@@ -83,11 +83,12 @@ class TicketResponder:
         for indicator in self.sorted_indicators:
             self.process_attributes(indicator)
             self.queue = indicator.ticket.queue
+            ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.fqdn
             line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_feed}|{indicator.intel_source}|{indicator.intel_confidence}|[Virus Total Link|{indicator.vt_link}]|"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
-                    in_progress_line = f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
+                    in_progress_line = f"+++ {ioc},{indicator.ticket.ticket_id},whitelist"
                     intel_entry = IntelEntry(
                         self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -104,7 +105,7 @@ class TicketResponder:
                     indicator.ticket.possible_changes.append(in_progress_line)
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
-                whitelist_line = f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
+                whitelist_line = f"+++ {ioc},{indicator.ticket.ticket_id},whitelist"
                 intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
@@ -237,9 +238,10 @@ class TicketResponder:
             line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
+                ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.etp_fqdn
                 if indicator.ticket.ticket_type == "FP":
                     self.get_single_intel_source(indicator)
-                    in_progress_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                    in_progress_line = f"+++ {ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                     intel_entry = IntelEntry(
                         self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -256,7 +258,7 @@ class TicketResponder:
                         possible_changes.append(in_progress_line)
                         indicator.ticket.possible_changes.append(in_progress_line)
                 elif indicator.ticket.ticket_type == "FN":
-                    in_progress_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
+                    in_progress_line = f"+++ {indicator.etp_fqdn},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
                     intel_entry = IntelEntry(
                         self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -266,7 +268,7 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
                 self.get_single_intel_source(indicator)
-                whitelist_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                whitelist_line = f"+++ {ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                 intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
