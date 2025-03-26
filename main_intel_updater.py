@@ -113,7 +113,7 @@ if __name__ == "__main__":
         approval_finder.find_if_resolved()
 
         if approval_finder.process_summary_ticket is False:
-            close_summary(approval_finder, summary_ticket)
+            close_summary(logger, approval_finder, summary_ticket)
             continue
 
         logger.info(f"Fetching {summary_ticket} comments")
