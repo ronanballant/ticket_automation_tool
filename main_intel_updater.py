@@ -49,14 +49,14 @@ if __name__ == "__main__":
         processed_tickets_file = sps_processed_tickets_file
         open_summary_tickets_file = open_sps_summary_tickets_file
     elif server_name == "oth-mpbv4":
-        # queue = "SPS"
-        # tickets_in_progress_file = sps_tickets_in_progress_file
-        # processed_tickets_file = sps_processed_tickets_file
-        # open_summary_tickets_file = open_sps_summary_tickets_file
-        queue = "ETP"
-        tickets_in_progress_file = etp_tickets_in_progress_file
-        processed_tickets_file = etp_processed_tickets_file
-        open_summary_tickets_file = open_etp_summary_tickets_file
+        queue = "SPS"
+        tickets_in_progress_file = sps_tickets_in_progress_file
+        processed_tickets_file = sps_processed_tickets_file
+        open_summary_tickets_file = open_sps_summary_tickets_file
+        # queue = "ETP"
+        # tickets_in_progress_file = etp_tickets_in_progress_file
+        # processed_tickets_file = etp_processed_tickets_file
+        # open_summary_tickets_file = open_etp_summary_tickets_file
 
     elif server_name == "prod-galaxy-t4tools.dfw02.corp.akamai.com":
         queue = "ETP"
