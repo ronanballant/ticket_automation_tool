@@ -187,6 +187,7 @@ class TicketResponder:
             if status.startswith("2"):
                 self.summary_ticket_created = True
                 self.ticket = Ticket(
+                    self.logger,
                     self.summary_ticket,
                     "Summary",
                     "SPS",
