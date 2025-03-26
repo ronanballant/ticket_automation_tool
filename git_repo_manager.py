@@ -66,13 +66,19 @@ class GitRepoManager:
             agent_vars = {}
             for line in ssh_agent_output.stdout.splitlines():
                 if '=' in line:
-                    key, value = line.split('=', 1)
-                    agent_vars[key.strip()] = value.strip(';')
-            
-            for key, value in agent_vars.items():
-                if key in ["SSH_AUTH_SOCK", "SSH_AGENT_PID"]:
-                    os.environ[key] = value
-        
+                    clean_line = line.split(';')[0].strip()  # Remove any trailing '; export ...'
+                    key, value = clean_line.split('=', 1)
+                    agent_vars[key.strip()] = value.strip()
+
+
+            for key in ["SSH_AUTH_SOCK", "SSH_AGENT_PID"]:
+                if key in agent_vars:
+                    os.environ[key] = agent_vars[key]
+                    self.logger.info(f"{key}: {agent_vars[key]}")
+                else:
+                    self.logger.warning(f"{key} not found in ssh-agent output.")
+
+            self.logger.info("SSH agent started successfully.")
             self.logger.info(f'SSH_AUTH_SOCK: {os.environ.get("SSH_AUTH_SOCK")}')
             self.logger.info(f'SSH_AGENT_PID: {os.environ.get("SSH_AGENT_PID")}')
         except subprocess.CalledProcessError as e:
