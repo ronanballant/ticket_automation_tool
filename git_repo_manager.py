@@ -62,8 +62,6 @@ class GitRepoManager:
                 check=True,
             )
             self.logger.info("SSH agent started.")
-            self.logger.info(f'SSH_AUTH_SOCK: {os.environ.get("SSH_AUTH_SOCK")}')
-            self.logger.info(f'SSH_AGENT_PID: {os.environ.get("SSH_AGENT_PID")}')
 
             agent_vars = {}
             for line in ssh_agent_output.stdout.splitlines():
@@ -75,6 +73,8 @@ class GitRepoManager:
                 if key in ["SSH_AUTH_SOCK", "SSH_AGENT_PID"]:
                     os.environ[key] = value
         
+            self.logger.info(f'SSH_AUTH_SOCK: {os.environ.get("SSH_AUTH_SOCK")}')
+            self.logger.info(f'SSH_AGENT_PID: {os.environ.get("SSH_AGENT_PID")}')
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}")
             sys.exit(1)
