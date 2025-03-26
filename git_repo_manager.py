@@ -61,6 +61,9 @@ class GitRepoManager:
                 text=True,
                 check=True,
             )
+            self.logger.info("SSH agent started.")
+            self.logger.info(f'SSH_AUTH_SOCK: {os.environ.get("SSH_AUTH_SOCK")}')
+            self.logger.info(f'SSH_AGENT_PID: {os.environ.get("SSH_AGENT_PID")}')
 
             agent_vars = {}
             for line in ssh_agent_output.stdout.splitlines():
@@ -73,10 +76,10 @@ class GitRepoManager:
                     os.environ[key] = value
         
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}", file=sys.stderr)
+            self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}")
             sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
+            self.logger.error(f"Unexpected error: {str(e)}")
             sys.exit(1)
 
     def add_ssh_key(self, ssh_key):
@@ -87,10 +90,10 @@ class GitRepoManager:
             )
         
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}", file=sys.stderr)
+            self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}")
             sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
+            self.logger.error(f"Unexpected error: {str(e)}")
             sys.exit(1)
 
     def change_directory(self, path):
@@ -98,13 +101,13 @@ class GitRepoManager:
             os.chdir(path)
             self.logger.info(f"Successfully changed directory to {path}.")
         except FileNotFoundError:
-            self.logger.error(f"Error: Directory {path} does not exist.", file=sys.stderr)
+            self.logger.error(f"Error: Directory {path} does not exist.")
             sys.exit(1)
         except PermissionError:
-            self.logger.error(f"Error: Permission denied for directory {path}.", file=sys.stderr)
+            self.logger.error(f"Error: Permission denied for directory {path}.")
             sys.exit(1)
         except Exception as e:
-            self.logger.error(f"Unexpected error: {str(e)}", file=sys.stderr)
+            self.logger.error(f"Unexpected error: {str(e)}")
             sys.exit(1)
 
     def kill_ssh_agent(self):
