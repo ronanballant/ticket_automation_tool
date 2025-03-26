@@ -254,6 +254,6 @@ if __name__ == "__main__":
             intel_processor.update_triggered is True
             and approval_finder.summary_updated is True
         ):
-            close_summary(approval_finder, summary_ticket)
+            close_summary(logger, approval_finder, summary_ticket)
 
     key_handler.remove_personal_keys()
