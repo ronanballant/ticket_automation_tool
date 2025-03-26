@@ -148,6 +148,7 @@ if __name__ == "__main__":
                 if "muc" in server_name:
                     logger.info(f"Running on {server_name}. Starting S3 process")
                     s3_client = S3Client(
+                        logger,
                         destination_region,
                         secops_s3_endpoint,
                         secops_s3_bucket,

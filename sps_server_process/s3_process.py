@@ -36,8 +36,8 @@ logger.info("Checking is_s3_running")
 with open("is_s3_running.csv", "r") as file:
     lines = file.readlines()
 
-    logger.info(f"S3 Ticket Analyser currently running: {lines[0]}")
     if "true" in lines[0]:
+        logger.info(f"S3 Ticket Analyser currently running: {lines[0]}")
         exit()
     
 with open("is_s3_running.csv", "w") as file:
