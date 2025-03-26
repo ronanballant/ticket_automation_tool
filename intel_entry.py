@@ -21,6 +21,7 @@ class IntelEntry:
     def to_dict(self):
         intel_processor_dict = self.__dict__.copy()
         intel_processor_dict.pop("indicator", None)  
+        intel_processor_dict.pop("logger", None)  
         return intel_processor_dict
 
     @classmethod

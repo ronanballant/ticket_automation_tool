@@ -49,7 +49,7 @@ class TicketResponder:
         ticket.set_ticket_comment()
         if ticket.send_comment is True and ticket.block_comment is False:
             try:
-                # self.add_comment()
+                self.add_comment()
                 ticket.comment_failed = False
                 self.logger.info(f"Responded to {ticket.ticket_id}")
             except Exception as e:
@@ -58,7 +58,7 @@ class TicketResponder:
         else:
             self.logger.info(f"No resolution for {ticket.ticket_id} - Open to analyse")
 
-        # self.close_ticket()
+        self.close_ticket()
 
     def create_sps_ticket(self, tickets):
         self.logger.info("Creating SPS ticket")
@@ -240,7 +240,7 @@ class TicketResponder:
                     self.get_single_intel_source(indicator)
                     in_progress_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                     intel_entry = IntelEntry(
-                        indicator, in_progress_line, "possible_changes", "add"
+                        self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
                     intel_entry.append_to_indicator()
                     possible_changes.append(in_progress_line)
@@ -249,7 +249,7 @@ class TicketResponder:
                         self.find_manual_blacklist_entry(indicator)
                         in_progress_line = "--- " + self.manual_blacklist_entry
                         intel_entry = IntelEntry(
-                            indicator, in_progress_line, "possible_changes", "remove"
+                            self.logger, indicator, in_progress_line, "possible_changes", "remove"
                         )
                         intel_entry.append_to_indicator()
                         possible_changes.append(in_progress_line)
@@ -257,7 +257,7 @@ class TicketResponder:
                 elif indicator.ticket.ticket_type == "FN":
                     in_progress_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
                     intel_entry = IntelEntry(
-                        indicator, in_progress_line, "possible_changes", "add"
+                        self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
                     intel_entry.append_to_indicator()
                     possible_changes.append(in_progress_line)
@@ -266,7 +266,7 @@ class TicketResponder:
                 closed_list.append(line)
                 self.get_single_intel_source(indicator)
                 whitelist_line = f"+++ {indicator.matched_ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
-                intel_entry = IntelEntry(indicator, whitelist_line, "whitelist", "add")
+                intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
                 indicator.ticket.whitelist_additions.append(whitelist_line)
@@ -274,7 +274,7 @@ class TicketResponder:
                     self.find_manual_blacklist_entry(indicator)
                     blacklist_removals_line = "--- " + self.manual_blacklist_entry
                     intel_entry = IntelEntry(
-                        indicator, blacklist_removals_line, "blacklist", "remove"
+                        self.logger, indicator, blacklist_removals_line, "blacklist", "remove"
                     )
                     intel_entry.append_to_indicator()
                     blacklist_removals.append(blacklist_removals_line)
@@ -282,7 +282,7 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "block":
                 closed_list.append(line)
                 blacklist_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
-                intel_entry = IntelEntry(indicator, blacklist_line, "blacklist", "add")
+                intel_entry = IntelEntry(self.logger, indicator, blacklist_line, "blacklist", "add")
                 intel_entry.append_to_indicator()
                 blacklist_additions.append(blacklist_line)
                 indicator.ticket.blacklist_additions.append(blacklist_line)
@@ -362,6 +362,7 @@ class TicketResponder:
             if status.startswith("2"):
                 self.summary_ticket_created = True
                 self.ticket = Ticket(
+                    self.logger,
                     self.summary_ticket,
                     "Summary",
                     "ETP",
