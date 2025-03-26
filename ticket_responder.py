@@ -89,7 +89,7 @@ class TicketResponder:
                 if indicator.ticket.ticket_type == "FP":
                     in_progress_line = f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
                     intel_entry = IntelEntry(
-                        indicator, in_progress_line, "possible_changes", "add"
+                        self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
                     intel_entry.append_to_indicator()
                     possible_changes.append(in_progress_line)
@@ -97,7 +97,7 @@ class TicketResponder:
                 elif indicator.ticket.ticket_type == "FN":
                     in_progress_line = f"+++ {indicator.fqdn},{indicator.ticket.ticket_id},{indicator.attribution}"
                     intel_entry = IntelEntry(
-                        indicator, in_progress_line, "possible_changes", "add"
+                        self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
                     intel_entry.append_to_indicator()
                     possible_changes.append(in_progress_line)
@@ -105,14 +105,14 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
                 whitelist_line = f"+++ {indicator.matched_ioc},{indicator.ticket.ticket_id},whitelist"
-                intel_entry = IntelEntry(indicator, whitelist_line, "whitelist", "add")
+                intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
                 indicator.ticket.whitelist_additions.append(whitelist_line)
             elif indicator.indicator_resolution.lower() == "block":
                 closed_list.append(line)
                 blacklist_line = f"+++ {indicator.fqdn},{indicator.ticket.ticket_id},{indicator.attribution}"
-                intel_entry = IntelEntry(indicator, blacklist_line, "blacklist", "add")
+                intel_entry = IntelEntry(self.logger, indicator, blacklist_line, "blacklist", "add")
                 intel_entry.append_to_indicator()
                 blacklist_additions.append(blacklist_line)
                 indicator.ticket.blacklist_additions.append(blacklist_line)
