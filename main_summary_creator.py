@@ -20,12 +20,12 @@ if __name__ == "__main__":
         tickets_in_progress_file = sps_tickets_in_progress_file
         open_summary_tickets_file = open_sps_summary_tickets_file
     elif server_name == "oth-mpbv4":
-        queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
-        # queue = "ETP"
-        # tickets_in_progress_file = etp_tickets_in_progress_file
-        # open_summary_tickets_file = open_etp_summary_tickets_file
+        # queue = "SPS"
+        # tickets_in_progress_file = sps_tickets_in_progress_file
+        # open_summary_tickets_file = open_sps_summary_tickets_file
+        queue = "ETP"
+        tickets_in_progress_file = etp_tickets_in_progress_file
+        open_summary_tickets_file = open_etp_summary_tickets_file
     elif "t4tools" in server_name:
         queue = "ETP"
         tickets_in_progress_file = etp_tickets_in_progress_file

@@ -213,6 +213,9 @@ def run_process():
     try:
         for ticket in Ticket.all_tickets:
             logger.info(f"Processing {ticket.ticket_id}")
+            if not ticket.indicators:
+                ticket.ticket_resolved = False
+                ticket.block_comment = True
             for indicator in ticket.indicators:
                 logger.info(f"Processing {indicator.fqdn}")
 

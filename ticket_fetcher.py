@@ -25,7 +25,7 @@ class TicketFetcher:
 
             if self.queue.lower() == "etp":
                 jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14260"'
+                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14284"'
                 # jql_query = 'project="ETPESC" AND issue = "ETPESC-9841"'
             params = {"jql": jql_query, "maxResults": 100}
 
@@ -122,11 +122,13 @@ class TicketFetcher:
         self.logger.info(
             f"Extracted {len(set(fqdns))} FQDNs, {len(set(ips))} IPs and {len(set(urls))} URLs from {ticket}"
         )
+
         return fqdns, urls, ips
 
     def clean_description(self, description):
+        self.description = description
         self.logger.info("Cleaning description")
-        description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
+        # description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
         pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
         description = re.sub(pattern, " ", description)
         pattern = r"\[([^\|]*)\|.*?\]"  

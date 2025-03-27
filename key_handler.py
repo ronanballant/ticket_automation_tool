@@ -19,12 +19,19 @@ class KeyHandler:
         self.logger = logger
 
     def remove_personal_keys(self):
-        os.remove(self.cert_path)
-        os.remove(self.key_path)
+        try:
+            self.logger.info(f"Reomving personal keys")
+            os.remove(self.cert_path)
+            os.remove(self.key_path)
+        except:
+            self.logger.error(f"Failed to remove personal keys: {e}")
     
     def remove_ssh_keys(self):
-        self.logger.info("Removing SSH keys")
-        os.remove(self.ssh_key_path)
+        try:
+            self.logger.info("Removing SSH keys")
+            os.remove(self.ssh_key_path)
+        except Exception as e:
+            self.logger.error(f"Failed to remove ssh keys: {e}")
 
     def decode_key(self, key):
         self.logger.info("Decoding Key")
