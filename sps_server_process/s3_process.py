@@ -33,12 +33,16 @@ def get_domain_data(logger, domains):
 
 logger.info("Starting S3 Ticket Analyser")
 logger.info("Checking is_s3_running")
-with open(is_running_file, "r") as file:
-    lines = file.readlines()
 
-    if "true" in lines[0]:
-        logger.info(f"S3 Ticket Analyser currently running: {lines[0]}")
-        exit()
+try:
+    with open(is_running_file, "r") as file:
+        lines = file.readlines()
+
+        if "true" in lines[0]:
+            logger.info(f"S3 Ticket Analyser currently running: {lines[0]}")
+            exit()
+except Exception as e:
+    logger.error(f"Error: {e}")
     
 logger.info("Writing true to is_s3_running.csv")
 with open(is_running_file, "w") as file:
