@@ -290,7 +290,7 @@ class ApprovalFinder:
         headers = {"Content-Type": "application/json"}
 
         payload = {
-            "name": self.comment_owner_id
+            "name": self.comment_owner
             }
     
         try:
