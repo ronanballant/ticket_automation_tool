@@ -84,9 +84,11 @@ class IntelProcessor:
             with open(sps_intel_update_file, "w", newline="") as file:
                 writer = csv.writer(file)
                 for intel_entry in self.whitelist:
+                    self.logger.info("Writing %s to %s", intel_entry, sps_intel_update_file)
                     writer.writerow([intel_entry])
 
                 for intel_entry in self.blacklist:
+                    self.logger.info("Writing %s to %s", intel_entry, sps_intel_update_file)
                     writer.writerow([intel_entry])
 
     def transfer_sps_update_file(self): 

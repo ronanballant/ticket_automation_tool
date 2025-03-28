@@ -143,7 +143,6 @@ if __name__ == "__main__":
         if queue == "SPS":
             if intel_processor.intel_entries:
                 intel_processor.add_to_sps_intel_file()
-                logger.info(f"Transfering {sps_intel_update_file} to SPOF VM")
 
                 if "muc" in server_name:
                     logger.info(f"Running on {server_name}. Starting S3 process")
@@ -160,7 +159,6 @@ if __name__ == "__main__":
                     intel_processor.update_triggered = True
                     if intel_processor.whitelist or intel_processor.blacklist:
                         try:
-                            logger.info(f"Sending {sps_intel_update_file} to {sps_intel_update_s3_path}")
                             s3_client.write_file(sps_intel_update_file, sps_intel_update_s3_path)
                         except Exception as e:
                             logger.error(f"Failed to send {sps_intel_update_file} to {sps_intel_update_s3_path}:\n{e}")
@@ -184,10 +182,12 @@ if __name__ == "__main__":
                                         else:
                                             retry_count += 1
                                     except json.JSONDecodeError as e:
-                                        logger.info(f"JSON Decode Error: {e} | Raw Data: {s3_client.file_content}")
                                         retry_count += 1  
+                                        logger.info("Attempt %s", retry_count)
                                 else:
                                     retry_count += 1  
+                                    logger.info("Attempt %s", retry_count)
+
                             
                             if '"success": false' in update_results:
                                 intel_processor.update_triggered = False
@@ -202,6 +202,7 @@ if __name__ == "__main__":
                     else:
                         logger.info(f"No Whitelist or Blacklist entries to process")
                 else:
+                    logger.info(f"Transfering {sps_intel_update_file} to SPOF VM")
                     intel_processor.transfer_sps_update_file()
                     logger.info(f"Triggering {intel_processor_path} on SPOF VM")
                     intel_processor.trigger_sps_intel_update()
