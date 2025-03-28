@@ -143,7 +143,6 @@ if __name__ == "__main__":
     )
 
     s3_client.initialise_client()
-    s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
     s3_client.read_s3_file(sps_intel_update_s3_path)
     data = s3_client.file_content.strip().split("\n")
 
@@ -151,6 +150,7 @@ if __name__ == "__main__":
         logger.info("No updates to process... Exiting process")
         exit()
 
+    s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
     logger.info(f"FQDNs to search: {data}")
     intel_updates = [row.strip().replace("'","") for row in data]
     logger.info(f"intel_updates: {intel_updates}")
