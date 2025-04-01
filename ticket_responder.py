@@ -26,7 +26,11 @@ class TicketResponder:
         self.get_username()
 
     def get_username(self):
-        self.username = os.getenv("USER") or os.getenv("USERNAME")
+        username = os.getenv("USER") or os.getenv("USERNAME")
+        if username.strip().lower() == 'root' or username.strip().lower() == 'none':
+            self.username = "rballant"
+        else:
+            self.username = username
 
     def update_ticket(self, ticket):
         self.ticket = ticket

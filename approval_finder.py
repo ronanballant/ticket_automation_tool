@@ -275,15 +275,19 @@ class ApprovalFinder:
                             ticket.changes_approved = False
     
     def update_owner(self, entry, reviewed_change):
-        reviewed_change_parts = reviewed_change.strip().split(",")
-        updated_changes = []
-        for part in reviewed_change_parts:
-            if "added by" in part.lower():
-                part = f"added by {self.comment_owner}"
-            updated_changes.append(part.strip())
+        if entry.operation == 'add':
+            reviewed_change_parts = reviewed_change.strip().split(",")
+            updated_changes = []
+            for part in reviewed_change_parts:
+                if "added by" in part.lower():
+                    part = f"added by {self.comment_owner}"
+                updated_changes.append(part.strip())
 
-        reviewed_change = ",".join(updated_changes)
-        entry.approved_intel_change = reviewed_change
+            reviewed_change = ",".join(updated_changes)
+            entry.approved_intel_change = reviewed_change
+        else:
+            entry.approved_intel_change = reviewed_change
+
 
     def update_assignee(self, ticket_id):
         url = self.jira_ticket_api + f"{ticket_id}/assignee"
