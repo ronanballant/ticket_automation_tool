@@ -230,6 +230,9 @@ if __name__ == "__main__":
                 git_manager.checkout_master()
                 logger.info("Pulling repo...")
                 git_manager.git_pull()
+                branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M")}'
+                logger.info(f"Branch name: {branch_name}")
+                git_manager.create_new_branch(branch_name)
 
                 intel_processor.add_to_etp_whitelist()
                 intel_processor.add_to_etp_blacklist()
@@ -239,9 +242,6 @@ if __name__ == "__main__":
                 if intel_processor.add_error_comment is True:
                     approval_finder.add_summary_comment(intel_processor.error_comment)
                 else:
-                    branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H00")}'
-                    logger.info(f"Branch name: {branch_name}")
-                    git_manager.create_new_branch(branch_name)
                     git_manager.git_add([whitelist_file, blacklist_file, secops_feed_file])
                     git_manager.git_commit("Ticket Automation")
                     git_manager.push_changes(branch_name)
