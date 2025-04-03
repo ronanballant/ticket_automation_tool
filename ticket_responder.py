@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from config import (blacklist_file, cert_path, jira_ticket_api, key_path)
+from config import (blacklist_file, jira_ticket_api)
 from intel_entry import IntelEntry
 from ticket import Ticket
 
@@ -18,7 +18,9 @@ class TicketResponder:
     service_type_sent = []
     resolved_tickets = []
 
-    def __init__(self, logger, secops_member):
+    def __init__(self, logger, secops_member, cert_path, key_path):
+        self.cert_path = cert_path
+        self.key_path = key_path
         self.logger = logger
         self.assignee = secops_member
         self.label = ""
@@ -178,7 +180,7 @@ class TicketResponder:
                 jira_ticket_api,
                 json=data,
                 headers=headers,
-                cert=(cert_path, key_path),
+                cert=(self.cert_path, self.key_path),
                 verify=False,
             )
         except Exception as e:
@@ -355,7 +357,7 @@ class TicketResponder:
                 jira_ticket_api,
                 data=json_object,
                 headers=headers,
-                cert=(cert_path, key_path),
+                cert=(self.cert_path, self.key_path),
                 verify=False,
             )
         except Exception as e:
@@ -426,7 +428,7 @@ class TicketResponder:
             url,
             json=payload,
             headers=headers,
-            cert=(cert_path, key_path),
+            cert=(self.cert_path, self.key_path),
             verify=False,
         )
 
@@ -534,7 +536,7 @@ class TicketResponder:
                     url,
                     json=payload,
                     headers=headers,
-                    cert=(cert_path, key_path),
+                    cert=(self.cert_path, self.key_path),
                     verify=False,
                 )
                 pass
@@ -559,7 +561,7 @@ class TicketResponder:
                     url,
                     json=payload,
                     headers=headers,
-                    cert=(cert_path, key_path),
+                    cert=(self.cert_path, self.key_path),
                     verify=False,
                 )
                 pass

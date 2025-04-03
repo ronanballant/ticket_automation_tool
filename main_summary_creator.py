@@ -43,7 +43,7 @@ if __name__ == "__main__":
     logger.info(f"Creating ticket instances")
     summary_creator.create_tickets()
 
-    responder = TicketResponder(logger, secops_member)
+    responder = TicketResponder(logger, secops_member, cert_path, key_path)
     logger.info(f"Finding unprocessed tickets")
     new_tickets = [
         ticket for ticket in Ticket.all_tickets if not ticket.linked_summary_ticket

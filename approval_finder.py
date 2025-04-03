@@ -6,7 +6,6 @@ from typing import Dict, List
 import Levenshtein 
 from datetime import datetime
 import requests
-from config import cert_path, key_path
 from ticket import Ticket
 
 
@@ -24,7 +23,9 @@ class ApprovalFinder:
         open_summary_tickets_file: str,
         processed_tickets_file: str,
         jira_search_api: str,
-        jira_ticket_api: str
+        jira_ticket_api: str,
+        cert_path,
+        key_path,
     ) -> None:
         self.logger = logger
         self.tickets_in_progress_file: str = tickets_in_progress_file
@@ -32,6 +33,8 @@ class ApprovalFinder:
         self.processed_tickets_file: str = processed_tickets_file
         self.jira_search_api: str = jira_search_api
         self.jira_ticket_api: str = jira_ticket_api
+        self.cert_path = cert_path
+        self.key_path = key_path
         self.reviewed_intel_changes: List[str] = []
         self.reviewed_allow_list: List[str] = []
         self.reviewed_block_list: List[str] = []
@@ -103,7 +106,7 @@ class ApprovalFinder:
             self.req = requests.get(
                 self.jira_search_api,
                 params=params,
-                cert=(cert_path, key_path),
+                cert=(self.cert_path, self.key_path),
                 verify=False,
             )
         except Exception as e:
@@ -115,7 +118,7 @@ class ApprovalFinder:
 
         comment_response = requests.get(
             comment_api, 
-            cert=(cert_path, key_path),
+            cert=(self.cert_path, self.key_path),
             verify=False,
         )
 
@@ -302,7 +305,7 @@ class ApprovalFinder:
                 url, 
                 json=payload,
                 headers=headers, 
-                cert=(cert_path, key_path),
+                cert=(self.cert_path, self.key_path),
                 verify=False,
             )
         except Exception as e:
@@ -347,7 +350,7 @@ class ApprovalFinder:
                             url,
                             json=payload,
                             headers=headers,
-                            cert=(cert_path, key_path),
+                            cert=(self.cert_path, self.key_path),
                             verify=False,
                         )
                 except Exception as e:
@@ -394,7 +397,7 @@ class ApprovalFinder:
                 url,
                 json=payload,
                 headers=headers,
-                cert=(cert_path, key_path),
+                cert=(self.cert_path, self.key_path),
                 verify=False,
             )
 
@@ -423,7 +426,7 @@ class ApprovalFinder:
                 url,
                 json=payload,
                 headers=headers,
-                cert=(cert_path, key_path),
+                cert=(self.cert_path, self.key_path),
                 verify=False,
             )
 

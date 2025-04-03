@@ -23,7 +23,7 @@ class KeyHandler:
             self.logger.info(f"Reomving personal keys")
             os.remove(self.cert_path)
             os.remove(self.key_path)
-        except:
+        except Exception as e:
             self.logger.error(f"Failed to remove personal keys: {e}")
     
     def remove_ssh_keys(self):
