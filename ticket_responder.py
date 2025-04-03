@@ -475,7 +475,8 @@ class TicketResponder:
             ticket_triaged = "31"
             ticket_in_progress = "221"
             ticket_resolved = "141"
-            transitions = [ticket_triaged, ticket_in_progress, ticket_resolved]
+            # transitions = [ticket_triaged, ticket_in_progress, ticket_resolved]
+            transitions = [ticket_triaged, ticket_in_progress]
 
             if (
                 self.ticket.ticket_resolved is True
