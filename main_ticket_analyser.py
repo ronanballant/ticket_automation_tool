@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="sps",
+        default="etp",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -138,6 +138,7 @@ def run_process():
     if not tickets:
         logger.info(f"No tickets in {queue.upper()} queue... exiting script")
         return
+    logger.info("Collected %s tickets", len(tickets))
 
     try:
         rule_set = RuleFetcher(logger)
@@ -188,6 +189,7 @@ def run_process():
             new_ticket.set_comment_sign_off()
 
     for ticket in Ticket.all_tickets:
+        logger.info("Processing %s tickets", len(Ticket.all_tickets))
         logger.info(f"Creating Indicator Instances for {ticket.ticket_id}")
         for fqdn in ticket.fqdns:
             indicator = Indicator(logger, fqdn, ticket, indicator_type)
