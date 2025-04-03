@@ -78,6 +78,8 @@ if __name__ == "__main__":
         processed_tickets_file,
         jira_search_api,
         jira_ticket_api,
+        cert_path,
+        key_path
     )
 
     logger.info(f"Getting open summary tickets")
