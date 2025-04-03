@@ -1,15 +1,19 @@
+import os
 import socket
 
 from config import (etp_tickets_in_progress_file, get_logger,
-                    open_sps_summary_tickets_file, open_etp_summary_tickets_file, 
-                    secops_member, sps_tickets_in_progress_file, cert_path, key_path, ssh_key_path)
+                    open_etp_summary_tickets_file,
+                    open_sps_summary_tickets_file, project_folder,
+                    secops_member, sps_tickets_in_progress_file)
 from key_handler import KeyHandler
 from summary_creator import SummaryCreator
 from ticket import Ticket
 from ticket_responder import TicketResponder
 
-
 logger = get_logger("logs_summary_creator.txt")
+cert_path = os.path.join(project_folder, ".summary_creator_personal_crt.crt")
+key_path = os.path.join(project_folder, ".summary_creator_personal_key.key")
+ssh_key_path = os.path.join(project_folder, ".summary_creator_ssh_key")
 
 
 if __name__ == "__main__":
@@ -90,6 +94,6 @@ if __name__ == "__main__":
             f"Saving summary ticket to {summary_creator.open_summary_tickets_file}"
         )
         summary_creator.save_open_summary_ticket(responder.summary_ticket)
-    
+
     logger.info("Removing personal keys")
     key_handler.remove_personal_keys()

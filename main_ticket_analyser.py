@@ -6,12 +6,13 @@ import json
 import os
 import time
 
-from config import (cert_path, etp_tickets_in_progress_file, key_path, get_logger,
-                    secops_member, sps_tickets_in_progress_file, ssh_key_path,
-                    destination_region, directory_prefix, results_path,
-                    search_fqdns_path, secops_s3_aws_access_key,
-                    secops_s3_aws_secret_key, secops_s3_bucket, secops_s3_endpoint, 
-                    sps_intel_results_local_file, search_fqdns_local_file)
+from config import (destination_region, directory_prefix,
+                    etp_tickets_in_progress_file, get_logger, project_folder,
+                    results_path, search_fqdns_local_file, search_fqdns_path,
+                    secops_member, secops_s3_aws_access_key,
+                    secops_s3_aws_secret_key, secops_s3_bucket,
+                    secops_s3_endpoint, sps_intel_results_local_file,
+                    sps_tickets_in_progress_file)
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
@@ -26,8 +27,10 @@ from ticket_resolver import TicketResolver
 from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
 
-
 logger = get_logger("logs_ticket_analyser.txt")
+cert_path = os.path.join(project_folder, ".ticket_analyser_personal_cert.crt")
+key_path = os.path.join(project_folder, ".ticket_analyser_personal_key.key")
+ssh_key_path = os.path.join(project_folder, ".ticket_analyser_ssh_key")
 
 
 def parse_args():
@@ -48,6 +51,7 @@ def parse_args():
     else:
         return args
 
+
 def muc_server_process(fqdns, server_name, key_handler):
     logger.info("Running on Muc server")
     fqdns = list(set(fqdns))
@@ -56,8 +60,8 @@ def muc_server_process(fqdns, server_name, key_handler):
         logger.info("No IOCs to process... Exiting Process")
         key_handler.remove_personal_keys()
         exit()
-        
-    if "muc" in server_name:    
+
+    if "muc" in server_name:
         s3_client = S3Client(
             logger,
             destination_region,
@@ -65,7 +69,7 @@ def muc_server_process(fqdns, server_name, key_handler):
             secops_s3_bucket,
             secops_s3_aws_access_key,
             secops_s3_aws_secret_key,
-            directory_prefix
+            directory_prefix,
         )
         s3_client.initialise_client()
 
@@ -76,19 +80,21 @@ def muc_server_process(fqdns, server_name, key_handler):
 
         s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
         s3_client.write_file(search_fqdns_local_file, results_path)
-        
+
         recheck = True
         max_retries = 45
         retry_count = 0
         while recheck and retry_count < max_retries:
-            time.sleep(60) 
+            time.sleep(60)
             logger.info(f"Atttempt {retry_count+1}")
             logger.info(f"Reading S3 file")
             s3_client.read_s3_file(results_path)
-            
+
             if s3_client.file_content:
                 try:
-                    json_results = json.loads(s3_client.file_content.strip())  # Strip spaces & newlines
+                    json_results = json.loads(
+                        s3_client.file_content.strip()
+                    )  # Strip spaces & newlines
                     if json_results:  # Check if it's a valid, non-empty JSON
                         recheck = False
                     else:
@@ -96,8 +102,8 @@ def muc_server_process(fqdns, server_name, key_handler):
                 except json.JSONDecodeError as e:
                     retry_count += 1  # Keep retrying if JSON is invalid
             else:
-                retry_count += 1  
-        
+                retry_count += 1
+
         if retry_count > max_retries:
             logger.info("Retry count exceeded... Exiting script")
 
@@ -108,8 +114,10 @@ def run_process():
     intel_search_fqdns = []
     queue = args.queue.lower()
     logger.info(f"{queue.upper()} Process In Progress...")
-    tickets_in_progress_file = sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
-    server_name = os.uname().nodename 
+    tickets_in_progress_file = (
+        sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
+    )
+    server_name = os.uname().nodename
 
     logger.info("Fetching Keys")
     try:
@@ -129,7 +137,6 @@ def run_process():
     except Exception as e:
         logger.error(f"Failed to fetch tickets: {e}")
         return
-
 
     logger.info(f"Loading ticket data from {tickets_in_progress_file}")
     Ticket.load_ticket_data(tickets_in_progress_file)
@@ -211,7 +218,7 @@ def run_process():
 
     if queue == "sps":
         muc_server_process(intel_search_fqdns, server_name, key_handler)
-    
+
     responder = TicketResponder(logger, secops_member)
     try:
         for ticket in Ticket.all_tickets:
@@ -254,7 +261,7 @@ def run_process():
                             indicator.matched_ioc_type = "DOMAIN"
                             indicator.candidate = candidate
                             intel_fetcher.read_previous_queries()
-                            if not intel_fetcher.results and "muc" not in server_name: 
+                            if not intel_fetcher.results and "muc" not in server_name:
                                 intel_fetcher.fetch_intel()
                             intel_fetcher.assign_results()
 
@@ -266,7 +273,9 @@ def run_process():
                 else:
                     try:
                         logger.info("Querying ETP intel")
-                        intel_fetcher = ETPIntelFetcher(logger, indicator, mongo_connection)
+                        intel_fetcher = ETPIntelFetcher(
+                            logger, indicator, mongo_connection
+                        )
 
                         for candidate in indicator.candidates:
                             indicator.matched_ioc_type = "DOMAIN"
@@ -279,7 +288,9 @@ def run_process():
                             if indicator.is_in_intel is True:
                                 indicator.matched_ioc = indicator.candidate
                                 if indicator.matched_ioc != indicator.fqdn:
-                                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.matched_ioc[:-1])
+                                    vt_fetcher = VirusTotalFetcher(
+                                        logger, indicator, indicator.matched_ioc[:-1]
+                                    )
                                     vt_fetcher.prepare_indicator()
                                     vt_fetcher.set_vt_link()
                                     vt_fetcher.get_previous_query()
@@ -306,7 +317,9 @@ def run_process():
                                             intel_fetcher.query_resolved_ip()
 
                                             if indicator.ip_in_intel is True:
-                                                intel_fetcher.attributes_assigned = False
+                                                intel_fetcher.attributes_assigned = (
+                                                    False
+                                                )
                                                 intel_fetcher.assign_results()
                                                 indicator.matched_ioc = (
                                                     indicator.resolved_ip
@@ -345,7 +358,9 @@ def run_process():
                 logger.info(f"Adding {ticket.ticket_id} to {tickets_in_progress_file}")
                 ticket.update_tickets_in_progress(tickets_in_progress_file)
             except Exception as e:
-                logger.error(f"Failed to add {ticket.ticket_id} to {tickets_in_progress_file}: {e}")
+                logger.error(
+                    f"Failed to add {ticket.ticket_id} to {tickets_in_progress_file}: {e}"
+                )
     except Exception as e:
         logger.error(f"Failed to process entities: {e}")
         return

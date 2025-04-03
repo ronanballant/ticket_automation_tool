@@ -1,20 +1,22 @@
 import json
+import os
 import socket
 import time
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
-from config import (blacklist_file, cert_path, destination_region,
-                    directory_prefix, etp_intel_repo,
-                    etp_processed_tickets_file, etp_tickets_in_progress_file,
+from config import (blacklist_file, destination_region, directory_prefix,
+                    etp_intel_repo, etp_processed_tickets_file,
+                    etp_tickets_in_progress_file, get_logger,
                     intel_processor_path, jira_search_api, jira_ticket_api,
-                    key_path, get_logger, open_etp_summary_tickets_file,
-                    open_sps_summary_tickets_file, search_fqdns_local_file,
-                    secops_feed_file, secops_s3_aws_access_key, secops_s3_aws_secret_key,
+                    open_etp_summary_tickets_file,
+                    open_sps_summary_tickets_file, project_folder,
+                    search_fqdns_local_file, secops_feed_file,
+                    secops_s3_aws_access_key, secops_s3_aws_secret_key,
                     secops_s3_bucket, secops_s3_endpoint,
                     sps_intel_update_file, sps_intel_update_s3_path,
                     sps_processed_tickets_file, sps_tickets_in_progress_file,
-                    ssh_key_path, update_responses_s3_path, whitelist_file)
+                    update_responses_s3_path, whitelist_file)
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
 from intel_processor import IntelProcessor
@@ -22,8 +24,10 @@ from key_handler import KeyHandler
 from s3_client import S3Client
 from ticket import Ticket
 
-
 logger = get_logger("logs_intel_updater.txt")
+cert_path = os.path.join(project_folder, ".intel_updater_personal_crt.crt")
+key_path = os.path.join(project_folder, ".intel_updater_personal_key.key")
+ssh_key_path = os.path.join(project_folder, ".intel_updater_ssh_key")
 
 
 def close_summary(logger, approval_finder, summary_ticket):
@@ -91,9 +95,7 @@ if __name__ == "__main__":
         logger.info(f"No open tickets. Exiting Script")
         exit()
 
-    key_handler = KeyHandler(
-        logger, cert_path, key_path, ssh_key_path
-    )
+    key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
     key_handler.get_key_names()
     key_handler.get_personal_keys()
 
@@ -159,36 +161,43 @@ if __name__ == "__main__":
                     intel_processor.update_triggered = True
                     if intel_processor.whitelist or intel_processor.blacklist:
                         try:
-                            s3_client.write_file(sps_intel_update_file, sps_intel_update_s3_path)
+                            s3_client.write_file(
+                                sps_intel_update_file, sps_intel_update_s3_path
+                            )
                         except Exception as e:
-                            logger.error(f"Failed to send {sps_intel_update_file} to {sps_intel_update_s3_path}:\n{e}")
+                            logger.error(
+                                f"Failed to send {sps_intel_update_file} to {sps_intel_update_s3_path}:\n{e}"
+                            )
                             intel_processor.update_triggered = False
-                            intel_processor.error_comment = (f"Failed to write intel update to S3 bucket:\n{e}")
+                            intel_processor.error_comment = (
+                                f"Failed to write intel update to S3 bucket:\n{e}"
+                            )
                         else:
                             recheck = True
                             max_retries = 5
                             retry_count = 0
                             update_results = '"success": false'
                             while recheck and retry_count < max_retries:
-                                time.sleep(60) 
+                                time.sleep(60)
                                 s3_client.read_s3_file(update_responses_s3_path)
-                                
+
                                 if s3_client.file_content:
                                     try:
-                                        json_results = json.loads(s3_client.file_content.strip())  
-                                        if json_results:  
+                                        json_results = json.loads(
+                                            s3_client.file_content.strip()
+                                        )
+                                        if json_results:
                                             update_results = json_results
                                             recheck = False
                                         else:
                                             retry_count += 1
                                     except json.JSONDecodeError as e:
-                                        retry_count += 1  
+                                        retry_count += 1
                                         logger.info("Attempt %s", retry_count)
                                 else:
-                                    retry_count += 1  
+                                    retry_count += 1
                                     logger.info("Attempt %s", retry_count)
 
-                            
                             if '"success": false' in update_results:
                                 intel_processor.update_triggered = False
                                 intel_processor.error_comment = (
@@ -197,8 +206,10 @@ if __name__ == "__main__":
                                     + update_results
                                     + "{code}"
                                 )
-                                
-                            s3_client.write_file(search_fqdns_local_file, update_responses_s3_path)
+
+                            s3_client.write_file(
+                                search_fqdns_local_file, update_responses_s3_path
+                            )
                     else:
                         logger.info(f"No Whitelist or Blacklist entries to process")
                 else:
@@ -230,7 +241,9 @@ if __name__ == "__main__":
                 git_manager.checkout_master()
                 logger.info("Pulling repo...")
                 git_manager.git_pull()
-                branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M")}'
+                branch_name = (
+                    f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M")}'
+                )
                 logger.info(f"Branch name: {branch_name}")
                 git_manager.create_new_branch(branch_name)
 
@@ -242,7 +255,9 @@ if __name__ == "__main__":
                 if intel_processor.add_error_comment is True:
                     approval_finder.add_summary_comment(intel_processor.error_comment)
                 else:
-                    git_manager.git_add([whitelist_file, blacklist_file, secops_feed_file])
+                    git_manager.git_add(
+                        [whitelist_file, blacklist_file, secops_feed_file]
+                    )
                     git_manager.git_commit("Ticket Automation")
                     git_manager.push_changes(branch_name)
                     git_manager.get_pr_link()
