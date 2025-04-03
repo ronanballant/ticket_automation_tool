@@ -219,7 +219,7 @@ def run_process():
     if queue == "sps":
         muc_server_process(intel_search_fqdns, server_name, key_handler)
 
-    responder = TicketResponder(logger, secops_member)
+    responder = TicketResponder(logger, secops_member, cert_path, key_path)
     try:
         for ticket in Ticket.all_tickets:
             logger.info(f"Processing {ticket.ticket_id}")
