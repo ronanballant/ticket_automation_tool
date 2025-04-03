@@ -27,7 +27,7 @@ class TicketResponder:
 
     def get_username(self):
         username = os.getenv("USER") or os.getenv("USERNAME")
-        if username.strip().lower() == 'root' or username.strip().lower() == 'none':
+        if not username or username.strip().lower() in ["root", "none"]:
             self.username = "rballant"
         else:
             self.username = username

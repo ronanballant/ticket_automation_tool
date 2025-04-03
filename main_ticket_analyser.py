@@ -49,6 +49,7 @@ def parse_args():
         return args
 
 def muc_server_process(fqdns, server_name, key_handler):
+    logger.info("Running on Muc server")
     fqdns = list(set(fqdns))
 
     if len(fqdns) < 1:
@@ -202,15 +203,15 @@ def run_process():
                 indicator.is_legitimate_indicator()
                 indicator.add_indicator_to_ticket()
                 indicator.get_candidates()
-                logger.info(f"Adding {indicator.fqdn} to intel search fqdns")
                 if indicator.legitimate_indicator is True:
+                    logger.info(f"Adding {indicator.fqdn} to intel search fqdns")
                     intel_search_fqdns.append(indicator.fqdn)
             except Exception as e:
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
     if queue == "sps":
         muc_server_process(intel_search_fqdns, server_name, key_handler)
-
+    
     responder = TicketResponder(logger, secops_member)
     try:
         for ticket in Ticket.all_tickets:
