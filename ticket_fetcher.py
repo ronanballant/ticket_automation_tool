@@ -26,7 +26,7 @@ class TicketFetcher:
             if self.queue.lower() == "etp":
                 jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
                 # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14284"'
-                # jql_query = 'project="ETPESC" AND issue = "ETPESC-9841"'
+                # jql_query = 'project="ETPESC" AND issue = "ENTESC-14395"'
             params = {"jql": jql_query, "maxResults": 100}
 
             self.req = requests.get(

@@ -63,7 +63,8 @@ class Indicator:
         self.resolved_ip: str = None
         self.ip_in_intel: bool = False
         self.matched_ioc: str = "-"
-
+        self.is_in_man_bl: bool = False
+        
     def clean_fqdn(self):
         self.logger.info(f"Cleaning {self.fqdn}")
         characters_to_remove = [
