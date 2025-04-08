@@ -402,10 +402,16 @@ class TicketResponder:
         if self.ticket.queue.lower() == "sps":
             if self.ticket.ticket_resolved is False:
                 self.assignee = ""
+            # payload = {
+            #     "update": {
+            #         "comment": [{"add": {"body": self.ticket.comment}}],
+            #         "assignee": [{"set": {"name": self.assignee}}],
+            #     }
+            # }
+
             payload = {
                 "update": {
-                    "comment": [{"add": {"body": self.ticket.comment}}],
-                    "assignee": [{"set": {"name": self.assignee}}],
+                    "comment": [{"add": {"body": self.ticket.comment}}]
                 }
             }
         else:
