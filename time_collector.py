@@ -171,5 +171,7 @@ if __name__ == "__main__":
                 ticket_handler.update_resolution_time()
                 if ticket_handler.resolution_date_updated is True:
                     TicketHandler.dashboard_tickets.append(ticket)
+            else:
+                TicketHandler.dashboard_tickets.append(ticket)
 
     TicketHandler.save_dashboard_tickets(ticket_handler.dashboard_ticket_file)
