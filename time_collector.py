@@ -134,16 +134,6 @@ class TicketHandler:
 
 if __name__ == "__main__":
     server_name = socket.gethostname()
-    if "muc" in server_name:
-        queue = "SPS"
-        processed_tickets_file = sps_processed_tickets_file
-    elif server_name == "prod-galaxy-t4tools.dfw02.corp.akamai.com":
-        queue = "ETP"
-        processed_tickets_file = etp_processed_tickets_file
-    else:
-        queue = "ETP"
-        processed_tickets_file = etp_processed_tickets_file
-
         
     key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
     key_handler.get_key_names()
