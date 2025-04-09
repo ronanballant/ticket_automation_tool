@@ -96,7 +96,10 @@ class TicketHandler:
         self.resolution_date_updated = False
         if self.resolution_date:
             logger.info("Resolution date found %s", self.resolution_date)
-            res_date = datetime.fromisoformat(self.resolution_date)
+            iso_str = self.resolution_date
+            if iso_str.endswith('+0000') or iso_str.endswith('-0000'):
+                iso_str = iso_str[:-5] + iso_str[-5:-2] + ":" + iso_str[-2:]
+            res_date = datetime.fromisoformat(iso_str)
             create_date = self.ticket.creation_time
 
             time_to_resolution = res_date - create_date
