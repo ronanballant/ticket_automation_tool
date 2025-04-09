@@ -243,11 +243,12 @@ class TicketResponder:
             self.queue = indicator.ticket.queue
             line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
             ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.etp_fqdn
+            intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "ALL_TYPES_BEST_MATCH"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
                     self.get_single_intel_source(indicator)
-                    in_progress_line = f"+++ {ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                    in_progress_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                     intel_entry = IntelEntry(
                         self.logger, indicator, in_progress_line, "possible_changes", "add"
                     )
@@ -274,7 +275,7 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
                 self.get_single_intel_source(indicator)
-                whitelist_line = f"+++ {ioc},{indicator.matched_ioc_type},ALL_TYPES_BEST_MATCH,no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                whitelist_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                 intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
@@ -402,12 +403,6 @@ class TicketResponder:
         if self.ticket.queue.lower() == "sps":
             if self.ticket.ticket_resolved is False:
                 self.assignee = ""
-            # payload = {
-            #     "update": {
-            #         "comment": [{"add": {"body": self.ticket.comment}}],
-            #         "assignee": [{"set": {"name": self.assignee}}],
-            #     }
-            # }
 
             payload = {
                 "update": {
@@ -415,13 +410,6 @@ class TicketResponder:
                 }
             }
         else:
-            # payload = {
-            #     "update": {
-            #         "comment": [{"add": {"body": self.ticket.comment}}],
-            #         "assignee": [{"set": {"name": self.assignee}}],
-            #         "labels": [{"add": self.label}],
-            #     }
-            # }
             payload = {
                 "update": {
                     "comment": [{"add": {"body": self.ticket.comment}}],
