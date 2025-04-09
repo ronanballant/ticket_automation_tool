@@ -31,10 +31,12 @@ class TicketHandler:
         self.processed_tickets = []
 
     def load_ticket_data(self, ticket_file):
+        logger.info("Loading ticket data from %s", ticket_file)
         with open(ticket_file, "r") as file:
             return json.load(file)
 
     def create_tickets(self, ticket_data):
+        logger.info("Creating tickets")
         new_tickets = []
         for ticket in ticket_data:
             ticket.pop('ticket_responses', None)
@@ -44,21 +46,17 @@ class TicketHandler:
 
         return new_tickets
 
-    def get_ticket_details(self):
-        self.queue = self.ticket.queue
-        self.ticket_id = self.ticket.get('ticket_id', None)
-        self.ticket_resolved = self.ticket.get('ticket_resolved', None)
-        self.time_to_resolution = self.ticket.get('time_to_resolution', None)
-        self.creation_time = self.ticket.get('creation_time', None)
-
     def check_required_data(self):
+        logger.info("Checking required data")
         self.get_time_to_resolution = False
         self.get_time_to_response = False
         
         if not self.ticket.time_to_resolution or self.ticket.time_to_resolution == "-":
+            logger.info("Time to resolution required: %s", self.ticket.time_to_resolution)
             self.get_time_to_resolution = True
 
     def fetch_jira_ticket(self):
+        logger.info("Fetching JIRA ticket %s", self.ticket.ticket_id)
         try:
             if self.ticket.queue.lower() == "sps":
                 jql_query = f'project="ReCat Sec Ops Requests" AND issue = "{self.ticket.ticket_id}"'
@@ -94,17 +92,21 @@ class TicketHandler:
             pass
 
     def update_resolution_time(self):
+        logger.info("Updating time to resolution for %s", self.ticket.ticket_id)
         self.resolution_date_updated = False
         if self.resolution_date:
+            logger.info("Resolution date found %s", self.resolution_date)
             res_date = datetime.fromisoformat(self.resolution_date)
             create_date = self.ticket.creation_time
 
             time_to_resolution = res_date - create_date
+            logger.info("Time to resolution: %s", time_to_resolution)
             self.ticket.time_to_resolution = time_to_resolution.total_seconds()  
             self.resolution_date_updated = True
 
     @classmethod
     def save_dashboard_tickets(cls, dashboard_file):
+        logger.info("Saving tickets to  %s", dashboard_file)
         tickets_dicts = []
         with open(dashboard_file, "w") as file:
             for ticket in cls.dashboard_tickets:
