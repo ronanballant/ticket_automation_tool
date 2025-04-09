@@ -6,7 +6,9 @@ DEST_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/sps_proce
 PYTHON_SCRIPT="/app01/secops_code/ticket_automation/ticket_automation_tool/time_collector.py"
 LOG_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/run_time_collector.log"
 LOCK_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/run_time_collector.lock"
-PYTHON_BIN="/app01/secops_code/ticket_automation/ticket_automation_tool/venv/bin/python3"  # or your venv path
+PYTHON_BIN="/app01/secops_code/ticket_automation/ticket_automation_tool/venv/bin/python3"
+DASHBOARD_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/dashboard_tickets.json"
+T3_PATH="rballant@t3tools.akamai.com:/app01/opt/splunk/var/log/ticket_automation/processed_ticket_data.json"
 # ------------------------------------------------
 
 # Locking to prevent overlapping runs
@@ -28,6 +30,9 @@ fi
 # Run the Python script
 echo "$(date '+%Y-%m-%d %H:%M:%S') - ▶️ Running Python script: $PYTHON_SCRIPT" >> "$LOG_FILE"
 $PYTHON_BIN "$PYTHON_SCRIPT" >> "$LOG_FILE" 2>&1
+
+echo "$(date '+%Y-%m-%d %H:%M:%S') - ▶️ Running rsync" >> "$LOG_FILE"
+rsync -azq "$DASHBOARD_FILE" "$T3_PATH" >> "$LOG_FILE" 2>&1
 
 if [[ $? -eq 0 ]]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - Python script finished successfully." >> "$LOG_FILE"
