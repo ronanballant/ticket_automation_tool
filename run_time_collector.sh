@@ -8,7 +8,7 @@ LOG_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/run_time_c
 LOCK_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/run_time_collector.lock"
 PYTHON_BIN="/app01/secops_code/ticket_automation/ticket_automation_tool/venv/bin/python3"
 DASHBOARD_FILE="/app01/secops_code/ticket_automation/ticket_automation_tool/dashboard_tickets.json"
-T3_PATH="rballant@t3tools.akamai.com:/app01/opt/splunk/var/log/ticket_automation/processed_ticket_data.json"
+T3_PATH="rballant@t3tools.akamai.com:/u0/rballant/processed_ticket_data.json"
 # ------------------------------------------------
 
 # Locking to prevent overlapping runs
