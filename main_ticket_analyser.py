@@ -5,6 +5,7 @@ import csv
 import json
 import os
 import time
+from typing import List
 
 from config import (destination_region, directory_prefix,
                     etp_tickets_in_progress_file, get_logger, project_folder,
@@ -47,7 +48,7 @@ def parse_args():
         "--tickets",
         default=None,
         required=False,
-        type=str,
+        type=List[str],
         help="A list of specific tickets to analyse",
     )
     args = parser.parse_args()
