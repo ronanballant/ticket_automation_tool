@@ -38,9 +38,18 @@ class GitRepoManager:
     def git_commit(self, commit_message):
         self.logger.info(f"Commiting files")
         self.run_command(["git", "commit", "-m", commit_message])
+        if "nothing to commit" in self.std_err.lower():
+            self.logger.warning("No changes to commit.")
+
+    def git_status(self):
+        self.logger.info(f"Getting current status")
+        self.run_command(["git", "status"])
+        self.logger.info(f"Git Status:\n{self.result}")
     
     def push_changes(self, branch_name):
+        self.logger.info(f"Pushing branch {branch_name} to remote...")
         self.run_command(["git", "push", "--set-upstream", "origin", branch_name])
+        self.logger.info(f"Push result: {self.result}")
         self.push_link = self.result
 
     def get_pr_link(self):
@@ -83,7 +92,7 @@ class GitRepoManager:
             self.logger.info(f'SSH_AGENT_PID: {os.environ.get("SSH_AGENT_PID")}')
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Error: {e.stderr if e.stderr else str(e)}")
-            sys.exit(1)
+            
         except Exception as e:
             self.logger.error(f"Unexpected error: {str(e)}")
             sys.exit(1)
