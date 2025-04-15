@@ -221,7 +221,7 @@ def run_process():
                 indicator.add_indicator_to_ticket()
                 indicator.get_candidates()
                 if indicator.legitimate_indicator is True:
-                    logger.info(f"Adding {indicator.fqdn} to intel search fqdns")
+                    logger.info(f"Adding {indicator.candidates} to intel search fqdns")
                     intel_search_fqdns += indicator.candidates
             except Exception as e:
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
