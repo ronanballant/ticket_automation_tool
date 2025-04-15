@@ -48,7 +48,6 @@ def parse_args():
         "--tickets",
         default=None,
         required=False,
-        type=List[str],
         help="A list of specific tickets to analyse",
     )
     args = parser.parse_args()

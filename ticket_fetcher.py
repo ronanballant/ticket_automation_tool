@@ -20,7 +20,6 @@ class TicketFetcher:
         try:
             if self.queue.lower() == "sps":
                 if specified_tickets:
-                    ticket_string = ", ".join(specified_tickets)
                     jql_query = f'project="ReCat Sec Ops Requests" AND issue in ({ticket_string})'
                 else:
                     jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
