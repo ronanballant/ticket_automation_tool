@@ -42,6 +42,14 @@ def parse_args():
         type=str,
         help="Enter sps or etp to choose a queue",
     )
+    parser.add_argument(
+        "-t",
+        "--tickets",
+        default=None,
+        required=False,
+        type=str,
+        help="A list of specific tickets to analyse",
+    )
     args = parser.parse_args()
 
     if args.queue is None:
@@ -50,6 +58,7 @@ def parse_args():
         exit(1)
     else:
         return args
+
 
 
 def muc_server_process(fqdns, server_name, key_handler):
@@ -113,6 +122,7 @@ def muc_server_process(fqdns, server_name, key_handler):
 def run_process():
     intel_search_fqdns = []
     queue = args.queue.lower()
+    specified_tickets = args.tickets
     logger.info(f"{queue.upper()} Process In Progress...")
     tickets_in_progress_file = (
         sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
@@ -131,7 +141,7 @@ def run_process():
     logger.info("Fetching Tickets")
     try:
         ticket_fetcher = TicketFetcher(logger, cert_path, key_path, queue)
-        ticket_fetcher.get_tickets()
+        ticket_fetcher.get_tickets(specified_tickets)
         ticket_fetcher.parse_tickets()
         tickets = ticket_fetcher.tickets
     except Exception as e:

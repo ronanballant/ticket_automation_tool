@@ -16,17 +16,23 @@ class TicketFetcher:
         self.key_path = key_path
         self.queue = queue
 
-    def get_tickets(self):
+    def get_tickets(self, specified_tickets):
         try:
             if self.queue.lower() == "sps":
-                jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
-                # jql_query = f'project="ReCat Sec Ops Requests" AND status IS "Open" AND assignee IS EMPTY'
-                # jql_query = f'project="ReCat Sec Ops Requests" AND issue = "RCSOR-7463"'
+                if specified_tickets:
+                    ticket_string = ", ".join(specified_tickets)
+                    jql_query = f'project="ReCat Sec Ops Requests" AND issue in ({ticket_string})'
+                else:
+                    jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
+                    # jql_query = f'project="ReCat Sec Ops Requests" AND status IS "Open" AND assignee IS EMPTY'
 
             if self.queue.lower() == "etp":
-                jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-                # jql_query = 'project="Enterprise Tier 3 Escalation Support" AND issue = "ENTESC-14284"'
-                # jql_query = 'project="ETPESC" AND issue = "ENTESC-14395"'
+                if specified_tickets:
+                    ticket_string = ", ".join(specified_tickets)
+                    jql_query = f'project="Enterprise Tier 3 Escalation Support" AND issue in ({ticket_string})'
+                else:
+                    jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
+            
             params = {"jql": jql_query, "maxResults": 100}
 
             self.req = requests.get(
