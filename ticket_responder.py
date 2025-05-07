@@ -243,8 +243,8 @@ class TicketResponder:
             self.queue = indicator.ticket.queue
             line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
             ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.etp_fqdn
-            intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "NATIVE_DOMAIN_PERFECT_MATCH"
-            # intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "ALL_TYPES_BEST_MATCH"
+            # intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "NATIVE_DOMAIN_PERFECT_MATCH"
+            intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "ALL_TYPES_BEST_MATCH"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
