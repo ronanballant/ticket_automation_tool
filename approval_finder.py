@@ -359,7 +359,8 @@ class ApprovalFinder:
                     self.logger.info(f"Response text: {response.text}")
 
                 self.approved_tickets.append(ticket.ticket_id)
-                ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
+                if not ticket.time_to_resolution or ticket.time_to_resolution == "" or  ticket.time_to_resolution.strip() == "-":
+                    ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
                 self.logger.info(f"{ticket.ticket_id} closed succesfully")
                 self.update_assignee(ticket.ticket_id)
             else:

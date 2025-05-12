@@ -352,7 +352,8 @@ class TicketResponder:
         tmp_dict["fields"]["components"] = [{"name": "Secops Automation"}]
         tmp_dict["fields"]["customfield_12703"] = "Internal"
         tmp_dict["fields"]["labels"] = ["ENT_SECOPS_OPERATIONS"]
-
+        tmp_dict["fields"]["customfield_10600"] = ["Low"]
+        
         json_object = json.dumps(tmp_dict, indent=4)
         try:
             response = requests.post(
@@ -384,16 +385,20 @@ class TicketResponder:
                     None,
                     None,
                 )
+
+                self.ticket.comment = (
+                    "*Open Cases*\n"
+                    + self.open_table
+                    + "\n\n\n*Closed Cases*\n"
+                    + self.closed_table
+                )
+
                 self.logger.info(f"ETP ticket {self.summary_ticket} created succesfully")
             else:
                 self.summary_ticket_created = False
                 self.logger.info(f"Failed to create ETP ticket. Status code: {status}")
-            self.ticket.comment = (
-                "*Open Cases*\n"
-                + self.open_table
-                + "\n\n\n*Closed Cases*\n"
-                + self.closed_table
-            )
+            
+            
 
     def add_comment(self):
         self.logger.info(f"Adding comment to {self.ticket.ticket_id}")
