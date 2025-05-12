@@ -352,7 +352,7 @@ class TicketResponder:
         tmp_dict["fields"]["components"] = [{"name": "Secops Automation"}]
         tmp_dict["fields"]["customfield_12703"] = "Internal"
         tmp_dict["fields"]["labels"] = ["ENT_SECOPS_OPERATIONS"]
-        tmp_dict["fields"]["customfield_10600"] = "20813"
+        tmp_dict["fields"]["customfield_10600"] = 20813
 
         json_object = json.dumps(tmp_dict, indent=4)
         try:
