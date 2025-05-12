@@ -176,13 +176,9 @@ class TicketFetcher:
                 fqdn_matches = [(match.group(0)) for match in matches]
                 matched_fqdns += fqdn_matches
 
-        matches = [
-            fqdn[4:] if fqdn.startswith("www.") else fqdn
-            for fqdn in matched_fqdns
-        ]
 
         fqdns = []
-        for fqdn in matches:
+        for fqdn in matched_fqdns:
             if tld.extract(fqdn).suffix:
                 fqdns.append(fqdn)
             else:
