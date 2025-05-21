@@ -44,23 +44,42 @@ class ResponseCreator:
             "PHISHTANK",
             "PARTIALLY_MALICIOUS_PHISHING",
             "SOPHOS_PHISHING",
-            "PMDURLSCAN"
-        ]
-
-        botnet_source_list = [
-            "DGA_KNOWN_fAMILY",
-            "CNC",
-            "BMBNK_ALL_CNC",
-            "BMBNK_DGA_ALL_CNC",
-            "NOMINUM_VC_BOTNET",
+            "PMDURLSCAN",
             "JAPAN_ANTI_PHISHING",
             "NOMINUM_VC_PHISHING",
+        ]
+
+
+        botnet_source_list = [
+            "CNC",
+            "BMBNK_ALL_CNC",
+            "NOMINUM_VC_BOTNET",
             "LOOKING_GLASS_CNC",
             "MANUAL_BLACKLIST_CNC",
-            "CNFCKR_CNC",
             "NOMINUM_NPS",
             "SOPHOS_CALLHOME",
+            "NX_DGA_V4",
+            "DGA_KNOWN_fAMILY",
+            "BMBNK_DGA_ALL_CNC",
+            "CNFCKR_CNC",
         ]
+
+        # botnet_source_list = [
+        #     "CNC",
+        #     "BMBNK_ALL_CNC",
+        #     "NOMINUM_VC_BOTNET",
+        #     "LOOKING_GLASS_CNC",
+        #     "MANUAL_BLACKLIST_CNC",
+        #     "NOMINUM_NPS",
+        #     "SOPHOS_CALLHOME",
+        # ]
+
+        # dga_source_list = [
+        #     "NX_DGA_V4",
+        #     "DGA_KNOWN_fAMILY",
+        #     "BMBNK_DGA_ALL_CNC",
+        #     "CNFCKR_CNC",
+        # ]
 
         malware_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in malware_source_list),
@@ -92,39 +111,53 @@ class ResponseCreator:
         )
         botnet_source_matches = botnet_source_pattern.findall(self.indicator.intel_source)
 
+        # dga_source_pattern = re.compile(
+        #     r"|".join(re.escape(source) for source in dga_source_list),
+        #     flags=re.IGNORECASE,
+        # )
+        # dga_source_matches = dga_source_pattern.findall(self.indicator.intel_source)
+
         self.indicator.vt_link = f"https://www.virustotal.com/gui/domain/{self.indicator.fqdn}/detection"
 
         if (
             "resolved IP and name pattern" in self.indicator.intel_source
             or "ncdippat" in self.indicator.intel_source
         ):
-            if self.indicator.fqdn == self.indicator.matched_ioc:
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolved to an IP address with a bad reputation. "
+            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to an IP address with a known bad reputation of malicious activity. "
             else:
                 if self.indicator.ip_in_intel is True:
-                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolves to {self.indicator.resolved_ip} which has indications of malicious activity. "
+                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to {self.indicator.resolved_ip} which has been associated with malicious activity. "
                 else:
-                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it resolved to an IP address with a bad reputation. "
+                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to an IP address associated with malicious activity. "
         elif malware_source_matches:
-            if self.indicator.fqdn == self.indicator.matched_ioc:
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as malicious activity was identified. "
+            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged due to malicious activity. "
             else:
-                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} has been associated with malcious activity. "
+                self.indicator.source_response = f"{self.indicator.fqdn} was blocked because {self.indicator.matched_ioc} has been associated with malicious activity. "
         elif phishing_source_matches:
-            if self.indicator.fqdn == self.indicator.matched_ioc:
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was identified for Phishing activity. "
+            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged due to Phishing activity. "
             else:
                 self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was identified for Phishing activity. "
         elif external_source_matches:
-            if self.indicator.fqdn == self.indicator.matched_ioc:
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it was reported malicious by security vendors. "
+            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+                self.indicator.source_response = f"{self.indicator.fqdn} was flagged due to malicious activity reported by threat intelligence sources. "
             else:
-                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was reported malicious by security vendors. "
+                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was flagged due to malicious activity reported by threat intelligence sources. "
         elif botnet_source_matches:
-            if self.indicator.fqdn == self.indicator.matched_ioc:
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it collided with a DGA. "
+            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+                self.indicator.source_response = f"{self.indicator.fqdn} was identified for malicious activity. "
             else:
-                self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} collided with a DGA. "
+                if self.indicator.ip_in_intel is True:
+                    self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to {self.indicator.resolved_ip} which was associated with malicious activity. "
+                else:
+                    self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was identified for malicious activity. "
+        # elif dga_source_matches:
+        #     if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+        #         self.indicator.source_response = f"{self.indicator.fqdn} was flagged as it collided with a DGA. "
+        #     else:
+        #         self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} collided with a DGA. "
         else:
             self.indicator.source_response = ""
 

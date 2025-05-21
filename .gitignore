@@ -26,6 +26,7 @@ mongo_craden.py
 pr_status.py
 etp_intel_fetcher_update.py
 email_sender.py
+comment_fixer.py
 
 
 # Ignore test files
