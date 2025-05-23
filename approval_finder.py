@@ -247,11 +247,9 @@ class ApprovalFinder:
                                     entry_found = True
                                     intel_entry.is_approved = True
                                     self.update_owner(intel_entry, reviewed_change_string)
+                                    indicator.reviewed_resolution = "Allow"
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "whitelist"
-                                        indicator.reviewed_resolution = "Allow"
-                                    else:
-                                        indicator.reviewed_resolution = indicator.indicator_resolution
 
                                     self.generate_data_string(indicator)
                         
@@ -265,11 +263,9 @@ class ApprovalFinder:
                                     intel_entry.is_approved = True
                                     self.update_owner(intel_entry, reviewed_change_string)
                                     indicator.sps_feed = intel_entry.approved_intel_change.split(",")[-1]
+                                    indicator.reviewed_resolution = "Block"
                                     if intel_entry.intel_list.lower() == "possible_changes":
                                         intel_entry.intel_list = "blacklist"
-                                        indicator.reviewed_resolution = "Block"
-                                    else:
-                                        indicator.reviewed_resolution = indicator.indicator_resolution
                                     self.generate_data_string(indicator)
                         
                         if entry_found is False:
@@ -516,7 +512,6 @@ class ApprovalFinder:
         self.logger.info(f"Creating intel data string for {indicator.fqdn}")
         date = datetime.today().strftime("%m/%d/%Y")
         reason = f"Internal|Carrier|SecOps|{indicator.ticket.ticket_id}"
-
         if indicator.reviewed_resolution == "Allow":
             data_string = [
                 date,
