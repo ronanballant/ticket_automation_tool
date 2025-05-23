@@ -74,6 +74,7 @@ class S3Client:
         #     self.logger.error(f"No files collected")
 
     def read_s3_file(self, filename):
+        self.logger.info("Reading from %s", filename)
         response = self.s3_client.get_object(Bucket=self.secops_s3_bucket, Key=filename)
         self.file_content = response["Body"].read().decode("utf-8")
 

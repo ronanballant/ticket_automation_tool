@@ -151,7 +151,7 @@ if __name__ == "__main__":
         exit()
 
     s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
-    logger.info(f"FQDNs to search: {data}")
+    logger.info(f"FQDNs to add: {data}")
     intel_updates = [row.strip().replace("'","") for row in data]
     logger.info(f"intel_updates: {intel_updates}")
     if intel_updates[0]:
