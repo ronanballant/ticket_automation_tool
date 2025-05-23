@@ -53,14 +53,14 @@ if __name__ == "__main__":
         processed_tickets_file = sps_processed_tickets_file
         open_summary_tickets_file = open_sps_summary_tickets_file
     elif server_name == "oth-mpbv4":
-        queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        processed_tickets_file = sps_processed_tickets_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
-        # queue = "ETP"
-        # tickets_in_progress_file = etp_tickets_in_progress_file
-        # processed_tickets_file = etp_processed_tickets_file
-        # open_summary_tickets_file = open_etp_summary_tickets_file
+        # queue = "SPS"
+        # tickets_in_progress_file = sps_tickets_in_progress_file
+        # processed_tickets_file = sps_processed_tickets_file
+        # open_summary_tickets_file = open_sps_summary_tickets_file
+        queue = "ETP"
+        tickets_in_progress_file = etp_tickets_in_progress_file
+        processed_tickets_file = etp_processed_tickets_file
+        open_summary_tickets_file = open_etp_summary_tickets_file
 
     elif server_name == "prod-galaxy-t4tools.dfw02.corp.akamai.com":
         queue = "ETP"
@@ -114,21 +114,22 @@ if __name__ == "__main__":
             approval_finder.open_jira_ticket()
             logger.info(f"Parsing {summary_ticket} description")
             approval_finder.parse_ticket()
-            logger.info(f"Finding summary resolution status")
-            approval_finder.find_if_resolved()
-
-            if approval_finder.process_summary_ticket is False:
-                close_summary(logger, approval_finder, summary_ticket)
-                continue
-
             logger.info(f"Fetching {summary_ticket} comments")
             approval_finder.get_comments()
             logger.info(f"Getting approval status")
             approval_finder.find_if_approved()
-
             if approval_finder.intel_changes_approved is False:
-                logger.info(f"Changes not approved. Ending process...")
-                continue
+                logger.info(f"Finding summary resolution status")
+                approval_finder.find_if_resolved()
+                if approval_finder.process_summary_ticket is False:
+                    logger.info(f"Summary ticket closed...")
+                    close_summary(logger, approval_finder, summary_ticket)
+                    continue
+                else:
+                    logger.info(f"Threats not approved. Ending {summary_ticket} process...")
+                    continue
+            else:
+                logger.info(f"Changes approved")
 
             logger.info(f"Parsing approved intel updates")
             approval_finder.parse_reviewed_changes()
