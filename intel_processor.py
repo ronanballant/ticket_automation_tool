@@ -182,9 +182,9 @@ class IntelProcessor:
             for url in urls:
                 response = requests.post(url, data=data, verify=False)
                 # Print full response including headers
-                print("Status Code:", response.status_code)
-                print("Headers:", response.headers)
-                print("Body:", response.text)
+                # print("Status Code:", response.status_code)
+                # print("Headers:", response.headers)
+                # print("Body:", response.text)
 
         for intel_entry in self.blacklist:
             entry = intel_entry.split(",")
@@ -217,9 +217,9 @@ class IntelProcessor:
             for url in urls:
                 response = requests.post(url, data=data, verify=False)
                 # Print full response including headers
-                print("Status Code:", response.status_code)
-                print("Headers:", response.headers)
-                print("Body:", response.text)
+                # print("Status Code:", response.status_code)
+                # print("Headers:", response.headers)
+                # print("Body:", response.text)
 
     def update_indicator(self, entry):
         entry.is_valid_update = True
