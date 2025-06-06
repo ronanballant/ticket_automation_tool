@@ -165,7 +165,7 @@ class IntelProcessor:
                 "https://freshmilk.prod-us-ord.prod.spof.akaetp.net/api/v1/entry/add",
                 "https://freshmilk.staging.qa.spof.akaetp.net/api/v1/entry/add"
             ]
-            entry = intel_entry.entry.split(",")
+            entry = intel_entry.split(",")
             fqdn = entry[0]
             ticket = entry[1]
 
@@ -187,7 +187,7 @@ class IntelProcessor:
                 print("Body:", response.text)
 
         for intel_entry in self.blacklist:
-            entry = intel_entry.entry.split(",")
+            entry = intel_entry.split(",")
             fqdn = entry[0]
             ticket = entry[1]
             block_feed = entry[2].lower()
