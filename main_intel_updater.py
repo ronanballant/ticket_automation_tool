@@ -220,7 +220,9 @@ if __name__ == "__main__":
                         logger.info(f"Transfering {sps_intel_update_file} to SPOF VM")
                         intel_processor.transfer_sps_update_file()
                         logger.info(f"Triggering {intel_processor_path} on SPOF VM")
-                        intel_processor.trigger_sps_intel_update()
+                        # intel_processor.trigger_sps_intel_update()
+
+                        intel_processor.update_linode()
 
                     approval_finder.generate_data_string_comment()
                     if intel_processor.update_triggered is True:

@@ -2,9 +2,11 @@ import fileinput
 import csv
 from config import (destination_ip, destination_username, 
                     intel_processor_path, jump_host_ip, jump_host_username, private_key_path,
-                    destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_file, sps_intel_update_file)
+                    destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_file, 
+                    sps_intel_update_file, feed_processor_api_key)
 from typing import List
 import subprocess
+import requests
 
 
 class IntelProcessor:
@@ -156,6 +158,68 @@ class IntelProcessor:
                         + f"Error: {e.stderr}\n"
                         + "{code}"
                     )
+            
+    def update_linode(self):
+        for intel_entry in self.whitelist:
+            urls = [
+                "https://freshmilk.prod-us-ord.prod.spof.akaetp.net/api/v1/entry/add",
+                "https://freshmilk.staging.qa.spof.akaetp.net/api/v1/entry/add"
+            ]
+            entry = intel_entry.entry.split(",")
+            fqdn = entry[0]
+            ticket = entry[1]
+
+            data = {
+                "name": fqdn,
+                "blockability_class": "alexa-whitelist-additions",
+                "threat_type": "1000",
+                "time_expire": "3650 days",
+                "reason": f"Internal|Carrier|SecOps|{ticket}",
+                "confidence": "0.95",
+                "api_key": feed_processor_api_key
+            }
+
+            for url in urls:
+                response = requests.post(url, data=data, verify=False)
+                # Print full response including headers
+                print("Status Code:", response.status_code)
+                print("Headers:", response.headers)
+                print("Body:", response.text)
+
+        for intel_entry in self.blacklist:
+            entry = intel_entry.entry.split(",")
+            fqdn = entry[0]
+            ticket = entry[1]
+            block_feed = entry[2].lower()
+            if "phishing" in block_feed:
+                feed = "tps-phishing"
+                threat_type = 402
+            elif "malware" in block_feed:
+                feed = "tps-malware"
+                threat_type = 302
+            elif "botnet" in block_feed:
+                feed = "gix-vta-block"
+                threat_type = 1000
+            else:
+                self.logger.info("no feed found: %s", entry)
+                continue
+
+            data = {
+                "name": fqdn,
+                "blockability_class": feed,
+                "threat_type": threat_type,
+                "time_expire": "3650 days",
+                "reason": f"Internal|Carrier|SecOps|{ticket}",
+                "confidence": "0.95",
+                "api_key": feed_processor_api_key
+            }
+
+            for url in urls:
+                response = requests.post(url, data=data, verify=False)
+                # Print full response including headers
+                print("Status Code:", response.status_code)
+                print("Headers:", response.headers)
+                print("Body:", response.text)
 
     def update_indicator(self, entry):
         entry.is_valid_update = True
