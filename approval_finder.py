@@ -4,7 +4,7 @@ import time
 import unicodedata
 from typing import Dict, List
 import Levenshtein 
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 from ticket import Ticket
 
@@ -355,7 +355,7 @@ class ApprovalFinder:
                     self.logger.info(f"Response text: {response.text}")
 
                 self.approved_tickets.append(ticket.ticket_id)
-                if not ticket.time_to_resolution or ticket.time_to_resolution == "" or  ticket.time_to_resolution.strip() == "-":
+                if not ticket.time_to_resolution or isinstance(ticket.time_to_resolution, timedelta) or ticket.time_to_resolution == "" or  ticket.time_to_resolution.strip() == "-":
                     ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
                 self.logger.info(f"{ticket.ticket_id} closed succesfully")
                 self.update_assignee(ticket.ticket_id)
@@ -429,8 +429,10 @@ class ApprovalFinder:
 
             status = str(response.status_code)
             if status.startswith("2"):
+                self.summary_updated = True
                 self.logger.info("Summary comment added")
             else:
+                self.summary_updated = False
                 self.logger.info(f"Summary comment not added - Status: {status}")
         else:
             self.logger.info(f"No comment for {self.summary_ticket}")
@@ -474,6 +476,8 @@ class ApprovalFinder:
                 ticket_dict.pop("possible_changes", None)  
                 ticket_dict.pop("comment_greeting", None)  
                 ticket_dict.pop("comment_sign_off", None)  
+                ticket_dict.pop("comment", None)  
+                ticket_dict.pop("ticket_responses", None)  
                 for indicator in ticket_dict.get("indicators", []):
                     indicator.pop("vt_link", None)  
                     indicator.pop("comment", None)  
@@ -522,6 +526,7 @@ class ApprovalFinder:
                 reason.replace("|", "\\|"),
                 indicator.ticket.ticket_id
             ]
+            indicator.intel_summary_string = data_string
         else:
             data_string = [
                 date,
@@ -532,6 +537,7 @@ class ApprovalFinder:
                 reason.replace("|", "\\|"),
                 indicator.ticket.ticket_id
             ]
+            indicator.intel_summary_string = data_string
         
         ApprovalFinder.intel_data_strings.append(data_string)
 

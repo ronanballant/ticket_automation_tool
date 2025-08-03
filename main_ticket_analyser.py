@@ -1,27 +1,21 @@
 #!/usr/bin/python3
 
 import argparse
-import csv
-import json
 import os
-import time
-from typing import List
 
-from config import (destination_region, directory_prefix,
-                    etp_tickets_in_progress_file, get_logger, project_folder,
-                    results_path, search_fqdns_local_file, search_fqdns_path,
-                    secops_member, secops_s3_aws_access_key,
-                    secops_s3_aws_secret_key, secops_s3_bucket,
-                    secops_s3_endpoint, sps_intel_results_local_file,
+from config import (carrier_intel_access_key, carrier_intel_bucket,
+                    carrier_intel_endpoint, carrier_intel_region,
+                    carrier_intel_secret_key, etp_tickets_in_progress_file,
+                    get_logger, project_folder, secops_member,
                     sps_tickets_in_progress_file)
+from duckdb_fqdn_lookup import DuckDBFQDNLookup
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
 from key_handler import KeyHandler
 from response_creator import ResponseCreator
 from rule_fetcher import RuleFetcher
-from s3_client import S3Client
-from sps_intel_fetcher import SPSIntelFetcher
+from carrier_intel_loader import CarrierIntelLoader
 from ticket import Ticket
 from ticket_fetcher import TicketFetcher
 from ticket_resolver import TicketResolver
@@ -39,14 +33,14 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="etp",
+        default="sps",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
     parser.add_argument(
         "-t",
         "--tickets",
-        default=None,
+        # default="RCSOR-8167",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
@@ -60,65 +54,6 @@ def parse_args():
         return args
 
 
-
-def muc_server_process(fqdns, server_name, key_handler):
-    logger.info("Running on Muc server")
-    fqdns = list(set(fqdns))
-
-    if len(fqdns) < 1:
-        logger.info("No IOCs to process... Exiting Process")
-        key_handler.remove_personal_keys()
-        exit()
-
-    if "muc" in server_name:
-        s3_client = S3Client(
-            logger,
-            destination_region,
-            secops_s3_endpoint,
-            secops_s3_bucket,
-            secops_s3_aws_access_key,
-            secops_s3_aws_secret_key,
-            directory_prefix,
-        )
-        s3_client.initialise_client()
-
-        with open(search_fqdns_local_file, "w") as file:
-            writer = csv.writer(file)
-            for fqdn in fqdns:
-                writer.writerow([fqdn])
-
-        s3_client.write_file(search_fqdns_local_file, search_fqdns_path)
-        s3_client.write_file(search_fqdns_local_file, results_path)
-
-        recheck = True
-        max_retries = 100
-        retry_count = 0
-        while recheck and retry_count < max_retries:
-            time.sleep(60)
-            logger.info(f"Atttempt {retry_count+1}")
-            logger.info(f"Reading S3 file")
-            s3_client.read_s3_file(results_path)
-
-            if s3_client.file_content:
-                try:
-                    json_results = json.loads(
-                        s3_client.file_content.strip()
-                    )  # Strip spaces & newlines
-                    if json_results:  # Check if it's a valid, non-empty JSON
-                        recheck = False
-                    else:
-                        retry_count += 1
-                except json.JSONDecodeError as e:
-                    retry_count += 1  # Keep retrying if JSON is invalid
-            else:
-                retry_count += 1
-
-        if retry_count > max_retries:
-            logger.info("Retry count exceeded... Exiting script")
-
-        SPSIntelFetcher.previous_queries = json_results.copy()
-
-
 def run_process():
     intel_search_fqdns = []
     queue = args.queue.lower()
@@ -127,7 +62,6 @@ def run_process():
     tickets_in_progress_file = (
         sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
     )
-    server_name = os.uname().nodename
 
     logger.info("Fetching Keys")
     try:
@@ -226,9 +160,14 @@ def run_process():
             except Exception as e:
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
-    if queue == "sps":
-        muc_server_process(intel_search_fqdns, server_name, key_handler)
-
+    carrier_s3_client = DuckDBFQDNLookup(
+        carrier_intel_region,
+        carrier_intel_endpoint,
+        carrier_intel_bucket,
+        carrier_intel_access_key,
+        carrier_intel_secret_key,
+    )
+    carrier_intel_fetcher = CarrierIntelLoader(logger, carrier_s3_client)
     responder = TicketResponder(logger, secops_member, cert_path, key_path)
     try:
         for ticket in Ticket.all_tickets:
@@ -266,18 +205,27 @@ def run_process():
                 if queue == "sps":
                     try:
                         logger.info("Querying SPS intel")
-                        intel_fetcher = SPSIntelFetcher(logger, indicator)
+                        carrier_intel_fetcher.indicator = indicator
                         for candidate in indicator.candidates:
                             indicator.matched_ioc_type = "DOMAIN"
                             indicator.candidate = candidate
-                            intel_fetcher.read_previous_queries()
-                            if not intel_fetcher.results and "muc" not in server_name:
-                                intel_fetcher.fetch_intel()
-                            intel_fetcher.assign_results()
+                            carrier_intel_fetcher.read_previous_s3_queries()
+                            if carrier_intel_fetcher.result:
+                                carrier_intel_fetcher.assign_s3_intel()
+                            else:
+                                carrier_intel_fetcher.query_s3_intel()
+                                if carrier_intel_fetcher.result:
+                                    carrier_intel_fetcher.assign_s3_intel()
+                                else:
+                                    carrier_intel_fetcher.no_s3_intel()
 
                             if indicator.is_in_intel is True:
                                 indicator.matched_ioc = candidate
                                 break
+                            else:
+                                # Add IP functioinality 
+                                # Add VT for matched candidate here
+                                pass
                     except Exception as e:
                         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
                 else:

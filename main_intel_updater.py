@@ -1,27 +1,19 @@
-import json
+import argparse
+
 import os
-import socket
-import time
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
-from config import (blacklist_file, destination_region, directory_prefix,
-                    etp_intel_repo, etp_processed_tickets_file,
-                    etp_tickets_in_progress_file, get_logger,
-                    intel_processor_path, jira_search_api, jira_ticket_api,
-                    open_etp_summary_tickets_file,
+from config import (blacklist_file, etp_intel_repo, etp_processed_tickets_file,
+                    etp_tickets_in_progress_file, get_logger, jira_search_api, 
+                    jira_ticket_api, open_etp_summary_tickets_file,
                     open_sps_summary_tickets_file, project_folder,
-                    search_fqdns_local_file, secops_feed_file,
-                    secops_s3_aws_access_key, secops_s3_aws_secret_key,
-                    secops_s3_bucket, secops_s3_endpoint,
-                    sps_intel_update_file, sps_intel_update_s3_path,
-                    sps_processed_tickets_file, sps_tickets_in_progress_file,
-                    update_responses_s3_path, whitelist_file)
+                    secops_feed_file, sps_processed_tickets_file, 
+                    sps_tickets_in_progress_file, whitelist_file)
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
 from intel_processor import IntelProcessor
 from key_handler import KeyHandler
-from s3_client import S3Client
 from ticket import Ticket
 
 logger = get_logger("logs_intel_updater.txt")
@@ -29,6 +21,31 @@ cert_path = os.path.join(project_folder, ".intel_updater_personal_crt.crt")
 key_path = os.path.join(project_folder, ".intel_updater_personal_key.key")
 ssh_key_path = os.path.join(project_folder, ".intel_updater_ssh_key")
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Ticket Automation - Intel Updater")
+    parser.add_argument(
+        "-q",
+        "--queue",
+        default="sps",
+        type=str,
+        help="Enter sps or etp to choose a queue",
+    )
+    parser.add_argument(
+        "-s",
+        "--summary_ticket",
+        # default="RCSOR-8173",
+        required=False,
+        help="A comma seperated string of specific tickets to analyse",
+    )
+    args = parser.parse_args()
+
+    if args.queue is None or args.queue.lower() not in ["etp", "sps"]:
+        """If no queue is selected"""
+        parser.print_help()
+        exit(1)
+    else:
+        return args
 
 def close_summary(logger, approval_finder, summary_ticket):
     logger.info(f"Removing {summary_ticket} from {open_summary_tickets_file}")
@@ -46,28 +63,21 @@ def close_summary(logger, approval_finder, summary_ticket):
 
 if __name__ == "__main__":
     logger.info("Intel update process in progress")
-    server_name = socket.gethostname()
-    if "muc" in server_name:
-        queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        processed_tickets_file = sps_processed_tickets_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
-    elif server_name == "oth-mpbv4":
-        queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        processed_tickets_file = sps_processed_tickets_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
-        # queue = "ETP"
-        # tickets_in_progress_file = etp_tickets_in_progress_file
-        # processed_tickets_file = etp_processed_tickets_file
-        # open_summary_tickets_file = open_etp_summary_tickets_file
 
-    elif server_name == "prod-galaxy-t4tools.dfw02.corp.akamai.com":
+    args = parse_args()
+
+    if args.queue.lower() == "sps":
+        queue = "SPS"
+        tickets_in_progress_file = sps_tickets_in_progress_file
+        processed_tickets_file = sps_processed_tickets_file
+        open_summary_tickets_file = open_sps_summary_tickets_file
+    else:
         queue = "ETP"
         tickets_in_progress_file = etp_tickets_in_progress_file
         processed_tickets_file = etp_processed_tickets_file
         open_summary_tickets_file = open_etp_summary_tickets_file
 
+    logger.info(f"Processing {queue} queue...")
     logger.info(f"tickets_in_progress_file path = {tickets_in_progress_file}")
     logger.info(f"open_summary_tickets_file path = {open_summary_tickets_file}")
 
@@ -79,7 +89,7 @@ if __name__ == "__main__":
         jira_search_api,
         jira_ticket_api,
         cert_path,
-        key_path
+        key_path,
     )
 
     logger.info(f"Getting open summary tickets")
@@ -126,7 +136,9 @@ if __name__ == "__main__":
                     close_summary(logger, approval_finder, summary_ticket)
                     continue
                 else:
-                    logger.info(f"Threats not approved. Ending {summary_ticket} process...")
+                    logger.info(
+                        f"Threats not approved. Ending {summary_ticket} process..."
+                    )
                     continue
             else:
                 logger.info(f"Changes approved")
@@ -144,98 +156,86 @@ if __name__ == "__main__":
 
             logger.info(f"Processing Intel changes")
             intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries)
-            intel_processor.process_indicators()
 
+
+            intel_processor.update_triggered = True
             if queue == "SPS":
                 if intel_processor.intel_entries:
-                    intel_processor.add_to_sps_intel_file()
-                    intel_processor.update_linode()
+                    intel_processor.process_sps_indicators()
+                    error_comment = False
+                    summary_comment = False
+                    for intel_entry in IntelEntry.all_intel_entries:
+                        for whitelisted_entry in intel_entry.whitelist:
+                            if whitelisted_entry.update_approved and whitelisted_entry.update_approved is True:
+                                entry = whitelisted_entry.approved_intel_change.strip().split(",")
+                                fqdn = entry[0]
+                                ticket = entry[1]
+                                intel_processor.linode_whitelist_addition(fqdn, ticket)
+                                whitelisted_entry.update_status_code = intel_processor.linode_update_status_code
+                                whitelisted_entry.linode_update_response = intel_processor.linode_update_response
+                                
+                                if '"success": false' in whitelisted_entry.linode_update_response or whitelisted_entry.update_status_code[0] != "2":
+                                    whitelisted_entry.update_triggered = False
+                                    error_comment = True
+                                    intel_processor.error_comment.append(f"{fqdn} - Status Code: {whitelisted_removal_entry.update_status_code} - Response: {blocklist_entry.linode_update_response}")
+                                else:
+                                    summary_comment = True
+                                    intel_processor.summary_comment.append(whitelisted_entry.indicator.intel_summary_string)
+                                    whitelisted_entry.update_triggered = True
 
-                    if "muc" in server_name:
-                        logger.info(f"Running on {server_name}. Starting S3 process")
-                        s3_client = S3Client(
-                            logger,
-                            destination_region,
-                            secops_s3_endpoint,
-                            secops_s3_bucket,
-                            secops_s3_aws_access_key,
-                            secops_s3_aws_secret_key,
-                            directory_prefix,
-                        )
-                        s3_client.initialise_client()
+                        for whitelisted_removal_entry in intel_entry.whitelist_removal:
+                            if whitelisted_removal_entry.update_approved and whitelisted_removal_entry.update_approved is True:
+                                entry = whitelisted_removal_entry.approved_intel_change.strip().split(",")
+                                fqdn = entry[0]
+                                ticket = entry[1]
+                                intel_processor.linode_whitelist_removal(fqdn, ticket)
+                                whitelisted_removal_entry.update_status_code = intel_processor.linode_update_status_code
+                                whitelisted_removal_entry.linode_update_response = intel_processor.linode_update_response
+                                if '"success": false' in whitelisted_removal_entry.linode_update_response or whitelisted_removal_entry.update_status_code[0] != "2":
+                                    whitelisted_removal_entry.update_triggered = False
+                                    error_comment = True
+                                    intel_processor.error_comment.append(f"{fqdn} - Status Code: {whitelisted_removal_entry.update_status_code} - Response: {blocklist_entry.linode_update_response}")
+                                else:
+                                    summary_comment = True
+                                    intel_processor.summary_comment.append(whitelisted_removal_entry.indicator.intel_summary_string)
+                                    whitelisted_removal_entry.update_triggered = True
+
+                        for blocklist_entry in intel_entry.blacklist:
+                            if blocklist_entry.update_approved and blocklist_entry.update_approved is True:
+                                entry = blocklist_entry.approved_intel_change.strip().split(",")
+                                fqdn = entry[0]
+                                ticket = entry[1]
+                                block_feed = entry[2]
+                                intel_processor.linode_blocklist_update(fqdn, ticket, block_feed)
+                                blocklist_entry.update_status_code = intel_processor.linode_update_status_code
+                                blocklist_entry.linode_update_response = intel_processor.linode_update_response
+                                if '"success": false' in blocklist_entry.linode_update_response or blocklist_entry.update_status_code[0] != "2":
+                                    error_comment = True
+                                    blocklist_entry.update_triggered = False
+                                    intel_processor.error_comment.append(f"{fqdn} - Status Code: {blocklist_entry.linode_update_response} - Response: {blocklist_entry.linode_update_response}")
+                                else:
+                                    summary_comment = True
+                                    intel_processor.summary_comment.append(blocklist_entry.indicator.intel_summary_string)
+                                    blocklist_entry.update_triggered = True
+                                    # intel_processor.summary_comment.append(.intel_summary_string)
+                            
+
+                    # approval_finder.generate_data_string_comment()
+
+                    if summary_comment is True or error_comment is True:
+                        intel_processor.generate_data_string_comment()
+                        approval_finder.add_summary_comment(intel_processor.data_string_comment)
+                    
+                    if not summary_comment or not error_comment is True:
                         intel_processor.update_triggered = True
-                        if intel_processor.whitelist or intel_processor.blacklist:
-                            try:
-                                s3_client.write_file(
-                                    sps_intel_update_file, sps_intel_update_s3_path
-                                )
-                            except Exception as e:
-                                logger.error(
-                                    f"Failed to send {sps_intel_update_file} to {sps_intel_update_s3_path}:\n{e}"
-                                )
-                                intel_processor.update_triggered = False
-                                intel_processor.error_comment = (
-                                    f"Failed to write intel update to S3 bucket:\n{e}"
-                                )
-                            else:
-                                recheck = True
-                                max_retries = 5
-                                retry_count = 0
-                                update_results = '"success": false'
-                                while recheck and retry_count < max_retries:
-                                    time.sleep(60)
-                                    s3_client.read_s3_file(update_responses_s3_path)
-
-                                    if s3_client.file_content:
-                                        try:
-                                            json_results = json.loads(
-                                                s3_client.file_content.strip()
-                                            )
-                                            if json_results:
-                                                update_results = json_results
-                                                recheck = False
-                                            else:
-                                                retry_count += 1
-                                        except json.JSONDecodeError as e:
-                                            retry_count += 1
-                                            logger.info("Attempt %s", retry_count)
-                                    else:
-                                        retry_count += 1
-                                        logger.info("Attempt %s", retry_count)
-
-                                if '"success": false' in update_results:
-                                    intel_processor.update_triggered = False
-                                    intel_processor.error_comment = (
-                                        "*{color:#de350b}!!! Failed to trigger intel update !!!{color}*"
-                                        + "{code:java} \n"
-                                        + update_results
-                                        + "{code}"
-                                    )
-
-                                s3_client.write_file(
-                                    search_fqdns_local_file, update_responses_s3_path
-                                )
-                        else:
-                            logger.info(f"No Whitelist or Blacklist entries to process")
-                    else:
-                        logger.info(f"Transfering {sps_intel_update_file} to SPOF VM")
-                        intel_processor.transfer_sps_update_file()
-                        logger.info(f"Triggering {intel_processor_path} on SPOF VM")
-                        intel_processor.trigger_sps_intel_update()
-
-                    approval_finder.generate_data_string_comment()
-                    if intel_processor.update_triggered is True:
-                        approval_finder.add_summary_comment(
-                            approval_finder.data_string_comment
-                        )
-                    else:
-                        approval_finder.add_summary_comment(intel_processor.error_comment)
+                        approval_finder.summary_updated
                 else:
-                    intel_processor.update_triggered = True
+                    close_summary(logger, approval_finder, summary_ticket)
             elif queue == "ETP":
+                intel_processor.process_indicators()
                 if intel_processor.intel_entries:
                     intel_processor.update_triggered = True
-                    error_comment = None  
+                    error_comment = None
 
                     try:
                         intel_processor.update_triggered = True
@@ -251,9 +251,7 @@ if __name__ == "__main__":
                         git_manager.checkout_master()
                         logger.info("Pulling repo...")
                         git_manager.git_pull()
-                        branch_name = (
-                            f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M")}'
-                        )
+                        branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M")}'
                         logger.info(f"Branch name: {branch_name}")
                         git_manager.create_new_branch(branch_name)
 
@@ -263,7 +261,9 @@ if __name__ == "__main__":
                         intel_processor.update_triggered = True
 
                         if intel_processor.add_error_comment is True:
-                            approval_finder.add_summary_comment(intel_processor.error_comment)
+                            approval_finder.add_summary_comment(
+                                intel_processor.error_comment
+                            )
                         else:
                             git_manager.git_add(
                                 [whitelist_file, blacklist_file, secops_feed_file]

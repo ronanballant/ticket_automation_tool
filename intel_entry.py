@@ -22,6 +22,9 @@ class IntelEntry:
         intel_processor_dict = self.__dict__.copy()
         intel_processor_dict.pop("indicator", None)  
         intel_processor_dict.pop("logger", None)  
+        intel_processor_dict.pop("whitelist", None)  
+        intel_processor_dict.pop("whitelist_removal", None)  
+        intel_processor_dict.pop("blacklist", None) 
         return intel_processor_dict
 
     @classmethod
