@@ -55,7 +55,6 @@ def parse_args():
 
 
 def run_process():
-    intel_search_fqdns = []
     queue = args.queue.lower()
     specified_tickets = args.tickets
     logger.info(f"{queue.upper()} Process In Progress...")
@@ -154,9 +153,6 @@ def run_process():
                 indicator.is_legitimate_indicator()
                 indicator.add_indicator_to_ticket()
                 indicator.get_candidates()
-                if indicator.legitimate_indicator is True:
-                    logger.info(f"Adding {indicator.candidates} to intel search fqdns")
-                    intel_search_fqdns += indicator.candidates
             except Exception as e:
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
