@@ -1,5 +1,5 @@
+import argparse
 import os
-import socket
 
 from config import (etp_tickets_in_progress_file, get_logger,
                     open_etp_summary_tickets_file,
@@ -16,21 +16,47 @@ key_path = os.path.join(project_folder, ".summary_creator_personal_key.key")
 ssh_key_path = os.path.join(project_folder, ".summary_creator_ssh_key")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Ticket Automation Tool")
+    parser.add_argument(
+        "-q",
+        "--queue",
+        default="etp",
+        type=str,
+        help="Enter sps or etp to choose a queue",
+    )
+    parser.add_argument(
+        "-t",
+        "--tickets",
+        # default="RCSOR-8167",
+        required=False,
+        help="A comma seperated string of specific tickets to analyse",
+    )
+    args = parser.parse_args()
+
+    if args.queue is None:
+        """If no queue is selected"""
+        parser.print_help()
+        exit(1)
+    else:
+        return args
+
+
 if __name__ == "__main__":
+    args = parse_args()
+
+    queue = args.queue.lower()
+    if args.queue.lower() not in ["sps", "etp"]:
+        print("Please enter sps or etp to choose a queue!")
+        logger.error(f"{args.queue} is an invalid entry")
+        exit(1)
+
     logger.info("Summary process in progress")
-    server_name = socket.gethostname()
-    if "muc" in server_name:
+    if queue.lower() == "sps":
         queue = "SPS"
         tickets_in_progress_file = sps_tickets_in_progress_file
         open_summary_tickets_file = open_sps_summary_tickets_file
-    elif server_name == "oth-mpbv4":
-        queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
-        # queue = "ETP"
-        # tickets_in_progress_file = etp_tickets_in_progress_file
-        # open_summary_tickets_file = open_etp_summary_tickets_file
-    elif "t4tools" in server_name:
+    elif queue.lower() == "etp":
         queue = "ETP"
         tickets_in_progress_file = etp_tickets_in_progress_file
         open_summary_tickets_file = open_etp_summary_tickets_file
