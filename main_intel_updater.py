@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="sps",
+        default="etp",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
@@ -62,6 +62,7 @@ def close_summary(logger, approval_finder, summary_ticket):
 
 
 if __name__ == "__main__":
+    a = datetime.today().strftime("%Y-%m-%d-%H%M%S")
     logger.info("Intel update process in progress")
 
     args = parse_args()
@@ -251,7 +252,7 @@ if __name__ == "__main__":
                         git_manager.checkout_master()
                         logger.info("Pulling repo...")
                         git_manager.git_pull()
-                        branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M")}'
+                        branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M%S")}'
                         logger.info(f"Branch name: {branch_name}")
                         git_manager.create_new_branch(branch_name)
 
@@ -265,14 +266,17 @@ if __name__ == "__main__":
                                 intel_processor.error_comment
                             )
                         else:
-                            git_manager.git_add(
-                                [whitelist_file, blacklist_file, secops_feed_file]
-                            )
-                            git_manager.git_commit("Ticket Automation")
-                            git_manager.git_status()
-                            git_manager.push_changes(branch_name)
-                            git_manager.get_pr_link()
-                            approval_finder.add_summary_comment(git_manager.pr_comment)
+                            if intel_processor.whitelist or intel_processor.blacklist or intel_processor.manual_blacklist:
+                                git_manager.git_add(
+                                    [whitelist_file, blacklist_file, secops_feed_file]
+                                )
+                                git_manager.git_commit("Ticket Automation")
+                                git_manager.git_status()
+                                git_manager.push_changes(branch_name)
+                                git_manager.get_pr_link()
+                                approval_finder.add_summary_comment(git_manager.pr_comment)
+                            else:
+                                approval_finder.add_summary_comment("No changes to push..")
                     except Exception as e:
                         logger.error(f"Intel update failed: {str(e)}", exc_info=True)
                         error_comment = (
