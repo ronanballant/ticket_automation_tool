@@ -62,7 +62,6 @@ def close_summary(logger, approval_finder, summary_ticket):
 
 
 if __name__ == "__main__":
-    a = datetime.today().strftime("%Y-%m-%d-%H%M%S")
     logger.info("Intel update process in progress")
 
     args = parse_args()

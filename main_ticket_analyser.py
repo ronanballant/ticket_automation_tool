@@ -8,7 +8,7 @@ from config import (carrier_intel_access_key, carrier_intel_bucket,
                     carrier_intel_secret_key, etp_tickets_in_progress_file,
                     get_logger, project_folder, secops_member,
                     sps_tickets_in_progress_file)
-from duckdb_fqdn_lookup import DuckDBFQDNLookup
+from s3_fqdn_lookup import S3FQDNLookup
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
@@ -156,7 +156,7 @@ def run_process():
             except Exception as e:
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
-    carrier_s3_client = DuckDBFQDNLookup(
+    carrier_s3_client = S3FQDNLookup(
         carrier_intel_region,
         carrier_intel_endpoint,
         carrier_intel_bucket,
@@ -164,6 +164,7 @@ def run_process():
         carrier_intel_secret_key,
     )
     carrier_intel_fetcher = CarrierIntelLoader(logger, carrier_s3_client)
+
     responder = TicketResponder(logger, secops_member, cert_path, key_path)
     try:
         for ticket in Ticket.all_tickets:
