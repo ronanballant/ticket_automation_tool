@@ -58,7 +58,7 @@ class Ticket:
     ]
 
     def __init__(
-        self, 
+        self,
         logger,
         ticket_id: str,
         ticket_type: str,
@@ -80,11 +80,13 @@ class Ticket:
         self.urls: List[str] = urls
         self.ips: List[str] = ips
         self.creation_time: str = creation_time
+
         self.indicators: List[Indicator] = []
         self.whitelist_additions: List[str] = []
         self.blacklist_additions: List[str] = []
         self.blacklist_removals: List[str] = []
         self.possible_changes: List[str] = []
+
         self.ticket_resolved: bool = True
         self.waiting_on_resolution: bool = False
         self.send_comment: bool = False
@@ -108,10 +110,10 @@ class Ticket:
             for domain in Ticket.whitelist_domains:
                 if domain in url:
                     benign_url = True
-            
+
             if benign_url is False:
                 urls.append(url)
-        
+
         self.urls = urls
 
     def set_process_flag(self):
@@ -131,26 +133,29 @@ class Ticket:
 
     def set_ticket_comment(self):
         if self.ticket_responses:
-            self.comment = self.comment_greeting + self.ticket_responses + self.comment_sign_off
+            self.comment = (
+                self.comment_greeting + self.ticket_responses + self.comment_sign_off
+            )
         else:
             self.comment = ""
             self.send_comment = False
 
     def to_dict(self):
-        indicators_dict = [indicator.to_dict() for indicator in self.indicators]
+        indicators_dict = [indicator.to_dict()
+                           for indicator in self.indicators]
 
         ticket_dict = self.__dict__.copy()
         if isinstance(self.creation_time, datetime):
-            ticket_dict["creation_time"] = self.creation_time.isoformat()  
+            ticket_dict["creation_time"] = self.creation_time.isoformat()
         if isinstance(self.time_to_response, timedelta):
-            ticket_dict["time_to_response"] = self.time_to_response.total_seconds()  
+            ticket_dict["time_to_response"] = self.time_to_response.total_seconds()
         if isinstance(self.time_to_resolution, timedelta):
-            ticket_dict["time_to_resolution"] = self.time_to_resolution.total_seconds()  
+            ticket_dict["time_to_resolution"] = self.time_to_resolution.total_seconds()
 
-        ticket_dict.pop("indicators", None)  
-        ticket_dict.pop("logger", None)  
+        ticket_dict.pop("indicators", None)
+        ticket_dict.pop("logger", None)
 
-        ticket_dict["indicators"] = indicators_dict 
+        ticket_dict["indicators"] = indicators_dict
 
         return ticket_dict
 
@@ -167,18 +172,23 @@ class Ticket:
             "ips",
             "creation_time",
             "indicators",
-        ] 
+        ]
         data["creation_time"] = datetime.fromisoformat(data["creation_time"])
-        if "time_to_response" in data and isinstance(data["time_to_response"], (int, float)):
-            data["time_to_response"] = timedelta(seconds=data["time_to_response"])
+        if "time_to_response" in data and isinstance(
+            data["time_to_response"], (int, float)
+        ):
+            data["time_to_response"] = timedelta(
+                seconds=data["time_to_response"])
         else:
-            data["time_to_response"] = None  
-        
-        if "time_to_resolution" in data and isinstance(data["time_to_resolution"], (int, float)):
-            data["time_to_resolution"] = timedelta(seconds=data["time_to_resolution"])
+            data["time_to_response"] = None
+
+        if "time_to_resolution" in data and isinstance(
+            data["time_to_resolution"], (int, float)
+        ):
+            data["time_to_resolution"] = timedelta(
+                seconds=data["time_to_resolution"])
         else:
-            data["time_to_resolution"] = None  
-        
+            data["time_to_resolution"] = None
 
         ticket = cls(
             logger,
@@ -195,7 +205,7 @@ class Ticket:
 
         ticket.indicators = []
         for indicator_data in data.get("indicators", []):
-            indicator = Indicator.from_dict(indicator_data, ticket, logger) 
+            indicator = Indicator.from_dict(indicator_data, ticket, logger)
             indicator.add_indicator_to_ticket()
 
         for key, value in data.items():
@@ -216,22 +226,22 @@ class Ticket:
             for ticket in cls.all_tickets:
                 ticket_dict = ticket.to_dict()
                 tickets_dicts.append(ticket_dict)
-            
+
             json.dump(tickets_dicts, file, indent=4)
 
     def update_tickets_in_progress(self, in_progress_file):
         with open(in_progress_file, "r") as file:
             try:
-                in_progress_dict = json.load(file) 
+                in_progress_dict = json.load(file)
                 if not in_progress_dict:
-                    in_progress_dict = [] 
+                    in_progress_dict = []
             except json.JSONDecodeError:
-                in_progress_dict = []  
+                in_progress_dict = []
 
         with open(in_progress_file, "w") as file:
             ticket_dict = self.to_dict()
             in_progress_dict.append(ticket_dict)
-            
+
             json.dump(in_progress_dict, file, indent=4)
 
     @classmethod
