@@ -133,8 +133,6 @@ class VirusTotalFetcher:
                     self.decoded_response = json.loads(response.text)
                     status = self.decoded_response.get('data', {}).get('attributes', {}).get('status', "")
                     if status == "completed":
-                        self.rescan = True
-                        self.assign_results()
                         scan_complete = True
                     else:
                         attempt += 1
@@ -192,51 +190,51 @@ class VirusTotalFetcher:
     def assign_results(self):
         try:
             self.today = datetime.today()
-            if self.rescan is True:
-                data_response = self.decoded_response.get("data", {})
-                filtered_response = data_response.get("attributes", {})
+            # if self.rescan is True:
+            #     data_response = self.decoded_response.get("data", {})
+            #     filtered_response = data_response.get("attributes", {})
+            #     last_analysis_stats = filtered_response.get("stats", {})
+            #     vt_indications = last_analysis_stats.get("malicious", "-")
+            #     if vt_indications != "-":
+            #         self.indicator.vt_indications = vt_indications
+            #         self.indicator.has_vt_data = True
+            #     self.indicator.last_scanned = filtered_response.get("date", "")
+            #     if self.indicator.last_scanned != "-":
+            #         last_scanned_datetime = datetime.utcfromtimestamp(self.indicator.last_scanned)
+            #         self.indicator.days_since_last_scanned = (self.today - last_scanned_datetime).days
+            #     else:
+            #         self.indicator.days_since_last_scanned = 365
+            # else:
+            self.logger.info(f"Attributing VT data")
+            data_response = self.decoded_response.get("data", {})
+            filtered_response = data_response.get("attributes", {})
+            last_analysis_stats = filtered_response.get("last_analysis_stats", {})
+            if not last_analysis_stats:
                 last_analysis_stats = filtered_response.get("stats", {})
-                vt_indications = last_analysis_stats.get("malicious", "-")
-                if vt_indications != "-":
-                    self.indicator.vt_indications = vt_indications
-                    self.indicator.has_vt_data = True
-                self.indicator.last_scanned = filtered_response.get("date", "")
-                if self.indicator.last_scanned != "-":
-                    last_scanned_datetime = datetime.utcfromtimestamp(self.indicator.last_scanned)
-                    self.indicator.days_since_last_scanned = (self.today - last_scanned_datetime).days
-                else:
-                    self.indicator.days_since_last_scanned = 365
+            self.indicator.vt_indications = last_analysis_stats.get("malicious", "-")
+            self.indicator.creation_date = filtered_response.get("creation_date", "")
+            self.indicator.last_scanned = filtered_response.get("last_analysis_date", "")
+            if not self.indicator.last_scanned:
+                self.indicator.last_scanned = "-"
+            self.indicator.categories = filtered_response.get("categories", {})
+            self.indicator.analysis_results = filtered_response.get(
+                "last_analysis_results", ""
+            )
+            self.indicator.tags = filtered_response.get("tags", "")
+            self.indicator.data_source = "External"
+            self.indicator.has_vt_data = True
+
+            if self.indicator.creation_date:
+                creation_datetime = datetime.utcfromtimestamp(self.indicator.creation_date)
+                self.indicator.days_since_creation = (self.today - creation_datetime).days
             else:
-                self.logger.info(f"Attributing VT data")
-                data_response = self.decoded_response.get("data", {})
-                filtered_response = data_response.get("attributes", {})
-                last_analysis_stats = filtered_response.get("last_analysis_stats", {})
-                if not last_analysis_stats:
-                    last_analysis_stats = filtered_response.get("stats", {})
-                self.indicator.vt_indications = last_analysis_stats.get("malicious", "-")
-                self.indicator.creation_date = filtered_response.get("creation_date", "")
-                self.indicator.last_scanned = filtered_response.get("last_analysis_date", "")
-                if not self.indicator.last_scanned:
-                    self.indicator.last_scanned = "-"
-                self.indicator.categories = filtered_response.get("categories", {})
-                self.indicator.analysis_results = filtered_response.get(
-                    "last_analysis_results", ""
-                )
-                self.indicator.tags = filtered_response.get("tags", "")
-                self.indicator.data_source = "External"
-                self.indicator.has_vt_data = True
+                self.indicator.days_since_creation = 100
 
-                if self.indicator.creation_date:
-                    creation_datetime = datetime.utcfromtimestamp(self.indicator.creation_date)
-                    self.indicator.days_since_creation = (self.today - creation_datetime).days
-                else:
-                    self.indicator.days_since_creation = 100
-
-                if self.indicator.last_scanned != "-":
-                    last_scanned_datetime = datetime.utcfromtimestamp(self.indicator.last_scanned)
-                    self.indicator.days_since_last_scanned = (self.today - last_scanned_datetime).days
-                else:
-                    self.indicator.days_since_last_scanned = 365
+            if self.indicator.last_scanned != "-":
+                last_scanned_datetime = datetime.utcfromtimestamp(self.indicator.last_scanned)
+                self.indicator.days_since_last_scanned = (self.today - last_scanned_datetime).days
+            else:
+                self.indicator.days_since_last_scanned = 365
         except Exception as e:
             self.logger.error(f"Error attributing VT data to {self.indicator.fqdn}: {e}")
             self.no_data()

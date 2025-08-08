@@ -33,14 +33,14 @@ def parse_args():
     parser.add_argument(
         "-q",
         "--queue",
-        default="sps",
+        default="etp",
         type=str,
         help="Enter sps or etp to choose a queue",
     )
     parser.add_argument(
         "-t",
         "--tickets",
-        # default="RCSOR-8167",
+        # default="RCSOR -8223",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
@@ -183,9 +183,9 @@ def run_process():
                     vt_fetcher.get_previous_query()
                     if not vt_fetcher.previous_vt_query:
                         vt_fetcher.rescan = False
-                        vt_fetcher.get_external_data()
                         vt_fetcher.scan_domain()
                         vt_fetcher.analyse_vt_rescan()
+                        vt_fetcher.get_external_data()
                         vt_fetcher.save_results()
                         if vt_fetcher.indicator.has_vt_data is True:
                             vt_fetcher.get_domain_attributions()
