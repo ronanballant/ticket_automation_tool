@@ -169,24 +169,26 @@ class ResponseCreator:
             self.indicator.is_resolved = False
             self.indicator.ticket.requires_approval = True
             self.indicator.ticket.ticket_resolved = False
-            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*Resolution*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.source_response} Analysis is currently in progress.\n "
+            if self.indicator.ticket.queue == "SPS":
+                self.indicator.ticket.send_comment = True
+            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \n{self.indicator.source_response} Analysis is currently in progress.\n "
         elif self.indicator.indicator_resolution.lower() == "allow":
             self.indicator.ticket.send_comment = True
             self.indicator.ticket.requires_approval = True
-            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.source_response} {self.indicator.rule_response}\n "
+            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \n{self.indicator.source_response} {self.indicator.rule_response}\n "
         elif self.indicator.indicator_resolution.lower() == "block":
             self.indicator.ticket.send_comment = True
             self.indicator.ticket.requires_approval = True
-            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \nFollowing a thorough investigation, several indications of {self.indicator.attribution} were found. \nTherefore the domain will be added to the intel. \n*Links*:\n{self.indicator.vt_link}\n"
+            self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \nFollowing a thorough investigation, several indications of {self.indicator.attribution} were found. \nTherefore the domain will be added to the intel. \n*Links*:\n{self.indicator.vt_link}\n"
         elif self.indicator.indicator_resolution.lower() == "closed":
             self.indicator.ticket.send_comment = True
             if self.indicator.ticket.ticket_type == "FP":
                 if self.indicator.is_in_intel is True:
-                    self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n"
+                    self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n"
                 else:
-                    self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n"
+                    self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \n{self.indicator.rule_response} \n"
             else:
-                self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*RESOLUTION*: {self.indicator.indicator_resolution} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n "
+                self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n "
         else:
             self.logger.info(f"Incorrect resolution: {self.indicator.indicator_resolution}")
             self.indicator.indicator_resolution = "In Progress"
