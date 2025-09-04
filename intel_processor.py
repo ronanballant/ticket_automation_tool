@@ -3,7 +3,7 @@ import csv
 from config import (destination_ip, destination_username, 
                     intel_processor_path, jump_host_ip, jump_host_username, private_key_path,
                     destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_file, 
-                    sps_intel_update_file, feed_processor_api_key, feed_processor_url)
+                    sps_intel_update_file, feed_processor_api_key, feed_processor_url, feed_processor_url2)
 from typing import List
 import subprocess
 import requests
@@ -212,6 +212,11 @@ class IntelProcessor:
                     )
 
     def linode_whitelist_addition(self, fqdn, ticket):
+        urls = [
+            feed_processor_url,
+            feed_processor_url2,
+        ]
+
         data = {
             "name": fqdn,
             "blockability_class": "alexa-whitelist-additions",
@@ -222,14 +227,20 @@ class IntelProcessor:
             "api_key": feed_processor_api_key
         }
 
-        self.logger.info(f"Sending update to Linode whitelist - {fqdn}")
-        response = requests.post(feed_processor_url, data=data, verify=False)
-        self.linode_update_status_code = str(response.status_code)
-        self.linode_update_response = response.text
-        self.logger.info(f"Response status code - {response.status_code}")
-        self.logger.info(f"Response text - {response.text}")
+        for url in urls:
+            self.logger.info(f"Sending update to Linode whitelist - {fqdn}")
+            response = requests.post(url, data=data, verify=False)
+            self.linode_update_status_code = str(response.status_code)
+            self.linode_update_response = response.text
+            self.logger.info(f"Response status code - {response.status_code}")
+            self.logger.info(f"Response text - {response.text}")
 
     def linode_whitelist_removal(self, fqdn, ticket):
+        urls = [
+            feed_processor_url,
+            feed_processor_url2,
+        ]
+
         data = {
             "name": fqdn,
             "blockability_class": "alexa-whitelist-additions",
@@ -240,12 +251,13 @@ class IntelProcessor:
             "api_key": feed_processor_api_key
         }
 
-        self.logger.info(f"Sending update to Linode whitelist removal - {fqdn}")
-        response = requests.post(feed_processor_url, data=data, verify=False)
-        self.linode_update_status_code = str(response.status_code)
-        self.linode_update_response = response.text
-        self.logger.info(f"Response status code - {response.status_code}")
-        self.logger.info(f"Response text - {response.text}")
+        for url in urls:
+            self.logger.info(f"Sending update to Linode whitelist removal - {fqdn}")
+            response = requests.post(url, data=data, verify=False)
+            self.linode_update_status_code = str(response.status_code)
+            self.linode_update_response = response.text
+            self.logger.info(f"Response status code - {response.status_code}")
+            self.logger.info(f"Response text - {response.text}")
 
     def linode_blocklist_update(self, fqdn, ticket, block_feed):
         if "phishing" in block_feed.lower():
@@ -271,17 +283,22 @@ class IntelProcessor:
             "api_key": feed_processor_api_key
         }
 
-        self.logger.info(f"Sending update to Linode blocklist - {fqdn}")
-        response = requests.post(feed_processor_url, data=data, verify=False)
-        self.linode_update_status_code = str(response.status_code)
-        self.linode_update_response = response.text
-        self.logger.info(f"Response status code - {response.status_code}")
-        self.logger.info(f"Response text - {response.text}")
+        urls = [
+            feed_processor_url,
+            feed_processor_url2,
+        ]
+
+        for url in urls:
+            self.logger.info(f"Sending update to Linode blocklist - {fqdn}")
+            response = requests.post(url, data=data, verify=False)
+            self.linode_update_status_code = str(response.status_code)
+            self.linode_update_response = response.text
+            self.logger.info(f"Response status code - {response.status_code}")
+            self.logger.info(f"Response text - {response.text}")
 
             
     def update_linode(self):
         for intel_entry in self.whitelist:
-            url = "https://freshmilk.prod-us-ord.prod.spof.akaetp.net/api/v1/entry/add"
             entry = intel_entry.split(",")
             fqdn = entry[0]
             ticket = entry[1]
@@ -296,9 +313,15 @@ class IntelProcessor:
                 "api_key": feed_processor_api_key
             }
 
-            response = requests.post(url, data=data, verify=False)
-            self.linode_update_status_code = response.status_code
-            self.linode_update_response = response.text
+            urls = [
+                feed_processor_url,
+                feed_processor_url2
+            ]
+
+            for url in urls:
+                response = requests.post(url, data=data, verify=False)
+                self.linode_update_status_code = response.status_code
+                self.linode_update_response = response.text
 
         for intel_entry in self.blacklist:
             entry = intel_entry.split(",")
@@ -328,7 +351,13 @@ class IntelProcessor:
                 "api_key": feed_processor_api_key
             }
 
-            response = requests.post(url, data=data, verify=False)
+            urls = [
+                feed_processor_url,
+                feed_processor_url2
+            ]
+
+            for url in urls:
+                response = requests.post(url, data=data, verify=False)
                 # Print full response including headers
                 # print("Status Code:", response.status_code)
                 # print("Headers:", response.headers)
