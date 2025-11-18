@@ -32,6 +32,20 @@ def parse_args():
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
+    parser.add_argument(
+        "-a",
+        "--archive_path",
+        default="/Users/rballant/Documents/code/jira_ticket_process/etp_tickets_in_progress_1763384406.json",
+        required=False,
+        help="A path to the archived tickets you wish to resummarise (-r also required).",
+    )
+    parser.add_argument(
+        "-r",
+        "--resummarise",
+        action="store_true",
+        default=True,
+        help="Use -r if you wish to resummarise archived tickets (-a also required).",
+    )
     args = parser.parse_args()
 
     if args.queue is None:
@@ -40,6 +54,9 @@ def parse_args():
         exit(1)
     else:
         return args
+    
+def re_summaraise(archived_file):
+    pass
 
 
 if __name__ == "__main__":
@@ -60,6 +77,15 @@ if __name__ == "__main__":
         queue = "ETP"
         tickets_in_progress_file = etp_tickets_in_progress_file
         open_summary_tickets_file = open_etp_summary_tickets_file
+
+    if args.resummarise is True:
+        if args.archive_path:
+            tickets_in_progress_file = args.archive_path
+        else:
+            logger.error("No archive file provided in -a. exiting...")
+            exit()
+
+
 
     summary_creator = SummaryCreator(
         logger, tickets_in_progress_file, open_summary_tickets_file

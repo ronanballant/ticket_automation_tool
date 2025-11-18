@@ -238,67 +238,73 @@ class TicketResponder:
             TicketResponder.indicators, key=lambda x: x.ticket.ticket_id, reverse=False
         )
 
-        for indicator in self.sorted_indicators:
-            self.process_attributes(indicator)
-            self.queue = indicator.ticket.queue
-            line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
-            ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.etp_fqdn
-            # intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "NATIVE_DOMAIN_PERFECT_MATCH"
-            intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "ALL_TYPES_BEST_MATCH"
-            if indicator.indicator_resolution.lower() == "in progress":
-                open_list.append(line)
-                if indicator.ticket.ticket_type == "FP":
-                    self.get_single_intel_source(indicator)
-                    in_progress_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
-                    intel_entry = IntelEntry(
-                        self.logger, indicator, in_progress_line, "possible_changes", "add"
-                    )
-                    intel_entry.append_to_indicator()
-                    possible_changes.append(in_progress_line)
-                    indicator.ticket.possible_changes.append(in_progress_line)
-                    if indicator.is_in_man_bl is True:
-                        self.find_manual_blacklist_entry(indicator)
-                        in_progress_line = "--- " + self.manual_blacklist_entry
+        try:
+            for indicator in self.sorted_indicators:
+                self.process_attributes(indicator)
+                self.queue = indicator.ticket.queue
+                line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
+                ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.etp_fqdn
+                # intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "NATIVE_DOMAIN_PERFECT_MATCH"
+                intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "ALL_TYPES_BEST_MATCH"
+                if indicator.indicator_resolution.lower() == "in progress":
+                    open_list.append(line)
+                    if indicator.ticket.ticket_type == "FP":
+                        self.get_single_intel_source(indicator)
+                        in_progress_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                         intel_entry = IntelEntry(
-                            self.logger, indicator, in_progress_line, "possible_changes", "remove"
+                            self.logger, indicator, in_progress_line, "possible_changes", "add"
                         )
                         intel_entry.append_to_indicator()
                         possible_changes.append(in_progress_line)
                         indicator.ticket.possible_changes.append(in_progress_line)
-                elif indicator.ticket.ticket_type == "FN":
-                    in_progress_line = f"+++ {indicator.etp_fqdn},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
-                    intel_entry = IntelEntry(
-                        self.logger, indicator, in_progress_line, "possible_changes", "add"
-                    )
+                        if indicator.is_in_man_bl is True:
+                            self.find_manual_blacklist_entry(indicator)
+                            if self.manual_blacklist_entry:
+                                in_progress_line = "--- " + self.manual_blacklist_entry
+                                intel_entry = IntelEntry(
+                                    self.logger, indicator, in_progress_line, "possible_changes", "remove"
+                                )
+                                intel_entry.append_to_indicator()
+                                possible_changes.append(in_progress_line)
+                                indicator.ticket.possible_changes.append(in_progress_line)
+                    elif indicator.ticket.ticket_type == "FN":
+                        in_progress_line = f"+++ {indicator.etp_fqdn},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
+                        intel_entry = IntelEntry(
+                            self.logger, indicator, in_progress_line, "possible_changes", "add"
+                        )
+                        intel_entry.append_to_indicator()
+                        possible_changes.append(in_progress_line)
+                        indicator.ticket.possible_changes.append(in_progress_line)
+                elif indicator.indicator_resolution.lower() == "allow":
+                    closed_list.append(line)
+                    self.get_single_intel_source(indicator)
+                    whitelist_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
+                    intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
                     intel_entry.append_to_indicator()
-                    possible_changes.append(in_progress_line)
-                    indicator.ticket.possible_changes.append(in_progress_line)
-            elif indicator.indicator_resolution.lower() == "allow":
-                closed_list.append(line)
-                self.get_single_intel_source(indicator)
-                whitelist_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
-                intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
-                intel_entry.append_to_indicator()
-                whitelist_additions.append(whitelist_line)
-                indicator.ticket.whitelist_additions.append(whitelist_line)
-                if indicator.is_in_man_bl is True:
-                    self.find_manual_blacklist_entry(indicator)
-                    blacklist_removals_line = "--- " + self.manual_blacklist_entry
-                    intel_entry = IntelEntry(
-                        self.logger, indicator, blacklist_removals_line, "blacklist", "remove"
-                    )
+                    whitelist_additions.append(whitelist_line)
+                    indicator.ticket.whitelist_additions.append(whitelist_line)
+                    if indicator.is_in_man_bl is True:
+                        self.find_manual_blacklist_entry(indicator)
+                        if self.manual_blacklist_entry:
+                            blacklist_removals_line = "--- " + self.manual_blacklist_entry
+                            intel_entry = IntelEntry(
+                                self.logger, indicator, blacklist_removals_line, "blacklist", "remove"
+                            )
+                            intel_entry.append_to_indicator()
+                            blacklist_removals.append(blacklist_removals_line)
+                            indicator.ticket.blacklist_removals.append(blacklist_removals_line)
+                elif indicator.indicator_resolution.lower() == "block":
+                    closed_list.append(line)
+                    blacklist_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
+                    intel_entry = IntelEntry(self.logger, indicator, blacklist_line, "blacklist", "add")
                     intel_entry.append_to_indicator()
-                    blacklist_removals.append(blacklist_removals_line)
-                    indicator.ticket.blacklist_removals.append(blacklist_removals_line)
-            elif indicator.indicator_resolution.lower() == "block":
-                closed_list.append(line)
-                blacklist_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
-                intel_entry = IntelEntry(self.logger, indicator, blacklist_line, "blacklist", "add")
-                intel_entry.append_to_indicator()
-                blacklist_additions.append(blacklist_line)
-                indicator.ticket.blacklist_additions.append(blacklist_line)
-            else:
-                closed_list.append(line)
+                    blacklist_additions.append(blacklist_line)
+                    indicator.ticket.blacklist_additions.append(blacklist_line)
+                else:
+                    closed_list.append(line)
+        except Exception as e:
+            print(e)
+            pass
 
         whitelist_additions = list(set(whitelist_additions))
         blacklist_additions = list(set(blacklist_additions))
