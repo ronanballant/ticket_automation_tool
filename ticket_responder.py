@@ -394,12 +394,47 @@ class TicketResponder:
                     None,
                 )
 
-                self.ticket.comment = (
+                self.additional_comments = False
+                self.ticket.comments = [(
                     "*Open Cases*\n"
                     + self.open_table
                     + "\n\n\n*Closed Cases*\n"
                     + self.closed_table
-                )
+                )]
+
+                if len(self.ticket.comments[0]) > 32700:
+                    self.additional_comments = True
+
+                    open_len = max(1, len(open_list) // 2) if open_list else 0
+                    closed_len = max(1, len(closed_list) // 2) if closed_list else 0
+
+
+                    open_one = open_list[:int(open_len)]
+                    open_comment_one = "\n".join(open_one)
+                    open_two = [open_list[0]]
+                    open_two.extend(open_list[int(open_len):])
+                    open_comment_two = "\n".join(open_two)
+
+                    closed_one = closed_list[:int(closed_len)]
+                    closed_comment_one = "\n".join(closed_one)
+                    closed_two = [closed_list[0]]
+                    closed_two.extend(closed_list[int(closed_len):])
+                    closed_comment_two = "\n".join(closed_two)
+                    
+                    self.ticket.comments = [
+                        (
+                            "*Comment 1 of 2*\n\n*Open Cases*\n"
+                            + open_comment_one
+                            + "\n\n\n*Closed Cases*\n"
+                            + closed_comment_one
+                        ),
+                        (
+                            "*Comment 2 of 2*\n\n*Open Cases*\n"
+                            + open_comment_two
+                            + "\n\n\n*Closed Cases*\n"
+                            + closed_comment_two
+                        )
+                    ]
 
                 self.logger.info(f"ETP ticket {self.summary_ticket} created succesfully")
             else:
@@ -414,36 +449,37 @@ class TicketResponder:
 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
-        if self.ticket.queue.lower() == "sps":
-            if self.ticket.ticket_resolved is False:
-                self.assignee = ""
+        for comment in self.ticket.comments:
+            if self.ticket.queue.lower() == "sps":
+                if self.ticket.ticket_resolved is False:
+                    self.assignee = ""
 
-            payload = {
-                "update": {
-                    "comment": [{"add": {"body": self.ticket.comment}}]
+                payload = {
+                    "update": {
+                        "comment": [{"add": {"body": comment}}]
+                    }
                 }
-            }
-        else:
-            payload = {
-                "update": {
-                    "comment": [{"add": {"body": self.ticket.comment}}],
-                    "labels": [{"add": self.label}],
+            else:
+                payload = {
+                    "update": {
+                        "comment": [{"add": {"body": comment}}],
+                        "labels": [{"add": self.label}],
+                    }
                 }
-            }
 
-        response = requests.request(
-            "PUT",
-            url,
-            json=payload,
-            headers=headers,
-            cert=(self.cert_path, self.key_path),
-            verify=False,
-        )
+            response = requests.request(
+                "PUT",
+                url,
+                json=payload,
+                headers=headers,
+                cert=(self.cert_path, self.key_path),
+                verify=False,
+            )
 
-        if str(response.status_code).startswith("2"):
-            self.comment_succesfully_added = True
-        else:
-            self.comment_succesfully_added = False
+            if str(response.status_code).startswith("2"):
+                self.comment_succesfully_added = True
+            else:
+                self.comment_succesfully_added = False
 
     def close_ticket(self):
         if self.ticket.queue == "SPS":
