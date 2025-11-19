@@ -133,11 +133,11 @@ class Ticket:
 
     def set_ticket_comment(self):
         if self.ticket_responses:
-            self.comment = (
+            self.comments = [(
                 self.comment_greeting + self.ticket_responses + self.comment_sign_off
-            )
+            )]
         else:
-            self.comment = ""
+            self.comment = [""]
             self.send_comment = False
 
     def to_dict(self):
