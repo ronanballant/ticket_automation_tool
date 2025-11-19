@@ -35,7 +35,6 @@ def parse_args():
     parser.add_argument(
         "-a",
         "--archive_path",
-        default="/Users/rballant/Documents/code/jira_ticket_process/etp_tickets_in_progress_1763384406.json",
         required=False,
         help="A path to the archived tickets you wish to resummarise (-r also required).",
     )
@@ -43,7 +42,6 @@ def parse_args():
         "-r",
         "--resummarise",
         action="store_true",
-        default=True,
         help="Use -r if you wish to resummarise archived tickets (-a also required).",
     )
     args = parser.parse_args()
