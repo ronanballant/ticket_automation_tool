@@ -210,12 +210,12 @@ class TicketResponder:
                 self.summary_ticket_created = False
                 self.logger.info(f"Failed to create SPS ticket. Status code: {status}")
 
-            self.ticket.comment = (
+            self.ticket.comments = [(
                 "*Open Cases*\n"
                 + self.open_table
                 + "\n\n\n*Closed Cases*\n"
                 + self.closed_table
-            )
+            )]
 
     def create_etp_ticket(self, tickets):
         self.logger.info("Creating ETP ticket")
