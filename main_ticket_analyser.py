@@ -40,7 +40,7 @@ def parse_args():
     parser.add_argument(
         "-t",
         "--tickets",
-        # default="RCSOR -8223",
+        # default="",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
