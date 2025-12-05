@@ -1,6 +1,8 @@
 import base64
 import os
 
+from urllib.parse import quote
+
 import get_az_secret
 from config import (
     asheik_cert_name,
@@ -22,6 +24,7 @@ from config import (
     carrier_intel_access_key_name,
     carrier_intel_secret_key_name,
     feed_processor_api_key_name,
+    mongo_password_name,
 )
 
 
@@ -151,3 +154,12 @@ class KeyHandler:
             self.feed_processor_api_key = feed_processor_api_key
         except Exception as e:
             self.logger.error(f"Error - Failed to load feed processor api key: {e}")
+
+    def get_mongo_password(self):
+        self.logger.info("Getting Mongo password")
+        try:
+            encoded_cert = get_az_secret.get_az_secret(mongo_password_name)
+            mongo_password = quote(encoded_cert, safe="")
+            self.mongo_password = mongo_password
+        except Exception as e:
+            self.logger.error(f"Error - Failed to load Mongo password: {e}")

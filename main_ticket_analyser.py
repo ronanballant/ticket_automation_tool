@@ -78,8 +78,8 @@ def run_process():
         carrier_intel_access_key = key_handler.carrier_intel_access_key
         key_handler.get_carrier_intel_secret_key()
         carrier_intel_secret_key = key_handler.carrier_intel_secret_key
-        key_handler.get_feed_processor_api_key()
-        feed_processor_api_key = key_handler.feed_processor_api_key
+        key_handler.get_mongo_password()
+        mongo_password = key_handler.mongo_password
     except Exception as e:
         logger.error(f"Failed to fetch keys: {e}")
         return
@@ -113,7 +113,7 @@ def run_process():
     if queue == "etp":
         try:
             logger.info("Initialising Mongo connection")
-            mongo_connection = InitialiseMongo(logger)
+            mongo_connection = InitialiseMongo(logger, mongo_password)
         except Exception as e:
             logger.error(f"Failed to intialise Mongo connection: {e}")
             return
