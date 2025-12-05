@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 import requests
-from config import previous_queries_file, vt_api_key
+from config import previous_queries_file
 
 
 class VirusTotalFetcher:
@@ -15,11 +15,12 @@ class VirusTotalFetcher:
     vt_request_count = 0
     vt_api_threshold = 200
 
-    def __init__(self, logger, indicator, ioc) -> None:
+    def __init__(self, logger, indicator, ioc, vt_api_key) -> None:
         self.logger = logger
         self.indicator = indicator
         self.ioc = ioc
         self.previous_vt_query = None
+        self.vt_api_key = vt_api_key
 
     def set_vt_link(self):
         self.indicator.vt_link = (
@@ -113,7 +114,7 @@ class VirusTotalFetcher:
             f"https://www.virustotal.com/api/v3/domains/{self.ioc}/analyse"
         )
 
-        headers = {"accept": "application/json", "x-apikey": vt_api_key}
+        headers = {"accept": "application/json", "x-apikey": self.vt_api_key}
 
         response = requests.post(self.vt_analysis_url, headers=headers)
         response_json = json.loads(response.text)
@@ -133,7 +134,7 @@ class VirusTotalFetcher:
                 f"https://www.virustotal.com/api/v3/analyses/{self.indicator.rescan_id}"
             )
 
-            headers = {"accept": "application/json", "x-apikey": vt_api_key}
+            headers = {"accept": "application/json", "x-apikey": self.vt_api_key}
             while scan_complete is False:
                 response = requests.get(url, headers=headers)
 
@@ -162,7 +163,7 @@ class VirusTotalFetcher:
             fqdn = self.ioc
             request_headers = {
                 "Accept": "application/json",
-                "x-apikey": vt_api_key,
+                "x-apikey": self.vt_api_key,
             }
             fqdn_vt_api = f"https://www.virustotal.com/api/v3/domains/{fqdn}"
             try:

@@ -12,7 +12,6 @@ from config import (
     blacklist_file,
     secops_feed_file,
     sps_intel_update_file,
-    feed_processor_api_key,
     feed_processor_url,
     feed_processor_url2,
 )
@@ -22,9 +21,10 @@ import requests
 
 
 class IntelProcessor:
-    def __init__(self, logger, intel_entries) -> None:
+    def __init__(self, logger, intel_entries, feed_processor_api_key) -> None:
         self.logger = logger
         self.intel_entries = intel_entries
+        self.feed_processor_api_key = feed_processor_api_key
         self.whitelist: List[str] = []
         self.whitelist_removal: List[str] = []
         self.blacklist: List[str] = []
@@ -265,7 +265,7 @@ class IntelProcessor:
             "time_expire": "3650 days",
             "reason": f"Internal|Carrier|SecOps|{ticket}",
             "confidence": "0.95",
-            "api_key": feed_processor_api_key,
+            "api_key": self.feed_processor_api_key,
         }
 
         for url in urls:
@@ -289,7 +289,7 @@ class IntelProcessor:
             "time_expire": "1 minute",
             "reason": f"Internal|Carrier|SecOps|{ticket}",
             "confidence": "0.95",
-            "api_key": feed_processor_api_key,
+            "api_key": self.feed_processor_api_key,
         }
 
         for url in urls:
@@ -321,7 +321,7 @@ class IntelProcessor:
             "time_expire": "3650 days",
             "reason": f"Internal|Carrier|SecOps|{ticket}",
             "confidence": "0.95",
-            "api_key": feed_processor_api_key,
+            "api_key": self.feed_processor_api_key,
         }
 
         urls = [
@@ -350,7 +350,7 @@ class IntelProcessor:
                 "time_expire": "3650 days",
                 "reason": f"Internal|Carrier|SecOps|{ticket}",
                 "confidence": "0.95",
-                "api_key": feed_processor_api_key,
+                "api_key": self.feed_processor_api_key,
             }
 
             urls = [feed_processor_url, feed_processor_url2]
@@ -385,7 +385,7 @@ class IntelProcessor:
                 "time_expire": "3650 days",
                 "reason": f"Internal|Carrier|SecOps|{ticket}",
                 "confidence": "0.95",
-                "api_key": feed_processor_api_key,
+                "api_key": self.feed_processor_api_key,
             }
 
             urls = [feed_processor_url, feed_processor_url2]

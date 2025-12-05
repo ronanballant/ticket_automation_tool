@@ -121,6 +121,8 @@ if __name__ == "__main__":
     key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
     key_handler.get_key_names()
     key_handler.get_personal_keys()
+    key_handler.get_feed_processor_api_key()
+    feed_processor_api_key = key_handler.feed_processor_api_key
 
     approval_finder.group_tickets()
     for summary_ticket in approval_finder.open_summary_tickets:
@@ -166,7 +168,7 @@ if __name__ == "__main__":
             approval_finder.update_summary()
 
             logger.info("Processing Intel changes")
-            intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries)
+            intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries, feed_processor_api_key)
 
             intel_processor.update_triggered = True
             if queue == "SPS":

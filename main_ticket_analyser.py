@@ -4,11 +4,9 @@ import argparse
 import os
 
 from config import (
-    carrier_intel_access_key,
     carrier_intel_bucket,
     carrier_intel_endpoint,
     carrier_intel_region,
-    carrier_intel_secret_key,
     etp_tickets_in_progress_file,
     get_logger,
     project_folder,
@@ -74,6 +72,14 @@ def run_process():
         key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
         key_handler.get_key_names()
         key_handler.get_personal_keys()
+        key_handler.get_vt_api_key()
+        vt_api_key = key_handler.vt_api_key
+        key_handler.get_carrier_intel_access_key()
+        carrier_intel_access_key = key_handler.carrier_intel_access_key
+        key_handler.get_carrier_intel_secret_key()
+        carrier_intel_secret_key = key_handler.carrier_intel_secret_key
+        key_handler.get_feed_processor_api_key()
+        feed_processor_api_key = key_handler.feed_processor_api_key
     except Exception as e:
         logger.error(f"Failed to fetch keys: {e}")
         return
@@ -184,7 +190,7 @@ def run_process():
 
                 try:
                     logger.info("Querying VT")
-                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.fqdn)
+                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.fqdn, vt_api_key)
                     vt_fetcher.prepare_indicator()
                     vt_fetcher.set_vt_link()
                     vt_fetcher.get_previous_query()
@@ -253,7 +259,7 @@ def run_process():
                                 indicator.matched_ioc = indicator.candidate
                                 if indicator.matched_ioc != indicator.fqdn:
                                     vt_fetcher = VirusTotalFetcher(
-                                        logger, indicator, indicator.matched_ioc[:-1]
+                                        logger, indicator, indicator.matched_ioc[:-1], vt_api_key
                                     )
                                     vt_fetcher.prepare_indicator()
                                     vt_fetcher.set_vt_link()
