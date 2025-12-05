@@ -18,6 +18,10 @@ from config import (
     tbelouso_cert_name,
     tbelouso_key_name,
     tbelouso_ssh_key_name,
+    vt_api_key_name,
+    carrier_intel_access_key_name,
+    carrier_intel_secret_key_name,
+    feed_processor_api_key_name,
 )
 
 
@@ -111,3 +115,39 @@ class KeyHandler:
             key = self.decode_key(encoded_key).decode("utf-8")
             with open(self.key_path, "w") as f:
                 f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
+
+    def get_vt_api_key(self):
+        self.logger.info("Getting VT API key")
+        try:
+            encoded_cert = get_az_secret.get_az_secret(vt_api_key_name)
+            vt_key = self.decode_key(encoded_cert).decode("utf-8")
+            self.vt_api_key = vt_key
+        except Exception as e:
+            self.logger.error(f"Error - Failed to load VT api key: {e}")
+
+    def get_carrier_intel_access_key(self):
+        self.logger.info("Getting Carrier TI access key")
+        try:
+            encoded_cert = get_az_secret.get_az_secret(carrier_intel_access_key_name)
+            carrier_intel_access_key = self.decode_key(encoded_cert).decode("utf-8")
+            self.carrier_intel_access_key = carrier_intel_access_key
+        except Exception as e:
+            self.logger.error(f"Error - Failed to load Carrier TI access key: {e}")
+
+    def get_carrier_intel_secret_key(self):
+        self.logger.info("Getting Carrier TI secret key")
+        try:
+            encoded_cert = get_az_secret.get_az_secret(carrier_intel_secret_key_name)
+            carrier_intel_secret_key = self.decode_key(encoded_cert).decode("utf-8")
+            self.carrier_intel_secret_key = carrier_intel_secret_key
+        except Exception as e:
+            self.logger.error(f"Error - Failed to load Carrier TI secret key: {e}")
+
+    def get_feed_processor_api_key(self):
+        self.logger.info("Getting VT API key")
+        try:
+            encoded_cert = get_az_secret.get_az_secret(feed_processor_api_key_name)
+            feed_processor_api_key = self.decode_key(encoded_cert).decode("utf-8")
+            self.feed_processor_api_key = feed_processor_api_key
+        except Exception as e:
+            self.logger.error(f"Error - Failed to load feed processor api key: {e}")
