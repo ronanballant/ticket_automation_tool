@@ -1,5 +1,3 @@
-
-
 class TicketResolver:
     DAYS_SINCE_CREATION = 30  # days since creation
 
@@ -16,7 +14,10 @@ class TicketResolver:
             self.indicator.intel_category_strength = "-"
 
             if self.indicator.is_in_intel is True:
-                if self.indicator.intel_confidence and self.indicator.intel_confidence != "-":
+                if (
+                    self.indicator.intel_confidence
+                    and self.indicator.intel_confidence != "-"
+                ):
                     if self.indicator.intel_confidence >= 0.90:
                         self.indicator.confidence_level = 5
                     elif self.indicator.intel_confidence >= 0.80:
@@ -48,24 +49,24 @@ class TicketResolver:
     def match_rule(self):
         if self.indicator.subdomain_only is False:
             if self.indicator.e_list_entry is False:
-                self.logger.info(f"Matching {self.indicator.fqdn} data against rule set")
+                self.logger.info(
+                    f"Matching {self.indicator.fqdn} data against rule set"
+                )
                 group = self.rules.get(self.indicator.ticket.queue)
                 if group:
                     type_match = group.get(self.indicator.ticket.ticket_type)
                     if type_match:
-                        is_in_intel = type_match.get(
-                            self.indicator.is_in_intel
-                        )
-                        is_filtered = is_in_intel.get(
-                            self.indicator.is_filtered
-                        )
+                        is_in_intel = type_match.get(self.indicator.is_in_intel)
+                        is_filtered = is_in_intel.get(self.indicator.is_filtered)
                         if is_filtered:
                             category_strength = is_filtered.get(
-                                self.indicator.intel_category_strength, is_filtered.get("-")
+                                self.indicator.intel_category_strength,
+                                is_filtered.get("-"),
                             )
                             if category_strength:
                                 age = category_strength.get(
-                                    self.indicator.domain_age, category_strength.get("-")
+                                    self.indicator.domain_age,
+                                    category_strength.get("-"),
                                 )
                                 if age:
                                     if self.indicator.vt_indications != "-":
@@ -73,7 +74,10 @@ class TicketResolver:
                                         min_vt_indications = {}
                                         max_vt_indications = {}
                                         for key, item_value in age.items():
-                                            if int(key) <= self.indicator.vt_indications:
+                                            if (
+                                                int(key)
+                                                <= self.indicator.vt_indications
+                                            ):
                                                 new_values = {
                                                     k: value
                                                     for k, value in item_value.items()
@@ -82,9 +86,15 @@ class TicketResolver:
                                                     min_vt_indications,
                                                     new_values,
                                                 )
-                                        
-                                        for key, item_value in min_vt_indications.items():
-                                            if int(key) >= self.indicator.vt_indications:
+
+                                        for (
+                                            key,
+                                            item_value,
+                                        ) in min_vt_indications.items():
+                                            if (
+                                                int(key)
+                                                >= self.indicator.vt_indications
+                                            ):
                                                 new_values = {
                                                     key: value
                                                     for key, value in item_value.items()
@@ -117,11 +127,9 @@ class TicketResolver:
                                                     key: value
                                                     for key, value in item_value.items()
                                                 }
-                                                min_confidence = (
-                                                    merge_dicts(
-                                                        min_confidence,
-                                                        new_values,
-                                                    )
+                                                min_confidence = merge_dicts(
+                                                    min_confidence,
+                                                    new_values,
                                                 )
 
                                         for (
@@ -148,9 +156,7 @@ class TicketResolver:
                                     self.indicator.indicator_resolution = match[
                                         "verdict"
                                     ]
-                                    response = match["response"].replace(
-                                        "\\n", "\n"
-                                    )
+                                    response = match["response"].replace("\\n", "\n")
                                     self.indicator.rule_response = response
                                 else:
                                     self.logger.info(
@@ -184,17 +190,23 @@ class TicketResolver:
                     self.indicator.rule_response = "No Rule Match"
             else:
                 self.indicator.indicator_resolution = "In Progress"
-                self.indicator.rule_response = f"FQDN in exact match lists with {self.indicator.url_count} paths"
+                self.indicator.rule_response = (
+                    f"FQDN in exact match lists with {self.indicator.url_count} paths"
+                )
         else:
             self.logger.info(
                 f"{self.indicator.fqdn} only has {self.indicator.subdomain_count} sudomains in intel"
             )
             self.indicator.indicator_resolution = "In Progress"
             self.indicator.rule_response = f"FQDN not directly in the intel. FQDN has {self.indicator.subdomain_count} subdomains in the intel"
-        
-        if int(self.indicator.subdomain_count) > 3 and self.indicator.indicator_resolution == "Allow":
-                self.indicator.indicator_resolution = "In Progress"
-                self.indicator.rule_response = f"FQDN has {self.indicator.subdomain_count} subdomains in the intel and must be analysed manually."
+
+        if (
+            int(self.indicator.subdomain_count) > 3
+            and self.indicator.indicator_resolution == "Allow"
+        ):
+            self.indicator.indicator_resolution = "In Progress"
+            self.indicator.rule_response = f"FQDN has {self.indicator.subdomain_count} subdomains in the intel and must be analysed manually."
+
 
 def merge_dicts(dict1, dict2):
     for key, value in dict2.items():

@@ -125,7 +125,7 @@ class RuleFetcher:
 
 
 def str_to_bool(string):
-    if type(string) == str:
+    if type(string) is str:
         if string.lower() == "true":
             return True
         elif string.lower() == "-":

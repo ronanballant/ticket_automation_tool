@@ -3,7 +3,7 @@ import json
 import time
 import unicodedata
 from typing import Dict, List
-import Levenshtein 
+import Levenshtein
 from datetime import datetime, timedelta
 import requests
 from ticket import Ticket
@@ -117,25 +117,30 @@ class ApprovalFinder:
         comment_api = self.jira_ticket_api + self.summary_ticket + "/comment"
 
         comment_response = requests.get(
-            comment_api, 
+            comment_api,
             cert=(self.cert_path, self.key_path),
             verify=False,
         )
 
         if str(comment_response.status_code).startswith("2"):
             comments = json.loads(comment_response.text)
-            self.comments = comments.get('comments', [])
-        
+            self.comments = comments.get("comments", [])
+
     def find_if_approved(self):
         self.intel_changes_approved = False
-        self.approval_word = 'approved'
+        self.approval_word = "approved"
         for comment in self.comments:
             comment_text = comment.get("body", "")
             comment_words = comment_text.lower().strip().split()
-            self.comment_owner = comment.get('author', {}).get('name', 'rballant')
-            self.comment_owner_id = comment.get('author', {}).get('key', 'JIRAUSER72807')
+            self.comment_owner = comment.get("author", {}).get("name", "rballant")
+            self.comment_owner_id = comment.get("author", {}).get(
+                "key", "JIRAUSER72807"
+            )
             if len(comment_words) < 3:
-                if any(Levenshtein.distance(self.approval_word, word) <= 1 for word in comment_words):
+                if any(
+                    Levenshtein.distance(self.approval_word, word) <= 1
+                    for word in comment_words
+                ):
                     self.intel_changes_approved = True
                     self.logger.info(f"Changes approved by {self.comment_owner}")
                     self.logger.info(f"Approval comment: {comment_text}")
@@ -171,17 +176,9 @@ class ApprovalFinder:
         extracted_list = extracted_text.split("\n")
         block_list = [entry.strip() for entry in extracted_list if entry.strip()]
 
-        self.reviewed_allow_list = [
-            line.strip()
-            for line in allow_list
-            if line
-        ]
+        self.reviewed_allow_list = [line.strip() for line in allow_list if line]
 
-        self.reviewed_block_list = [
-            line.strip()
-            for line in block_list
-            if line
-        ]
+        self.reviewed_block_list = [line.strip() for line in block_list if line]
 
     def find_if_resolved(self):
         self.process_summary_ticket = True
@@ -199,7 +196,9 @@ class ApprovalFinder:
                     for entry in issues:
                         fields = entry.get("fields")
                         if fields:
-                            self.resolution_status = fields.get("status", {}).get("name", "")
+                            self.resolution_status = fields.get("status", {}).get(
+                                "name", ""
+                            )
                             reporter_data = fields.get("assignee", {})
                             if reporter_data:
                                 full_name = reporter_data.get("displayName", "")
@@ -237,7 +236,7 @@ class ApprovalFinder:
                         entry_parts = entry_string.split(",")
                         entry_length = len(entry_parts)
                         entry_fqdn = entry_parts[0].strip()
-                        
+
                         for reviewed_change_string in self.reviewed_allow_list:
                             reviewed_change_parts = reviewed_change_string.split(",")
                             reviewed_length = len(reviewed_change_parts)
@@ -246,13 +245,18 @@ class ApprovalFinder:
                                 if entry_fqdn == reviewed_fqdn:
                                     entry_found = True
                                     intel_entry.is_approved = True
-                                    self.update_owner(intel_entry, reviewed_change_string)
+                                    self.update_owner(
+                                        intel_entry, reviewed_change_string
+                                    )
                                     indicator.reviewed_resolution = "Allow"
-                                    if intel_entry.intel_list.lower() == "possible_changes":
+                                    if (
+                                        intel_entry.intel_list.lower()
+                                        == "possible_changes"
+                                    ):
                                         intel_entry.intel_list = "whitelist"
 
                                     self.generate_data_string(indicator)
-                        
+
                         for reviewed_change_string in self.reviewed_block_list:
                             reviewed_change_parts = reviewed_change_string.split(",")
                             reviewed_length = len(reviewed_change_parts)
@@ -261,20 +265,27 @@ class ApprovalFinder:
                                 if entry_fqdn == reviewed_fqdn:
                                     entry_found = True
                                     intel_entry.is_approved = True
-                                    self.update_owner(intel_entry, reviewed_change_string)
-                                    indicator.sps_feed = intel_entry.approved_intel_change.split(",")[-1]
+                                    self.update_owner(
+                                        intel_entry, reviewed_change_string
+                                    )
+                                    indicator.sps_feed = (
+                                        intel_entry.approved_intel_change.split(",")[-1]
+                                    )
                                     indicator.reviewed_resolution = "Block"
-                                    if intel_entry.intel_list.lower() == "possible_changes":
+                                    if (
+                                        intel_entry.intel_list.lower()
+                                        == "possible_changes"
+                                    ):
                                         intel_entry.intel_list = "blacklist"
                                     self.generate_data_string(indicator)
-                        
+
                         if entry_found is False:
                             intel_entry.is_approved = False
                             indicator.is_approved = False
                             ticket.changes_approved = False
-    
+
     def update_owner(self, entry, reviewed_change):
-        if entry.operation == 'add':
+        if entry.operation == "add":
             reviewed_change_parts = reviewed_change.strip().split(",")
             updated_changes = []
             for part in reviewed_change_parts:
@@ -287,20 +298,17 @@ class ApprovalFinder:
         else:
             entry.approved_intel_change = reviewed_change
 
-
     def update_assignee(self, ticket_id):
         url = self.jira_ticket_api + f"{ticket_id}/assignee"
         headers = {"Content-Type": "application/json"}
 
-        payload = {
-            "name": self.comment_owner
-            }
-    
+        payload = {"name": self.comment_owner}
+
         try:
             response = requests.put(
-                url, 
+                url,
                 json=payload,
-                headers=headers, 
+                headers=headers,
                 cert=(self.cert_path, self.key_path),
                 verify=False,
             )
@@ -310,9 +318,13 @@ class ApprovalFinder:
         else:
             status = str(response.status_code)
             if status.startswith("2"):
-                self.logger.info(f"{ticket_id} assigned to {self.comment_owner} succesfully")
+                self.logger.info(
+                    f"{ticket_id} assigned to {self.comment_owner} succesfully"
+                )
             else:
-                self.logger.error(f"Failed to assign {ticket_id} Error - {response.text}")
+                self.logger.error(
+                    f"Failed to assign {ticket_id} Error - {response.text}"
+                )
                 self.logger.info(f"Response text: {response.text}")
 
     def close_resolved_tickets(self):
@@ -339,9 +351,7 @@ class ApprovalFinder:
                 self.logger.info(f"Closing {ticket.ticket_id}")
                 try:
                     for transition in transitions:
-                        payload = {
-                            "transition": {"id": transition}
-                        }
+                        payload = {"transition": {"id": transition}}
                         response = requests.post(
                             url,
                             json=payload,
@@ -351,12 +361,21 @@ class ApprovalFinder:
                         )
                 except Exception as e:
                     self.unapproved_tickets.append(ticket.ticket_id)
-                    self.logger.error(f"Failed to close {ticket.ticket_id} - Error: {e}")
+                    self.logger.error(
+                        f"Failed to close {ticket.ticket_id} - Error: {e}"
+                    )
                     self.logger.info(f"Response text: {response.text}")
 
                 self.approved_tickets.append(ticket.ticket_id)
-                if not ticket.time_to_resolution or isinstance(ticket.time_to_resolution, timedelta) or ticket.time_to_resolution == "" or  ticket.time_to_resolution.strip() == "-":
-                    ticket.time_to_resolution = (self.current_time - ticket.creation_time.replace(tzinfo=None))
+                if (
+                    not ticket.time_to_resolution
+                    or isinstance(ticket.time_to_resolution, timedelta)
+                    or ticket.time_to_resolution == ""
+                    or ticket.time_to_resolution.strip() == "-"
+                ):
+                    ticket.time_to_resolution = (
+                        self.current_time - ticket.creation_time.replace(tzinfo=None)
+                    )
                 self.logger.info(f"{ticket.ticket_id} closed succesfully")
                 self.update_assignee(ticket.ticket_id)
             else:
@@ -470,18 +489,17 @@ class ApprovalFinder:
         with open(self.processed_tickets_file, "w") as file:
             for ticket in self.tickets:
                 ticket_dict = ticket.to_dict()
-                ticket_dict.pop("whitelist_additions", None)  
-                ticket_dict.pop("blacklist_additions", None)  
-                ticket_dict.pop("blacklist_removals", None)  
-                ticket_dict.pop("possible_changes", None)  
-                ticket_dict.pop("comment_greeting", None)  
-                ticket_dict.pop("comment_sign_off", None)  
-                ticket_dict.pop("comment", None)  
-                ticket_dict.pop("ticket_responses", None)  
+                ticket_dict.pop("whitelist_additions", None)
+                ticket_dict.pop("blacklist_additions", None)
+                ticket_dict.pop("blacklist_removals", None)
+                ticket_dict.pop("possible_changes", None)
+                ticket_dict.pop("comment_greeting", None)
+                ticket_dict.pop("comment_sign_off", None)
+                ticket_dict.pop("comment", None)
+                ticket_dict.pop("ticket_responses", None)
                 for indicator in ticket_dict.get("indicators", []):
-                    indicator.pop("vt_link", None)  
-                    indicator.pop("comment", None)  
-
+                    indicator.pop("vt_link", None)
+                    indicator.pop("comment", None)
 
                 processed_tickets_dict.append(ticket_dict)
 
@@ -508,7 +526,6 @@ class ApprovalFinder:
         with open(self.tickets_in_progress_file, "w") as file:
             json.dump(tickets_in_progress, file, indent=4)
 
-
     # def get_attribution(self, entry):
     #         if .ticket.queue = "sps":
 
@@ -524,7 +541,7 @@ class ApprovalFinder:
                 indicator.intel_feed.replace("|", "\\|"),
                 indicator.intel_source.replace("|", "\\|"),
                 reason.replace("|", "\\|"),
-                indicator.ticket.ticket_id
+                indicator.ticket.ticket_id,
             ]
             indicator.intel_summary_string = data_string
         else:
@@ -535,17 +552,17 @@ class ApprovalFinder:
                 indicator.sps_feed,
                 "-",
                 reason.replace("|", "\\|"),
-                indicator.ticket.ticket_id
+                indicator.ticket.ticket_id,
             ]
             indicator.intel_summary_string = data_string
-        
+
         ApprovalFinder.intel_data_strings.append(data_string)
 
     def generate_data_string_comment(self):
         strings = []
-        
+
         for data_string in ApprovalFinder.intel_data_strings:
             new_string = "|" + "|".join(data_string) + "|"
             strings.append(new_string)
-        
+
         self.data_string_comment = "Intel update successful\n" + "\n".join(strings)

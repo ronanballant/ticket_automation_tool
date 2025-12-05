@@ -4,12 +4,22 @@ import os
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
-from config import (blacklist_file, etp_intel_repo, etp_processed_tickets_file,
-                    etp_tickets_in_progress_file, get_logger, jira_search_api, 
-                    jira_ticket_api, open_etp_summary_tickets_file,
-                    open_sps_summary_tickets_file, project_folder,
-                    secops_feed_file, sps_processed_tickets_file, 
-                    sps_tickets_in_progress_file, whitelist_file)
+from config import (
+    blacklist_file,
+    etp_intel_repo,
+    etp_processed_tickets_file,
+    etp_tickets_in_progress_file,
+    get_logger,
+    jira_search_api,
+    jira_ticket_api,
+    open_etp_summary_tickets_file,
+    open_sps_summary_tickets_file,
+    project_folder,
+    secops_feed_file,
+    sps_processed_tickets_file,
+    sps_tickets_in_progress_file,
+    whitelist_file,
+)
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
 from intel_processor import IntelProcessor
@@ -47,13 +57,14 @@ def parse_args():
     else:
         return args
 
+
 def close_summary(logger, approval_finder, summary_ticket):
     logger.info(f"Removing {summary_ticket} from {open_summary_tickets_file}")
     approval_finder.clear_processed_summary_ticket()
 
     logger.info(f"Saving processed tickets to {approval_finder.processed_tickets_file}")
     approval_finder.update_processed_tickets()
-    logger.info(f"Generating processed tickets list")
+    logger.info("Generating processed tickets list")
     approval_finder.get_processed_tickets()
     logger.info(
         f"Removing resolved tickets from {summary_ticket} from {open_summary_tickets_file}"
@@ -92,19 +103,19 @@ if __name__ == "__main__":
         key_path,
     )
 
-    logger.info(f"Getting open summary tickets")
+    logger.info("Getting open summary tickets")
     approval_finder.get_open_summary_tickets()
 
     if not approval_finder.open_summary_tickets:
-        logger.info(f"No open summary tickets. Exiting Script")
+        logger.info("No open summary tickets. Exiting Script")
         exit()
 
-    logger.info(f"Opening current tickets")
+    logger.info("Opening current tickets")
     approval_finder.open_current_tickets()
     approval_finder.create_tickets()
 
     if not Ticket.all_tickets:
-        logger.info(f"No open tickets. Exiting Script")
+        logger.info("No open tickets. Exiting Script")
         exit()
 
     key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
@@ -126,13 +137,13 @@ if __name__ == "__main__":
             approval_finder.parse_ticket()
             logger.info(f"Fetching {summary_ticket} comments")
             approval_finder.get_comments()
-            logger.info(f"Getting approval status")
+            logger.info("Getting approval status")
             approval_finder.find_if_approved()
             if approval_finder.intel_changes_approved is False:
-                logger.info(f"Finding summary resolution status")
+                logger.info("Finding summary resolution status")
                 approval_finder.find_if_resolved()
                 if approval_finder.process_summary_ticket is False:
-                    logger.info(f"Summary ticket closed...")
+                    logger.info("Summary ticket closed...")
                     close_summary(logger, approval_finder, summary_ticket)
                     continue
                 else:
@@ -141,22 +152,21 @@ if __name__ == "__main__":
                     )
                     continue
             else:
-                logger.info(f"Changes approved")
+                logger.info("Changes approved")
 
-            logger.info(f"Parsing approved intel updates")
+            logger.info("Parsing approved intel updates")
             approval_finder.parse_reviewed_changes()
-            logger.info(f"Finding resolved tickets")
+            logger.info("Finding resolved tickets")
             approval_finder.find_approved_intel_changes()
-            logger.info(f"Closing resolved tickets")
+            logger.info("Closing resolved tickets")
             approval_finder.close_resolved_tickets()
-            logger.info(f"Summarising closed tickets")
+            logger.info("Summarising closed tickets")
             approval_finder.generate_approval_summary()
             logger.info(f"Sending summary comment to {summary_ticket}")
             approval_finder.update_summary()
 
-            logger.info(f"Processing Intel changes")
+            logger.info("Processing Intel changes")
             intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries)
-
 
             intel_processor.update_triggered = True
             if queue == "SPS":
@@ -166,67 +176,118 @@ if __name__ == "__main__":
                     summary_comment = False
                     for intel_entry in IntelEntry.all_intel_entries:
                         for whitelisted_entry in intel_entry.whitelist:
-                            if whitelisted_entry.update_approved and whitelisted_entry.update_approved is True:
+                            if (
+                                whitelisted_entry.update_approved
+                                and whitelisted_entry.update_approved is True
+                            ):
                                 entry = whitelisted_entry.approved_intel_change.strip().split(",")
                                 fqdn = entry[0]
                                 ticket = entry[1]
                                 intel_processor.linode_whitelist_addition(fqdn, ticket)
-                                whitelisted_entry.update_status_code = intel_processor.linode_update_status_code
-                                whitelisted_entry.linode_update_response = intel_processor.linode_update_response
-                                
-                                if '"success": false' in whitelisted_entry.linode_update_response or whitelisted_entry.update_status_code[0] != "2":
+                                whitelisted_entry.update_status_code = (
+                                    intel_processor.linode_update_status_code
+                                )
+                                whitelisted_entry.linode_update_response = (
+                                    intel_processor.linode_update_response
+                                )
+
+                                if (
+                                    '"success": false'
+                                    in whitelisted_entry.linode_update_response
+                                    or whitelisted_entry.update_status_code[0] != "2"
+                                ):
                                     whitelisted_entry.update_triggered = False
                                     error_comment = True
-                                    intel_processor.error_comment.append(f"{fqdn} - Status Code: {whitelisted_removal_entry.update_status_code} - Response: {blocklist_entry.linode_update_response}")
+                                    intel_processor.error_comment.append(
+                                        f"{fqdn} - Status Code: {whitelisted_entry.update_status_code} - Response: {whitelisted_entry.linode_update_response}"
+                                    )
                                 else:
                                     summary_comment = True
-                                    intel_processor.summary_comment.append(whitelisted_entry.indicator.intel_summary_string)
+                                    intel_processor.summary_comment.append(
+                                        whitelisted_entry.indicator.intel_summary_string
+                                    )
                                     whitelisted_entry.update_triggered = True
 
                         for whitelisted_removal_entry in intel_entry.whitelist_removal:
-                            if whitelisted_removal_entry.update_approved and whitelisted_removal_entry.update_approved is True:
+                            if (
+                                whitelisted_removal_entry.update_approved
+                                and whitelisted_removal_entry.update_approved is True
+                            ):
                                 entry = whitelisted_removal_entry.approved_intel_change.strip().split(",")
                                 fqdn = entry[0]
                                 ticket = entry[1]
                                 intel_processor.linode_whitelist_removal(fqdn, ticket)
-                                whitelisted_removal_entry.update_status_code = intel_processor.linode_update_status_code
-                                whitelisted_removal_entry.linode_update_response = intel_processor.linode_update_response
-                                if '"success": false' in whitelisted_removal_entry.linode_update_response or whitelisted_removal_entry.update_status_code[0] != "2":
+                                whitelisted_removal_entry.update_status_code = (
+                                    intel_processor.linode_update_status_code
+                                )
+                                whitelisted_removal_entry.linode_update_response = (
+                                    intel_processor.linode_update_response
+                                )
+                                if (
+                                    '"success": false'
+                                    in whitelisted_removal_entry.linode_update_response
+                                    or whitelisted_removal_entry.update_status_code[0]
+                                    != "2"
+                                ):
                                     whitelisted_removal_entry.update_triggered = False
                                     error_comment = True
-                                    intel_processor.error_comment.append(f"{fqdn} - Status Code: {whitelisted_removal_entry.update_status_code} - Response: {blocklist_entry.linode_update_response}")
+                                    intel_processor.error_comment.append(
+                                        f"{fqdn} - Status Code: {whitelisted_removal_entry.update_status_code} - Response: {whitelisted_removal_entry.linode_update_response}"
+                                    )
                                 else:
                                     summary_comment = True
-                                    intel_processor.summary_comment.append(whitelisted_removal_entry.indicator.intel_summary_string)
+                                    intel_processor.summary_comment.append(
+                                        whitelisted_removal_entry.indicator.intel_summary_string
+                                    )
                                     whitelisted_removal_entry.update_triggered = True
 
                         for blocklist_entry in intel_entry.blacklist:
-                            if blocklist_entry.update_approved and blocklist_entry.update_approved is True:
-                                entry = blocklist_entry.approved_intel_change.strip().split(",")
+                            if (
+                                blocklist_entry.update_approved
+                                and blocklist_entry.update_approved is True
+                            ):
+                                entry = (
+                                    blocklist_entry.approved_intel_change.strip().split(",")
+                                )
                                 fqdn = entry[0]
                                 ticket = entry[1]
                                 block_feed = entry[2]
-                                intel_processor.linode_blocklist_update(fqdn, ticket, block_feed)
-                                blocklist_entry.update_status_code = intel_processor.linode_update_status_code
-                                blocklist_entry.linode_update_response = intel_processor.linode_update_response
-                                if '"success": false' in blocklist_entry.linode_update_response or blocklist_entry.update_status_code[0] != "2":
+                                intel_processor.linode_blocklist_update(
+                                    fqdn, ticket, block_feed
+                                )
+                                blocklist_entry.update_status_code = (
+                                    intel_processor.linode_update_status_code
+                                )
+                                blocklist_entry.linode_update_response = (
+                                    intel_processor.linode_update_response
+                                )
+                                if (
+                                    '"success": false'
+                                    in blocklist_entry.linode_update_response
+                                    or blocklist_entry.update_status_code[0] != "2"
+                                ):
                                     error_comment = True
                                     blocklist_entry.update_triggered = False
-                                    intel_processor.error_comment.append(f"{fqdn} - Status Code: {blocklist_entry.linode_update_response} - Response: {blocklist_entry.linode_update_response}")
+                                    intel_processor.error_comment.append(
+                                        f"{fqdn} - Status Code: {blocklist_entry.linode_update_response} - Response: {blocklist_entry.linode_update_response}"
+                                    )
                                 else:
                                     summary_comment = True
-                                    intel_processor.summary_comment.append(blocklist_entry.indicator.intel_summary_string)
+                                    intel_processor.summary_comment.append(
+                                        blocklist_entry.indicator.intel_summary_string
+                                    )
                                     blocklist_entry.update_triggered = True
                                     # intel_processor.summary_comment.append(.intel_summary_string)
-                            
 
                     # approval_finder.generate_data_string_comment()
 
                     if summary_comment is True or error_comment is True:
                         intel_processor.generate_data_string_comment()
-                        approval_finder.add_summary_comment(intel_processor.data_string_comment)
-                    
-                    if not summary_comment or not error_comment is True:
+                        approval_finder.add_summary_comment(
+                            intel_processor.data_string_comment
+                        )
+
+                    if not summary_comment or error_comment is not True:
                         intel_processor.update_triggered = True
                         approval_finder.summary_updated
                 else:
@@ -251,7 +312,7 @@ if __name__ == "__main__":
                         git_manager.checkout_master()
                         logger.info("Pulling repo...")
                         git_manager.git_pull()
-                        branch_name = f'customer_escalations/{datetime.today().strftime("%Y-%m-%d-%H%M%S")}'
+                        branch_name = f"customer_escalations/{datetime.today().strftime('%Y-%m-%d-%H%M%S')}"
                         logger.info(f"Branch name: {branch_name}")
                         git_manager.create_new_branch(branch_name)
 
@@ -265,7 +326,11 @@ if __name__ == "__main__":
                                 intel_processor.error_comment
                             )
                         else:
-                            if intel_processor.whitelist or intel_processor.blacklist or intel_processor.manual_blacklist:
+                            if (
+                                intel_processor.whitelist
+                                or intel_processor.blacklist
+                                or intel_processor.manual_blacklist
+                            ):
                                 git_manager.git_add(
                                     [whitelist_file, blacklist_file, secops_feed_file]
                                 )
@@ -273,9 +338,13 @@ if __name__ == "__main__":
                                 git_manager.git_status()
                                 git_manager.push_changes(branch_name)
                                 git_manager.get_pr_link()
-                                approval_finder.add_summary_comment(git_manager.pr_comment)
+                                approval_finder.add_summary_comment(
+                                    git_manager.pr_comment
+                                )
                             else:
-                                approval_finder.add_summary_comment("No changes to push..")
+                                approval_finder.add_summary_comment(
+                                    "No changes to push.."
+                                )
                     except Exception as e:
                         logger.error(f"Intel update failed: {str(e)}", exc_info=True)
                         error_comment = (

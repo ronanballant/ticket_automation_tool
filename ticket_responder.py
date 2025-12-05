@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from config import (blacklist_file, jira_ticket_api)
+from config import blacklist_file, jira_ticket_api
 from intel_entry import IntelEntry
 from ticket import Ticket
 
@@ -38,9 +38,9 @@ class TicketResponder:
         self.ticket = ticket
         ticket.ticket_responses = ""
         self.current_time = datetime.now()
-        self.time_to_response = (
-            ticket.time_to_response
-        ) = self.current_time - self.ticket.creation_time.replace(tzinfo=None)
+        self.time_to_response = ticket.time_to_response = (
+            self.current_time - self.ticket.creation_time.replace(tzinfo=None)
+        )
 
         for indicator in ticket.indicators:
             indicator.insertion_timestamp = self.time
@@ -89,14 +89,24 @@ class TicketResponder:
         for indicator in self.sorted_indicators:
             self.process_attributes(indicator)
             self.queue = indicator.ticket.queue
-            ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.fqdn
+            ioc = (
+                indicator.matched_ioc
+                if indicator.matched_ioc.strip() != "-"
+                else indicator.fqdn
+            )
             line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_feed}|{indicator.intel_source}|{indicator.intel_confidence}|[Virus Total Link|{indicator.vt_link}]|"
             if indicator.indicator_resolution.lower() == "in progress":
                 open_list.append(line)
                 if indicator.ticket.ticket_type == "FP":
-                    in_progress_line = f"+++ {ioc},{indicator.ticket.ticket_id},whitelist"
+                    in_progress_line = (
+                        f"+++ {ioc},{indicator.ticket.ticket_id},whitelist"
+                    )
                     intel_entry = IntelEntry(
-                        self.logger, indicator, in_progress_line, "possible_changes", "add"
+                        self.logger,
+                        indicator,
+                        in_progress_line,
+                        "possible_changes",
+                        "add",
                     )
                     intel_entry.append_to_indicator()
                     possible_changes.append(in_progress_line)
@@ -104,7 +114,11 @@ class TicketResponder:
                 elif indicator.ticket.ticket_type == "FN":
                     in_progress_line = f"+++ {indicator.fqdn},{indicator.ticket.ticket_id},{indicator.attribution}"
                     intel_entry = IntelEntry(
-                        self.logger, indicator, in_progress_line, "possible_changes", "add"
+                        self.logger,
+                        indicator,
+                        in_progress_line,
+                        "possible_changes",
+                        "add",
                     )
                     intel_entry.append_to_indicator()
                     possible_changes.append(in_progress_line)
@@ -112,14 +126,18 @@ class TicketResponder:
             elif indicator.indicator_resolution.lower() == "allow":
                 closed_list.append(line)
                 whitelist_line = f"+++ {ioc},{indicator.ticket.ticket_id},whitelist"
-                intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
+                intel_entry = IntelEntry(
+                    self.logger, indicator, whitelist_line, "whitelist", "add"
+                )
                 intel_entry.append_to_indicator()
                 whitelist_additions.append(whitelist_line)
                 indicator.ticket.whitelist_additions.append(whitelist_line)
             elif indicator.indicator_resolution.lower() == "block":
                 closed_list.append(line)
                 blacklist_line = f"+++ {indicator.fqdn},{indicator.ticket.ticket_id},{indicator.attribution}"
-                intel_entry = IntelEntry(self.logger, indicator, blacklist_line, "blacklist", "add")
+                intel_entry = IntelEntry(
+                    self.logger, indicator, blacklist_line, "blacklist", "add"
+                )
                 intel_entry.append_to_indicator()
                 blacklist_additions.append(blacklist_line)
                 indicator.ticket.blacklist_additions.append(blacklist_line)
@@ -157,14 +175,20 @@ class TicketResponder:
         description = "\n".join(description_list)
 
         headers = {"Content-Type": "application/json"}
-        
-        server_name = os.uname().nodename 
+
+        server_name = os.uname().nodename
         if "t4tools" in server_name:
-            date = datetime.strftime(datetime.fromtimestamp(self.time) + timedelta(hours=1), "%Y-%m-%d %H:00")
-        elif "muc" in server_name:    
-            date = datetime.strftime(datetime.fromtimestamp(self.time) - timedelta(hours=1), "%Y-%m-%d %H:00")
+            date = datetime.strftime(
+                datetime.fromtimestamp(self.time) + timedelta(hours=1), "%Y-%m-%d %H:00"
+            )
+        elif "muc" in server_name:
+            date = datetime.strftime(
+                datetime.fromtimestamp(self.time) - timedelta(hours=1), "%Y-%m-%d %H:00"
+            )
         else:
-            date = datetime.strftime(datetime.fromtimestamp(self.time), "%Y-%m-%d %H:00")
+            date = datetime.strftime(
+                datetime.fromtimestamp(self.time), "%Y-%m-%d %H:00"
+            )
 
         data = {
             "fields": {
@@ -205,17 +229,21 @@ class TicketResponder:
                     None,
                     None,
                 )
-                self.logger.info(f"SPS ticket {self.ticket.ticket_id} created succesfully")
+                self.logger.info(
+                    f"SPS ticket {self.ticket.ticket_id} created succesfully"
+                )
             else:
                 self.summary_ticket_created = False
                 self.logger.info(f"Failed to create SPS ticket. Status code: {status}")
 
-            self.ticket.comments = [(
-                "*Open Cases*\n"
-                + self.open_table
-                + "\n\n\n*Closed Cases*\n"
-                + self.closed_table
-            )]
+            self.ticket.comments = [
+                (
+                    "*Open Cases*\n"
+                    + self.open_table
+                    + "\n\n\n*Closed Cases*\n"
+                    + self.closed_table
+                )
+            ]
 
     def create_etp_ticket(self, tickets):
         self.logger.info("Creating ETP ticket")
@@ -243,16 +271,28 @@ class TicketResponder:
                 self.process_attributes(indicator)
                 self.queue = indicator.ticket.queue
                 line = f"|{indicator.ticket.ticket_id}|{indicator.ticket.ticket_type}|{indicator.fqdn}|{indicator.matched_ioc}|{indicator.indicator_resolution}|{indicator.vt_indications}|{indicator.subdomain_count}|{indicator.source_response} {indicator.rule_response}|{indicator.categories}|{indicator.intel_category}|{indicator.intel_source_list}|{indicator.is_filtered}|{indicator.filter_reason}|[Virus Total Link|{indicator.vt_link}]|"
-                ioc = indicator.matched_ioc if indicator.matched_ioc.strip() != "-" else indicator.etp_fqdn
+                ioc = (
+                    indicator.matched_ioc
+                    if indicator.matched_ioc.strip() != "-"
+                    else indicator.etp_fqdn
+                )
                 # intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "NATIVE_DOMAIN_PERFECT_MATCH"
-                intel_action = "IP_PERFECT_MATCH" if indicator.matched_ioc_type.lower() == 'ipv4' else "ALL_TYPES_BEST_MATCH"
+                intel_action = (
+                    "IP_PERFECT_MATCH"
+                    if indicator.matched_ioc_type.lower() == "ipv4"
+                    else "ALL_TYPES_BEST_MATCH"
+                )
                 if indicator.indicator_resolution.lower() == "in progress":
                     open_list.append(line)
                     if indicator.ticket.ticket_type == "FP":
                         self.get_single_intel_source(indicator)
                         in_progress_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
                         intel_entry = IntelEntry(
-                            self.logger, indicator, in_progress_line, "possible_changes", "add"
+                            self.logger,
+                            indicator,
+                            in_progress_line,
+                            "possible_changes",
+                            "add",
                         )
                         intel_entry.append_to_indicator()
                         possible_changes.append(in_progress_line)
@@ -262,15 +302,25 @@ class TicketResponder:
                             if self.manual_blacklist_entry:
                                 in_progress_line = "--- " + self.manual_blacklist_entry
                                 intel_entry = IntelEntry(
-                                    self.logger, indicator, in_progress_line, "possible_changes", "remove"
+                                    self.logger,
+                                    indicator,
+                                    in_progress_line,
+                                    "possible_changes",
+                                    "remove",
                                 )
                                 intel_entry.append_to_indicator()
                                 possible_changes.append(in_progress_line)
-                                indicator.ticket.possible_changes.append(in_progress_line)
+                                indicator.ticket.possible_changes.append(
+                                    in_progress_line
+                                )
                     elif indicator.ticket.ticket_type == "FN":
                         in_progress_line = f"+++ {indicator.etp_fqdn},{indicator.matched_ioc_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
                         intel_entry = IntelEntry(
-                            self.logger, indicator, in_progress_line, "possible_changes", "add"
+                            self.logger,
+                            indicator,
+                            in_progress_line,
+                            "possible_changes",
+                            "add",
                         )
                         intel_entry.append_to_indicator()
                         possible_changes.append(in_progress_line)
@@ -279,24 +329,36 @@ class TicketResponder:
                     closed_list.append(line)
                     self.get_single_intel_source(indicator)
                     whitelist_line = f"+++ {ioc},{indicator.matched_ioc_type},{intel_action},no malicious indications,{str(self.time)},Added by {self.username},{indicator.single_intel_source}"
-                    intel_entry = IntelEntry(self.logger, indicator, whitelist_line, "whitelist", "add")
+                    intel_entry = IntelEntry(
+                        self.logger, indicator, whitelist_line, "whitelist", "add"
+                    )
                     intel_entry.append_to_indicator()
                     whitelist_additions.append(whitelist_line)
                     indicator.ticket.whitelist_additions.append(whitelist_line)
                     if indicator.is_in_man_bl is True:
                         self.find_manual_blacklist_entry(indicator)
                         if self.manual_blacklist_entry:
-                            blacklist_removals_line = "--- " + self.manual_blacklist_entry
+                            blacklist_removals_line = (
+                                "--- " + self.manual_blacklist_entry
+                            )
                             intel_entry = IntelEntry(
-                                self.logger, indicator, blacklist_removals_line, "blacklist", "remove"
+                                self.logger,
+                                indicator,
+                                blacklist_removals_line,
+                                "blacklist",
+                                "remove",
                             )
                             intel_entry.append_to_indicator()
                             blacklist_removals.append(blacklist_removals_line)
-                            indicator.ticket.blacklist_removals.append(blacklist_removals_line)
+                            indicator.ticket.blacklist_removals.append(
+                                blacklist_removals_line
+                            )
                 elif indicator.indicator_resolution.lower() == "block":
                     closed_list.append(line)
                     blacklist_line = f"+++ {indicator.etp_fqdn},{indicator.indicator_type},{indicator.attribution},Known,{indicator.attribution_id},{indicator.attribution_description},etp-manual,{str(self.time)},added by {self.username}"
-                    intel_entry = IntelEntry(self.logger, indicator, blacklist_line, "blacklist", "add")
+                    intel_entry = IntelEntry(
+                        self.logger, indicator, blacklist_line, "blacklist", "add"
+                    )
                     intel_entry.append_to_indicator()
                     blacklist_additions.append(blacklist_line)
                     indicator.ticket.blacklist_additions.append(blacklist_line)
@@ -341,11 +403,15 @@ class TicketResponder:
 
         description = "\n".join(description_list)
 
-        server_name = os.uname().nodename 
+        server_name = os.uname().nodename
         if "t4tools" in server_name:
-            date = datetime.strftime(datetime.fromtimestamp(self.time) + timedelta(hours=3), "%Y-%m-%d %H:00")
+            date = datetime.strftime(
+                datetime.fromtimestamp(self.time) + timedelta(hours=3), "%Y-%m-%d %H:00"
+            )
         else:
-            date = datetime.strftime(datetime.fromtimestamp(self.time) - timedelta(hours=2), "%Y-%m-%d %H:00")
+            date = datetime.strftime(
+                datetime.fromtimestamp(self.time) - timedelta(hours=2), "%Y-%m-%d %H:00"
+            )
 
         headers = {"Content-Type": "application/json"}
         subject_headline = f"Ticket Automation Results {date}"
@@ -395,12 +461,14 @@ class TicketResponder:
                 )
 
                 self.additional_comments = False
-                self.ticket.comments = [(
-                    "*Open Cases*\n"
-                    + self.open_table
-                    + "\n\n\n*Closed Cases*\n"
-                    + self.closed_table
-                )]
+                self.ticket.comments = [
+                    (
+                        "*Open Cases*\n"
+                        + self.open_table
+                        + "\n\n\n*Closed Cases*\n"
+                        + self.closed_table
+                    )
+                ]
 
                 if len(self.ticket.comments[0]) > 32700:
                     self.additional_comments = True
@@ -408,19 +476,18 @@ class TicketResponder:
                     open_len = max(1, len(open_list) // 2) if open_list else 0
                     closed_len = max(1, len(closed_list) // 2) if closed_list else 0
 
-
-                    open_one = open_list[:int(open_len)]
+                    open_one = open_list[: int(open_len)]
                     open_comment_one = "\n".join(open_one)
                     open_two = [open_list[0]]
-                    open_two.extend(open_list[int(open_len):])
+                    open_two.extend(open_list[int(open_len) :])
                     open_comment_two = "\n".join(open_two)
 
-                    closed_one = closed_list[:int(closed_len)]
+                    closed_one = closed_list[: int(closed_len)]
                     closed_comment_one = "\n".join(closed_one)
                     closed_two = [closed_list[0]]
-                    closed_two.extend(closed_list[int(closed_len):])
+                    closed_two.extend(closed_list[int(closed_len) :])
                     closed_comment_two = "\n".join(closed_two)
-                    
+
                     self.ticket.comments = [
                         (
                             "*Comment 1 of 2*\n\n*Open Cases*\n"
@@ -433,15 +500,15 @@ class TicketResponder:
                             + open_comment_two
                             + "\n\n\n*Closed Cases*\n"
                             + closed_comment_two
-                        )
+                        ),
                     ]
 
-                self.logger.info(f"ETP ticket {self.summary_ticket} created succesfully")
+                self.logger.info(
+                    f"ETP ticket {self.summary_ticket} created succesfully"
+                )
             else:
                 self.summary_ticket_created = False
                 self.logger.info(f"Failed to create ETP ticket. Status code: {status}")
-            
-            
 
     def add_comment(self):
         self.logger.info(f"Adding comment to {self.ticket.ticket_id}")
@@ -454,11 +521,7 @@ class TicketResponder:
                 if self.ticket.ticket_resolved is False:
                     self.assignee = ""
 
-                payload = {
-                    "update": {
-                        "comment": [{"add": {"body": comment}}]
-                    }
-                }
+                payload = {"update": {"comment": [{"add": {"body": comment}}]}}
             else:
                 payload = {
                     "update": {
@@ -509,12 +572,16 @@ class TicketResponder:
                         - self.ticket.creation_time.replace(tzinfo=None)
                     )
             else:
-                self.logger.info(f"Changing {self.ticket.ticket_id} status to 'In Progress'")
+                self.logger.info(
+                    f"Changing {self.ticket.ticket_id} status to 'In Progress'"
+                )
                 try:
                     self.transition_ticket(transitions[:-1])
                     pass
                 except Exception as e:
-                    self.logger.info(f"Failed to change {self.ticket.ticket_id} status: {e}")
+                    self.logger.info(
+                        f"Failed to change {self.ticket.ticket_id} status: {e}"
+                    )
         else:
             ticket_triaged = "31"
             ticket_in_progress = "221"
@@ -530,7 +597,9 @@ class TicketResponder:
             ):
                 self.add_service_type()
                 try:
-                    self.logger.info(f"Updating {self.ticket.ticket_id} status to 'Closed'")
+                    self.logger.info(
+                        f"Updating {self.ticket.ticket_id} status to 'Closed'"
+                    )
                     self.transition_ticket(transitions)
                 except Exception as e:
                     self.logger.info(f"Failed to close {self.ticket.ticket_id}: {e}")
@@ -546,7 +615,9 @@ class TicketResponder:
                     )
                     self.transition_ticket(transitions[:-1])
                 except Exception as e:
-                    self.logger.info(f"Failed to update {self.ticket.ticket_id} status: {e}")
+                    self.logger.info(
+                        f"Failed to update {self.ticket.ticket_id} status: {e}"
+                    )
 
     def process_attributes(self, indicator):
         for attribute, value in vars(indicator).items():
@@ -618,7 +689,7 @@ class TicketResponder:
             else:
                 status = str(response.status_code)
                 if status.startswith("2"):
-                    self.logger.info(f"Status updated succesfully")
+                    self.logger.info("Status updated succesfully")
                 else:
                     self.logger.info(
                         f"Failed to update status {self.ticket.ticket_id}. Status code: {status}"
@@ -637,7 +708,9 @@ class TicketResponder:
                     self.manual_blacklist_entry = line.strip()
                     break
 
-            self.logger.info(f"{self.manual_blacklist_entry} removed from the blacklist")
+            self.logger.info(
+                f"{self.manual_blacklist_entry} removed from the blacklist"
+            )
         except FileNotFoundError:
             self.logger.info(f"Error: File '{blacklist_file}' not found.")
         except Exception as e:

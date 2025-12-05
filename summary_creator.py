@@ -6,7 +6,9 @@ from ticket import Ticket
 
 
 class SummaryCreator:
-    def __init__(self, logger, tickets_in_progress_file, open_summary_tickets_file) -> None:
+    def __init__(
+        self, logger, tickets_in_progress_file, open_summary_tickets_file
+    ) -> None:
         self.logger = logger
         self.tickets_in_progress_file = tickets_in_progress_file
         self.open_summary_tickets_file = open_summary_tickets_file
@@ -25,13 +27,15 @@ class SummaryCreator:
             json.dump([], file, indent=4)
 
     def archive_tickets(self):
-        self.archive_filename = self.tickets_in_progress_file[:-5] + "_" + str(int(time.time())) + ".json"
+        self.archive_filename = (
+            self.tickets_in_progress_file[:-5] + "_" + str(int(time.time())) + ".json"
+        )
         tickets_dicts = []
         with open(self.archive_filename, "w") as file:
             for ticket in Ticket.all_tickets:
                 ticket_dict = ticket.to_dict()
                 tickets_dicts.append(ticket_dict)
-            
+
             json.dump(tickets_dicts, file, indent=4)
 
     def save_open_summary_ticket(self, summary_ticket):

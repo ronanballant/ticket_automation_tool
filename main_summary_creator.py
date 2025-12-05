@@ -1,10 +1,15 @@
 import argparse
 import os
 
-from config import (etp_tickets_in_progress_file, get_logger,
-                    open_etp_summary_tickets_file,
-                    open_sps_summary_tickets_file, project_folder,
-                    secops_member, sps_tickets_in_progress_file)
+from config import (
+    etp_tickets_in_progress_file,
+    get_logger,
+    open_etp_summary_tickets_file,
+    open_sps_summary_tickets_file,
+    project_folder,
+    secops_member,
+    sps_tickets_in_progress_file,
+)
 from key_handler import KeyHandler
 from summary_creator import SummaryCreator
 from ticket import Ticket
@@ -52,7 +57,8 @@ def parse_args():
         exit(1)
     else:
         return args
-    
+
+
 def re_summaraise(archived_file):
     pass
 
@@ -83,24 +89,22 @@ if __name__ == "__main__":
             logger.error("No archive file provided in -a. exiting...")
             exit()
 
-
-
     summary_creator = SummaryCreator(
         logger, tickets_in_progress_file, open_summary_tickets_file
     )
     logger.info(f"Loading ticket data from {tickets_in_progress_file}")
     summary_creator.load_ticket_data()
-    logger.info(f"Creating ticket instances")
+    logger.info("Creating ticket instances")
     summary_creator.create_tickets()
 
     responder = TicketResponder(logger, secops_member, cert_path, key_path)
-    logger.info(f"Finding unprocessed tickets")
+    logger.info("Finding unprocessed tickets")
     new_tickets = [
         ticket for ticket in Ticket.all_tickets if not ticket.linked_summary_ticket
     ]
 
     if not new_tickets:
-        logger.info(f"No new tickets, exiting script")
+        logger.info("No new tickets, exiting script")
         exit()
 
     key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
@@ -109,13 +113,13 @@ if __name__ == "__main__":
 
     if queue == "SPS":
         try:
-            logger.info(f"Creating SPS summary ticket")
+            logger.info("Creating SPS summary ticket")
             responder.create_sps_ticket(new_tickets)
         except Exception as e:
             logger.error(f"Failed to create SPS summary results ticket: {e}")
     elif queue == "ETP":
         try:
-            logger.info(f"Creating ETP summary ticket")
+            logger.info("Creating ETP summary ticket")
             responder.create_etp_ticket(new_tickets)
         except Exception as e:
             logger.error(f"Failed to create ETP summary results ticket: {e}")
@@ -136,7 +140,7 @@ if __name__ == "__main__":
             logger.info(f"Archived tickets to {summary_creator.archive_filename}")
             exit()
 
-        logger.info(f"Linking summary ticket")
+        logger.info("Linking summary ticket")
         Ticket.link_summary_ticket(responder.summary_ticket)
         logger.info(f"Saving updated tickets to {tickets_in_progress_file}")
         Ticket.save_current_tickets(tickets_in_progress_file)

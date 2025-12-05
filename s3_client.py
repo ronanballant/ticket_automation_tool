@@ -92,7 +92,9 @@ class S3Client:
                 self.broken_iocs.extend(ioc_strings)
 
     def write_file(self, file_name, s3_output_path):
-        self.logger.info(f"Writing {file_name} to {self.secops_s3_bucket}/{s3_output_path}")
+        self.logger.info(
+            f"Writing {file_name} to {self.secops_s3_bucket}/{s3_output_path}"
+        )
         self.s3_client.upload_file(file_name, self.secops_s3_bucket, s3_output_path)
 
     def get_file(self, file_path):
@@ -101,4 +103,3 @@ class S3Client:
             Bucket=self.secops_s3_bucket, Key=file_path
         )
         self.file_content = response["Body"].read().decode("utf-8")
-

@@ -6,10 +6,12 @@ import tldextract as tld
 
 from config import jira_search_api
 
+
 class TicketFetcher:
     requests.packages.urllib3.disable_warnings(
         requests.urllib3.exceptions.InsecureRequestWarning
     )
+
     def __init__(self, logger, cert_path, key_path, queue="sps") -> None:
         self.logger = logger
         self.cert_path = cert_path
@@ -22,7 +24,7 @@ class TicketFetcher:
                 if specified_tickets:
                     jql_query = f'project="ReCat Sec Ops Requests" AND issue in ({specified_tickets})'
                 else:
-                    jql_query = f'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
+                    jql_query = 'project="ReCat Sec Ops Requests" AND status = "Open" AND assignee IS EMPTY'
                     # jql_query = f'project="ReCat Sec Ops Requests" AND status IS "Open" AND assignee IS EMPTY'
 
             if self.queue.lower() == "etp":
@@ -30,7 +32,7 @@ class TicketFetcher:
                     jql_query = f'project="Enterprise Tier 3 Escalation Support" AND issue in ({specified_tickets})'
                 else:
                     jql_query = 'project="Enterprise Tier 3 Escalation Support" AND assignee is EMPTY AND status in (New, Open) and "Next Steps" ~ SecOps'
-            
+
             params = {"jql": jql_query, "maxResults": 100}
 
             self.req = requests.get(
@@ -56,7 +58,9 @@ class TicketFetcher:
                         ticket_id = entry.get("key")
                         fields = entry.get("fields")
                         if fields:
-                            creation_time = datetime.strptime(fields.get("created"), '%Y-%m-%dT%H:%M:%S.%f%z')
+                            creation_time = datetime.strptime(
+                                fields.get("created"), "%Y-%m-%dT%H:%M:%S.%f%z"
+                            )
                             reporter_data = fields.get("reporter")
                             full_name = reporter_data.get("displayName")
                             user_name = reporter_data.get("name")
@@ -79,7 +83,12 @@ class TicketFetcher:
                             if summary:
                                 components = fields.get("components")
                                 if components:
-                                    component = ",".join([component.get("name") for component in components])
+                                    component = ",".join(
+                                        [
+                                            component.get("name")
+                                            for component in components
+                                        ]
+                                    )
                                     component = component.replace("_", " ")
                                 else:
                                     component = ""
@@ -89,7 +98,9 @@ class TicketFetcher:
                                 elif "secops false positive" in component.lower():
                                     ticket_type = "FP"
                                 else:
-                                    ticket_type = self.get_ticket_type(summary, description)
+                                    ticket_type = self.get_ticket_type(
+                                        summary, description
+                                    )
 
                             self.tickets[ticket_id] = {
                                 "ticket_type": ticket_type,
@@ -135,11 +146,10 @@ class TicketFetcher:
         # description = re.sub(r'\{quote\}.*?\{quote\}', '', description, flags=re.DOTALL)
         pattern = r"{color[^}]*}|{code[^}]*}|{noformat[^}]*}"
         description = re.sub(pattern, " ", description)
-        pattern = r"\[([^\|]*)\|.*?\]"  
+        pattern = r"\[([^\|]*)\|.*?\]"
         description = re.sub(pattern, r"\1", description)
         description = (
-            description
-            .replace("{quote}", " ")
+            description.replace("{quote}", " ")
             .replace("|", " ")
             .replace("[:]", ":")
             .replace("[.]", ".")
@@ -168,14 +178,13 @@ class TicketFetcher:
         pattern = re.compile(
             "((?=[a-z0-9-]{1,63}\\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\\.)+[a-z]{2,63}"
         )
-        
+
         matched_fqdns = []
         for word in words:
             if "@" not in word:
                 matches = re.finditer(pattern, word)
                 fqdn_matches = [(match.group(0)) for match in matches]
                 matched_fqdns += fqdn_matches
-
 
         fqdns = []
         for fqdn in matched_fqdns:
@@ -196,7 +205,9 @@ class TicketFetcher:
     def collect_urls(self, description):
         words = description.split()
         # pattern = re.compile("([a-zA-Z]+://)?([\w-]+(\[\.\]|\.))+[\w]{2,}/.*")
-        pattern = re.compile("([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\\.)+)+[\\w]{2,}(:\\d+)?/.*")
+        pattern = re.compile(
+            "([a-zA-Z]+://)?([\\w-]+(\\[\\.\\]|\\.)+)+[\\w]{2,}(:\\d+)?/.*"
+        )
 
         matched_urls = []
         for word in words:
@@ -224,10 +235,10 @@ class TicketFetcher:
     def get_ticket_type(self, summary, description):
         summary = summary.lower()
         description = description.lower()
-        
+
         if "exfil" in description or "exfiltration" in description:
             return "None"
-        
+
         if "fn:" in summary or "false negative" in summary:
             return "FN"
         elif "fp:" in summary or "false positive" in summary:

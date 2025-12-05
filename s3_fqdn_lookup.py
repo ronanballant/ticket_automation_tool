@@ -13,7 +13,7 @@ class S3FQDNLookup:
             region_name=region,
             endpoint_url=f"https://{endpoint}",
             aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key
+            aws_secret_access_key=secret_key,
         )
 
     def query_fqdn(self, fqdn):
@@ -27,32 +27,57 @@ class S3FQDNLookup:
                 continue
 
             try:
-                body = self.s3.get_object(Bucket=self.bucket, Key=key)["Body"].read().decode("utf-8")
+                body = (
+                    self.s3.get_object(Bucket=self.bucket, Key=key)["Body"]
+                    .read()
+                    .decode("utf-8")
+                )
 
                 for line in body.splitlines():
                     if not line.strip():
-                        continue  
+                        continue
                     try:
                         record = json.loads(line)
                         if record.get("fqdn") == fqdn:
                             return record
                     except json.JSONDecodeError:
-                        continue  
+                        continue
 
             except Exception:
-                continue 
+                continue
 
-        return None 
+        return None
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Query a single FQDN from S3 using DuckDB")
-    parser.add_argument("-d", "--domain", default="suijidaohxl.top", help="Domain to query (e.g., a.mail.example.com)")
+    parser = argparse.ArgumentParser(
+        description="Query a single FQDN from S3 using DuckDB"
+    )
+    parser.add_argument(
+        "-d",
+        "--domain",
+        default="suijidaohxl.top",
+        help="Domain to query (e.g., a.mail.example.com)",
+    )
     return parser.parse_args()
 
-if __name__ == '__main__':
-    from config import carrier_intel_region, carrier_intel_endpoint, carrier_intel_bucket, carrier_intel_access_key, carrier_intel_secret_key
+
+if __name__ == "__main__":
+    from config import (
+        carrier_intel_region,
+        carrier_intel_endpoint,
+        carrier_intel_bucket,
+        carrier_intel_access_key,
+        carrier_intel_secret_key,
+    )
 
     args = parse_args()
-    client = S3FQDNLookup(carrier_intel_region, carrier_intel_endpoint, carrier_intel_bucket, carrier_intel_access_key, carrier_intel_secret_key)
+    client = S3FQDNLookup(
+        carrier_intel_region,
+        carrier_intel_endpoint,
+        carrier_intel_bucket,
+        carrier_intel_access_key,
+        carrier_intel_secret_key,
+    )
     result = client.query_fqdn(args.domain)
     print(result)

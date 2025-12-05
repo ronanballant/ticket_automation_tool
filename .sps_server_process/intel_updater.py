@@ -1,35 +1,32 @@
 #!/usr/bin/python3
 
-import datetime
-import json
+import csv
 import re
 
 import requests
+from config import api_key, get_logger, sps_intel_update_file
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
-from config import (api_key, destination_region, directory_prefix, empty_file_path, get_logger,
-                    secops_s3_aws_access_key, secops_s3_aws_secret_key,
-                    secops_s3_bucket, secops_s3_endpoint,
-                    sps_intel_update_s3_path, update_responses_s3_path)
-from s3_client import S3Client
 
-
-logger = get_logger("logs_s3_intel_updater.txt")
+logger = get_logger("logs_intel_updater.txt")
 
 
 class IntelUpdater:
-    def __init__(self, logger, update_line) -> None:
+    def __init__(
+        self, logger, update_line, reason_given=None, expiration=None, confidence=None
+    ) -> None:
         self.logger = logger
         self.update_line = update_line
         self.fqdn = ""
         self.ticket_id = ""
         self.feed = ""
         self.valid_update = False
+        self.expiration = expiration
+        self.confidence = confidence
+        self.reason_given = reason_given
 
     def parse_update(self):
-        update_data = (
-            self.update_line.replace('"', "").replace("'", "").strip().split(",")
-        )
+        update_data = self.update_line
 
         if len(update_data) == 3:
             self.fqdn = update_data[0]
@@ -44,8 +41,11 @@ class IntelUpdater:
             self.logger.info(f"Skipped - Not valid format: {update_data}")
 
     def get_reason(self):
-        self.reason = f"Internal|Carrier|SecOps|{self.ticket_id}"
-        self.logger.info(f"Created reason string: {self.reason}")
+        if self.reason_given:
+            self.reason = f"Internal|Carrier|SecOps|{self.reason_given}"
+        else:
+            self.reason = f"Internal|Carrier|SecOps|{self.ticket_id}"
+            self.logger.info(f"Created reason string: {self.reason}")
 
     def get_update_parameters(self):
         self.logger.info(f"Updating parameters")
@@ -65,22 +65,30 @@ class IntelUpdater:
             self.intel_feed = "gix-vta-block"
             self.expiration_time = "180 days"
             self.threat_id = 1000
+        elif self.feed.lower() == "unidentified":
+            self.intel_feed = "tps-unidentified"
+            self.expiration_time = "180 days"
+            self.threat_id = 601
         else:
             self.intel_feed = ""
             self.expiration_time = ""
             self.threat_id = ""
+
+        if self.expiration:
+            self.expiration_time = self.expiration
         self.logger.info(
             f"Created parameters - feed: {self.intel_feed}, expiration: {self.expiration_time}, threat_id: {self.threat_id}"
         )
 
     def create_update_command(self):
+        self.confidence = 0.95 if self.confidence is None else self.confidence
         self.command = {
             "name": self.fqdn,
             "blockability_class": self.intel_feed,
             "threat_type": self.threat_id,
             "time_expire": self.expiration_time,
             "reason": self.reason,
-            "confidence": 0.95,
+            "confidence": self.confidence,
             "api_key": api_key,
         }
         self.logger.info(f"Created command: {self.command}")
@@ -91,7 +99,7 @@ class IntelUpdater:
 
         url = "https://fresh-milk-feeds.rad.nominum.com:51000/api/v1/entry/add"
         response = requests.post(url, data=self.command, verify=False)
-        self.logger.info(f"Response text: {response.text}")
+        logger.info(f"Response text: {response.text}")
         self.response_text = response.text
         if str(response.status_code).startswith("2"):
             self.logger.info(f"{self.fqdn} added to {self.intel_feed}")
@@ -130,47 +138,46 @@ class IntelUpdater:
             self.logger.info(f"{self.fqdn} not a valid FQDN")
             self.valid_update = False
 
+    def create_linode_commands(self):
+        urls = [
+            "https://freshmilk.prod-us-ord.prod.spof.akaetp.net/api/v1/entry/add",
+            "https://freshmilk.staging.qa.spof.akaetp.net/api/v1/entry/add",
+        ]
+
+        data = {
+            "name": self.fqdn,
+            "blockability_class": self.intel_feed,
+            "threat_type": self.threat_id,
+            "time_expire": self.expiration_time,
+            "reason": self.reason,
+            "confidence": self.confidence,
+            "api_key": api_key,
+        }
+
+        for url in urls:
+            response = requests.post(url, data=data, verify=False)
+            logger.info(f"Response text: {response.text}")
+            self.response_text = response.text
+            if str(response.status_code).startswith("2"):
+                self.logger.info(f"{self.fqdn} added to {self.intel_feed}")
+            else:
+                self.logger.info(f"Failed to add {self.fqdn} to {self.intel_feed}")
+
 
 if __name__ == "__main__":
-    s3_client = S3Client(
-        logger,
-        destination_region,
-        secops_s3_endpoint,
-        secops_s3_bucket,
-        secops_s3_aws_access_key,
-        secops_s3_aws_secret_key,
-        directory_prefix,
-    )
+    data_strings = []
+    with open(sps_intel_update_file, "r") as file:
+        reader = csv.reader(file)
+        intel_updates = [row for row in reader]
 
-    s3_client.initialise_client()
-    s3_client.read_s3_file(sps_intel_update_s3_path)
-    data = s3_client.file_content.strip().split("\n")
+    for row in intel_updates:
+        if row[0]:
+            intel_updater = IntelUpdater(logger, row)
+            intel_updater.parse_update()
+            intel_updater.clean_domain()
+            intel_updater.get_update_parameters()
+            intel_updater.get_reason()
+            # intel_updater.create_linode_commands()
 
-    if data[0] == "empty":
-        logger.info("No updates to process... Exiting process")
-        exit()
-
-    s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
-    logger.info(f"FQDNs to add: {data}")
-    intel_updates = [row.strip().replace("'","") for row in data]
-    logger.info(f"intel_updates: {intel_updates}")
-    if intel_updates[0]:
-        responses = []
-        for row in intel_updates:
-            if row[0]:
-                logger.info(f"Processing: {row}")
-                intel_updater = IntelUpdater(logger, row)
-                intel_updater.parse_update()
-                intel_updater.clean_domain()
-                intel_updater.get_update_parameters()
-                intel_updater.get_reason()
-                intel_updater.create_update_command()
-                intel_updater.execute_command()
-                responses.append(intel_updater.response_text)
-
-        print("responses", responses)
-        with open("intel_update_responses.json", "w") as file:
-            json.dump(responses, file, indent=4)
-
-        s3_client.write_file("intel_update_responses.json", update_responses_s3_path)
-        s3_client.write_file(empty_file_path, sps_intel_update_s3_path)
+            intel_updater.create_update_command()
+            intel_updater.execute_command()

@@ -29,7 +29,7 @@ class ResponseCreator:
             "SOPHOS_REPOSITORY",
             "VIRUS_TOTAL_MALWARE",
             "NOMINUM_IP_FRESH_MILK_TPS_MALWARE_IPS",
-            "NOMINUM_IP_FRESH_MILK_TPS_UNIDENTIFIED_IPS"
+            "NOMINUM_IP_FRESH_MILK_TPS_UNIDENTIFIED_IPS",
         ]
 
         phishing_source_list = [
@@ -48,7 +48,6 @@ class ResponseCreator:
             "JAPAN_ANTI_PHISHING",
             "NOMINUM_VC_PHISHING",
         ]
-
 
         botnet_source_list = [
             "CNC",
@@ -88,7 +87,7 @@ class ResponseCreator:
         malware_source_matches = malware_source_pattern.findall(
             self.indicator.intel_source
         )
-        
+
         external_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in external_source_list),
             flags=re.IGNORECASE,
@@ -96,7 +95,7 @@ class ResponseCreator:
         external_source_matches = external_source_pattern.findall(
             self.indicator.intel_source
         )
-        
+
         phishing_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in phishing_source_list),
             flags=re.IGNORECASE,
@@ -104,12 +103,14 @@ class ResponseCreator:
         phishing_source_matches = phishing_source_pattern.findall(
             self.indicator.intel_source
         )
-        
+
         botnet_source_pattern = re.compile(
             r"|".join(re.escape(source) for source in botnet_source_list),
             flags=re.IGNORECASE,
         )
-        botnet_source_matches = botnet_source_pattern.findall(self.indicator.intel_source)
+        botnet_source_matches = botnet_source_pattern.findall(
+            self.indicator.intel_source
+        )
 
         # dga_source_pattern = re.compile(
         #     r"|".join(re.escape(source) for source in dga_source_list),
@@ -117,13 +118,15 @@ class ResponseCreator:
         # )
         # dga_source_matches = dga_source_pattern.findall(self.indicator.intel_source)
 
-        self.indicator.vt_link = f"https://www.virustotal.com/gui/domain/{self.indicator.fqdn}/detection"
+        self.indicator.vt_link = (
+            f"https://www.virustotal.com/gui/domain/{self.indicator.fqdn}/detection"
+        )
 
         if (
             "resolved IP and name pattern" in self.indicator.intel_source
             or "ncdippat" in self.indicator.intel_source
         ):
-            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+            if self.indicator.fqdn.strip(".") == self.indicator.matched_ioc.strip("."):
                 self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to an IP address with a known bad reputation of malicious activity. "
             else:
                 if self.indicator.ip_in_intel is True:
@@ -131,23 +134,29 @@ class ResponseCreator:
                 else:
                     self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to an IP address associated with malicious activity. "
         elif malware_source_matches:
-            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged due to malicious activity. "
+            if self.indicator.fqdn.strip(".") == self.indicator.matched_ioc.strip("."):
+                self.indicator.source_response = (
+                    f"{self.indicator.fqdn} was flagged due to malicious activity. "
+                )
             else:
                 self.indicator.source_response = f"{self.indicator.fqdn} was blocked because {self.indicator.matched_ioc} has been associated with malicious activity. "
         elif phishing_source_matches:
-            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
-                self.indicator.source_response = f"{self.indicator.fqdn} was flagged due to Phishing activity. "
+            if self.indicator.fqdn.strip(".") == self.indicator.matched_ioc.strip("."):
+                self.indicator.source_response = (
+                    f"{self.indicator.fqdn} was flagged due to Phishing activity. "
+                )
             else:
                 self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was identified for Phishing activity. "
         elif external_source_matches:
-            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
+            if self.indicator.fqdn.strip(".") == self.indicator.matched_ioc.strip("."):
                 self.indicator.source_response = f"{self.indicator.fqdn} was flagged due to malicious activity reported by threat intelligence sources. "
             else:
                 self.indicator.source_response = f"{self.indicator.fqdn} was blocked as {self.indicator.matched_ioc} was flagged due to malicious activity reported by threat intelligence sources. "
         elif botnet_source_matches:
-            if self.indicator.fqdn.strip('.') == self.indicator.matched_ioc.strip('.'):
-                self.indicator.source_response = f"{self.indicator.fqdn} was identified for malicious activity. "
+            if self.indicator.fqdn.strip(".") == self.indicator.matched_ioc.strip("."):
+                self.indicator.source_response = (
+                    f"{self.indicator.fqdn} was identified for malicious activity. "
+                )
             else:
                 if self.indicator.ip_in_intel is True:
                     self.indicator.source_response = f"{self.indicator.fqdn} was flagged for resolving to {self.indicator.resolved_ip} which was associated with malicious activity. "
@@ -190,11 +199,11 @@ class ResponseCreator:
             else:
                 self.indicator.comment = f" \n*{self.indicator.indicator_type}*: {self.indicator.fqdn} \n*COMMENTS*: \n{self.indicator.rule_response} \n*Links*:\n{self.indicator.vt_link}\n "
         else:
-            self.logger.info(f"Incorrect resolution: {self.indicator.indicator_resolution}")
+            self.logger.info(
+                f"Incorrect resolution: {self.indicator.indicator_resolution}"
+            )
             self.indicator.indicator_resolution = "In Progress"
             self.indicator.is_resolved = False
             self.indicator.ticket.ticket_resolved = False
             self.indicator.ticket.requires_approval = True
             self.indicator.ticket.send_comment = True
-
-

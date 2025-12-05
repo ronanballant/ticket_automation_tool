@@ -40,13 +40,19 @@ class ETPIntelFetcher:
             self.indicator.intel_category = self.previous_intel.get("intel_category")
             self.indicator.intel_source = self.previous_intel.get("intel_source")
             self.indicator.intel_source_list = self.previous_intel.get("intel_source")
-            self.indicator.intel_description = self.previous_intel.get("intel_description")
+            self.indicator.intel_description = self.previous_intel.get(
+                "intel_description"
+            )
             self.indicator.is_filtered = self.previous_intel.get("is_filtered")
             self.indicator.filter_reason = self.previous_intel.get("filter_reason")
             self.indicator.intel_threat_id = self.previous_intel.get("intel_threat_id")
             self.indicator.intel_list_id = self.previous_intel.get("intel_list_id")
-            self.indicator.intel_threat_keywords = self.previous_intel.get("intel_threat_keywords")
-            self.indicator.intel_category_strength = self.previous_intel.get("intel_category_strength")
+            self.indicator.intel_threat_keywords = self.previous_intel.get(
+                "intel_threat_keywords"
+            )
+            self.indicator.intel_category_strength = self.previous_intel.get(
+                "intel_category_strength"
+            )
             self.indicator.is_in_intel = self.previous_intel.get("is_in_intel")
             self.indicator.subdomain_count = self.previous_intel.get("subdomain_count")
             self.indicator.etp_fqdn = self.previous_intel.get("etp_fqdn")
@@ -119,20 +125,36 @@ class ETPIntelFetcher:
                 if etp_fqdn_status_list:
                     strongest_result = etp_fqdn_status_list[0]
 
-                    self.indicator.intel_category = strongest_result.get("intel_category", "-")
-                    self.indicator.intel_source = strongest_result.get("intel_source", "-")
-                    self.indicator.is_internal = is_internal_source(self.indicator.intel_source)
+                    self.indicator.intel_category = strongest_result.get(
+                        "intel_category", "-"
+                    )
+                    self.indicator.intel_source = strongest_result.get(
+                        "intel_source", "-"
+                    )
+                    self.indicator.is_internal = is_internal_source(
+                        self.indicator.intel_source
+                    )
                     self.indicator.is_in_man_bl = is_in_man_bl(", ".join(sources))
-                    self.indicator.intel_description = strongest_result.get("intel_description", "-")
+                    self.indicator.intel_description = strongest_result.get(
+                        "intel_description", "-"
+                    )
                     self.indicator.is_filtered = str_to_bool(
                         strongest_result.get("is_filtered", "-")
                     )
-                    self.indicator.filter_reason = strongest_result.get("filter_reason", "-")
-                    self.indicator.intel_threat_id = strongest_result.get("intel_threat_id", "-")
-                    self.indicator.intel_list_id = strongest_result.get("intel_list_id", "-")
+                    self.indicator.filter_reason = strongest_result.get(
+                        "filter_reason", "-"
+                    )
+                    self.indicator.intel_threat_id = strongest_result.get(
+                        "intel_threat_id", "-"
+                    )
+                    self.indicator.intel_list_id = strongest_result.get(
+                        "intel_list_id", "-"
+                    )
                     if self.indicator.intel_list_id != "-":
                         self.indicator.intel_category_strength = (
-                            "strong" if self.indicator.intel_list_id in [1, 2, 3] else "weak"
+                            "strong"
+                            if self.indicator.intel_list_id in [1, 2, 3]
+                            else "weak"
                         )
                     else:
                         self.indicator.intel_category_strength = "-"
@@ -154,7 +176,6 @@ class ETPIntelFetcher:
                         "intel_list_id": self.indicator.intel_list_id,
                         "intel_category_strength": self.indicator.intel_category_strength,
                         "is_in_intel": self.indicator.is_in_intel,
-                        "intel_category": self.indicator.intel_category,
                         "subdomain_only": self.indicator.subdomain_only,
                         "subdomain_count": self.indicator.subdomain_count,
                     }
@@ -180,14 +201,12 @@ class ETPIntelFetcher:
         self.indicator.is_internal = False
 
         ETPIntelFetcher.previous_queries[self.indicator.fqdn] = {}
-    
+
     def query_resolved_ip(self):
         for ip in self.indicator.resolved_ips:
             ip_query = ip + "/32"
             try:
-                cursor = self.mongo_connection.blacklist.find(
-                    {"etp_record": ip_query}
-                )
+                cursor = self.mongo_connection.blacklist.find({"etp_record": ip_query})
                 self.indicator.mongo_results = [record for record in cursor]
 
                 if self.indicator.mongo_results:
@@ -201,6 +220,7 @@ class ETPIntelFetcher:
             except Exception as e:
                 self.logger.error(f"Error querying ETP intel: {e}")
 
+
 def get_category_level(list_id):
     if list_id in [1, 2, 3]:
         category_level = "strong"
@@ -209,17 +229,20 @@ def get_category_level(list_id):
 
     return category_level
 
+
 def str_to_bool(string):
-    if type(string) == str:
+    if type(string) is str:
         return True if string.lower() == "true" else False
     else:
         return string
+
 
 def is_internal_source(source):
     if any(substring in source.lower() for substring in ["nom", "etp", "man"]):
         return True
     else:
         return False
+
 
 def is_in_man_bl(source):
     if "manual" in source.lower():

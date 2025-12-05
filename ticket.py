@@ -1,3 +1,4 @@
+
 import json
 from datetime import datetime, timedelta
 from typing import List
@@ -133,16 +134,15 @@ class Ticket:
 
     def set_ticket_comment(self):
         if self.ticket_responses:
-            self.comments = [(
-                self.comment_greeting + self.ticket_responses + self.comment_sign_off
-            )]
+            self.comments = [
+                (self.comment_greeting + self.ticket_responses + self.comment_sign_off)
+            ]
         else:
             self.comment = [""]
             self.send_comment = False
 
     def to_dict(self):
-        indicators_dict = [indicator.to_dict()
-                           for indicator in self.indicators]
+        indicators_dict = [indicator.to_dict() for indicator in self.indicators]
 
         ticket_dict = self.__dict__.copy()
         if isinstance(self.creation_time, datetime):
@@ -177,16 +177,14 @@ class Ticket:
         if "time_to_response" in data and isinstance(
             data["time_to_response"], (int, float)
         ):
-            data["time_to_response"] = timedelta(
-                seconds=data["time_to_response"])
+            data["time_to_response"] = timedelta(seconds=data["time_to_response"])
         else:
             data["time_to_response"] = None
 
         if "time_to_resolution" in data and isinstance(
             data["time_to_resolution"], (int, float)
         ):
-            data["time_to_resolution"] = timedelta(
-                seconds=data["time_to_resolution"])
+            data["time_to_resolution"] = timedelta(seconds=data["time_to_resolution"])
         else:
             data["time_to_resolution"] = None
 

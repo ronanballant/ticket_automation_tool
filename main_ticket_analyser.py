@@ -3,11 +3,18 @@
 import argparse
 import os
 
-from config import (carrier_intel_access_key, carrier_intel_bucket,
-                    carrier_intel_endpoint, carrier_intel_region,
-                    carrier_intel_secret_key, etp_tickets_in_progress_file,
-                    get_logger, project_folder, secops_member,
-                    sps_tickets_in_progress_file)
+from config import (
+    carrier_intel_access_key,
+    carrier_intel_bucket,
+    carrier_intel_endpoint,
+    carrier_intel_region,
+    carrier_intel_secret_key,
+    etp_tickets_in_progress_file,
+    get_logger,
+    project_folder,
+    secops_member,
+    sps_tickets_in_progress_file,
+)
 from s3_fqdn_lookup import S3FQDNLookup
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
@@ -40,7 +47,7 @@ def parse_args():
     parser.add_argument(
         "-t",
         "--tickets",
-        # default="",
+        # default="RCSOR-8722",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
@@ -83,7 +90,7 @@ def run_process():
 
     logger.info(f"Loading ticket data from {tickets_in_progress_file}")
     Ticket.load_ticket_data(tickets_in_progress_file)
-    logger.info(f"Creating ticket instances")
+    logger.info("Creating ticket instances")
     Ticket.get_tickets_in_progress()
 
     if not tickets:
@@ -176,7 +183,7 @@ def run_process():
                 logger.info(f"Processing {indicator.fqdn}")
 
                 try:
-                    logger.info(f"Querying VT")
+                    logger.info("Querying VT")
                     vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.fqdn)
                     vt_fetcher.prepare_indicator()
                     vt_fetcher.set_vt_link()
@@ -213,6 +220,7 @@ def run_process():
                                 carrier_intel_fetcher.query_s3_intel()
                                 if carrier_intel_fetcher.result:
                                     carrier_intel_fetcher.assign_s3_intel()
+                                    # If ETP feed fetch ETP intel
                                 else:
                                     carrier_intel_fetcher.no_s3_intel()
 
@@ -220,7 +228,7 @@ def run_process():
                                 indicator.matched_ioc = candidate
                                 break
                             else:
-                                # Add IP functioinality 
+                                # Add IP functioinality
                                 # Add VT for matched candidate here
                                 pass
                     except Exception as e:
@@ -239,6 +247,7 @@ def run_process():
                             )
                             intel_fetcher.query_intel()
                             intel_fetcher.assign_results()
+                            # if carrier intel, fetch carrier
 
                             if indicator.is_in_intel is True:
                                 indicator.matched_ioc = indicator.candidate

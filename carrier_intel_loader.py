@@ -8,8 +8,8 @@ class CarrierIntelLoader:
 
     def read_previous_queries(self):
         try:
-            self.results[self.indicator.candidate] = CarrierIntelLoader.previous_queries.get(
-                self.indicator.candidate, None
+            self.results[self.indicator.candidate] = (
+                CarrierIntelLoader.previous_queries.get(self.indicator.candidate, None)
             )
         except Exception as e:
             self.logger.error(f"Failed to read previous Intel query: {e}")
@@ -53,7 +53,6 @@ class CarrierIntelLoader:
         first_source = first_reason_pair[1].replace("|", "\|")
         self.indicator.intel_feed = first_feed
         self.indicator.intel_source = first_source
-        
 
         self.indicator.intel_confidence = self.result.get("max_confidence", "-")
         nps_cat = self.result.get("nps_cat", 0)
@@ -63,7 +62,7 @@ class CarrierIntelLoader:
         self.indicator.subdomain_count = self.result.get("subdomain_count", 0)
         self.indicator.url_count = self.result.get("path_count", "-")
         self.indicator.is_in_intel = True
-        
+
         is_inexact = self.result.get("is_inexact", False)
         self.indicator.e_list_entry = not is_inexact
         self.indicator.subdomain_only = False
@@ -71,9 +70,7 @@ class CarrierIntelLoader:
 
 
 def str_to_bool(string):
-    if type(string) == str:
+    if type(string) is str:
         return True if string.lower() == "true" else False
     else:
         return string
-
-

@@ -2,16 +2,29 @@ import base64
 import os
 
 import get_az_secret
-from config import (asheik_cert_name, asheik_key_name, asheik_ssh_key_name,
-                    gkochner_cert_name, gkochner_key_name,
-                    gkochner_ssh_key_name, mcohen_cert_name, mcohen_key_name,
-                    mcohen_ssh_key_name, rballant_cert_name, rballant_key_name,
-                    rballant_ssh_key_name, tbelouso_cert_name,
-                    tbelouso_key_name, tbelouso_ssh_key_name)
+from config import (
+    asheik_cert_name,
+    asheik_key_name,
+    asheik_ssh_key_name,
+    gkochner_cert_name,
+    gkochner_key_name,
+    gkochner_ssh_key_name,
+    mcohen_cert_name,
+    mcohen_key_name,
+    mcohen_ssh_key_name,
+    rballant_cert_name,
+    rballant_key_name,
+    rballant_ssh_key_name,
+    tbelouso_cert_name,
+    tbelouso_key_name,
+    tbelouso_ssh_key_name,
+)
 
 
 class KeyHandler:
-    def __init__(self, logger, cert_path, key_path, ssh_key_path, analyst="rballant") -> None:
+    def __init__(
+        self, logger, cert_path, key_path, ssh_key_path, analyst="rballant"
+    ) -> None:
         self.analyst = "rballant"
         self.cert_path = cert_path
         self.key_path = key_path
@@ -20,12 +33,12 @@ class KeyHandler:
 
     def remove_personal_keys(self):
         try:
-            self.logger.info(f"Reomving personal keys")
+            self.logger.info("Removing personal keys")
             os.remove(self.cert_path)
             os.remove(self.key_path)
         except Exception as e:
             self.logger.error(f"Failed to remove personal keys: {e}")
-    
+
     def remove_ssh_keys(self):
         try:
             self.logger.info("Removing SSH keys")
@@ -68,12 +81,12 @@ class KeyHandler:
                 f.write(ssh_key.replace("\\n", "\n").replace("\n ", "\n"))
 
             os.chmod(self.ssh_key_path, 0o600)
-        except:
+        except Exception:
             encoded_ssh_key = get_az_secret.get_az_secret(rballant_ssh_key_name)
             ssh_key = self.decode_key(encoded_ssh_key).decode("utf-8")
             with open(self.ssh_key_path, "w") as f:
                 f.write(ssh_key.replace("\\n", "\n").replace("\n ", "\n"))
-            
+
             os.chmod(self.ssh_key_path, 0o600)
 
     def get_personal_keys(self):
@@ -83,17 +96,17 @@ class KeyHandler:
             cert = self.decode_key(encoded_cert).decode("utf-8")
             with open(self.cert_path, "w") as f:
                 f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
-        
+
             encoded_key = get_az_secret.get_az_secret(self.key_name)
             key = self.decode_key(encoded_key).decode("utf-8")
             with open(self.key_path, "w") as f:
                 f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
-        except:
+        except Exception:
             encoded_cert = get_az_secret.get_az_secret(rballant_cert_name)
             cert = self.decode_key(encoded_cert).decode("utf-8")
             with open(self.cert_path, "w") as f:
                 f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
-        
+
             encoded_key = get_az_secret.get_az_secret(rballant_key_name)
             key = self.decode_key(encoded_key).decode("utf-8")
             with open(self.key_path, "w") as f:

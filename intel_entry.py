@@ -17,19 +17,19 @@ class IntelEntry:
         self.manual_blacklist: List[str] = []
         self.approved_intel_change: str = None
         IntelEntry.all_intel_entries.append(self)
-        
+
     def to_dict(self):
         intel_processor_dict = self.__dict__.copy()
-        intel_processor_dict.pop("indicator", None)  
-        intel_processor_dict.pop("logger", None)  
-        intel_processor_dict.pop("whitelist", None)  
-        intel_processor_dict.pop("whitelist_removal", None)  
-        intel_processor_dict.pop("blacklist", None) 
+        intel_processor_dict.pop("indicator", None)
+        intel_processor_dict.pop("logger", None)
+        intel_processor_dict.pop("whitelist", None)
+        intel_processor_dict.pop("whitelist_removal", None)
+        intel_processor_dict.pop("blacklist", None)
         return intel_processor_dict
 
     @classmethod
     def from_dict(cls, data, indicator, logger):
-        keys = [ 
+        keys = [
             "indicator",
             "entry",
             "intel_list",
@@ -52,4 +52,3 @@ class IntelEntry:
 
     def append_to_indicator(self):
         self.indicator.append_intel_entry(self)
-    

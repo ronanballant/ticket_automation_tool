@@ -74,7 +74,7 @@ class Intel:
         self.source = source
         self.is_in_intel = True if self.feed else False
         self.e_list_entry = False
-    
+
     def get_subdomain_count(self):
         pattern = f"\.{self.domain}\s"
         cat_feed_process = subprocess.Popen(

@@ -52,7 +52,7 @@ class Indicator:
         self.source_response: str = ""
         self.is_resolved: bool = False
         self.comment: str = ""
-        self.attribution: str = ""                
+        self.attribution: str = ""
         self.attribution_id = "-"
         self.attribution_description = "-"
         self.whitelisted_domain = True
@@ -66,7 +66,7 @@ class Indicator:
         self.is_in_man_bl: bool = False
         self.sps_feed = None
         self.reviewed_resolution = None
-        
+
     def clean_fqdn(self):
         self.logger.info(f"Cleaning {self.fqdn}")
         characters_to_remove = [
@@ -126,30 +126,29 @@ class Indicator:
         intel_entries_dict = [entry.to_dict() for entry in self.intel_entries]
 
         indicator_dict = self.__dict__.copy()
-        indicator_dict["time_to_response"] = self.time_to_response.total_seconds()  
+        indicator_dict["time_to_response"] = self.time_to_response.total_seconds()
 
-        indicator_dict.pop("ticket", None)  
-        indicator_dict.pop("mongo_results", None)  
-        indicator_dict.pop("analysis_results", None)  
-        indicator_dict.pop("logger", None)  
+        indicator_dict.pop("ticket", None)
+        indicator_dict.pop("mongo_results", None)
+        indicator_dict.pop("analysis_results", None)
+        indicator_dict.pop("logger", None)
 
-        indicator_dict["intel_entries"] = intel_entries_dict 
+        indicator_dict["intel_entries"] = intel_entries_dict
 
         return indicator_dict
 
     @classmethod
     def from_dict(cls, data, ticket, logger):
-
         indicator = cls(
             logger,
             fqdn=data["fqdn"],
             indicator_type=data["indicator_type"],
-            ticket=ticket,  
+            ticket=ticket,
         )
-        
+
         indicator.intel_entries = []
         for intel_entry_data in data.get("intel_entries", []):
-            intel_entry = IntelEntry.from_dict(intel_entry_data, indicator, logger) 
+            intel_entry = IntelEntry.from_dict(intel_entry_data, indicator, logger)
             intel_entry.append_to_indicator()
 
         for key, value in data.items():

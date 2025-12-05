@@ -1,9 +1,21 @@
 import fileinput
 import csv
-from config import (destination_ip, destination_username, 
-                    intel_processor_path, jump_host_ip, jump_host_username, private_key_path,
-                    destination_intel_file_path, whitelist_file, blacklist_file, secops_feed_file, 
-                    sps_intel_update_file, feed_processor_api_key, feed_processor_url, feed_processor_url2)
+from config import (
+    destination_ip,
+    destination_username,
+    intel_processor_path,
+    jump_host_ip,
+    jump_host_username,
+    private_key_path,
+    destination_intel_file_path,
+    whitelist_file,
+    blacklist_file,
+    secops_feed_file,
+    sps_intel_update_file,
+    feed_processor_api_key,
+    feed_processor_url,
+    feed_processor_url2,
+)
 from typing import List
 import subprocess
 import requests
@@ -32,46 +44,60 @@ class IntelProcessor:
                             intel_entry.whitelist.append(intel_entry)
                             intel_entry.update_approved = True
                             self.whitelist.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the allow list.")
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for the allow list."
+                            )
                         elif intel_entry.operation.lower() == "remove":
                             intel_entry.update_approved = True
                             intel_entry.whitelist_removal.append(intel_entry)
                             self.whitelist_removal.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for whitelist removal.")
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for whitelist removal."
+                            )
                     elif intel_entry.intel_list.lower() == "blacklist":
                         if intel_entry.operation.lower() == "add":
                             intel_entry.update_approved = True
                             intel_entry.blacklist.append(intel_entry)
                             self.blacklist.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the block list.")
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for the block list."
+                            )
 
         self.whitelist = list(set(self.whitelist))
         self.blacklist = list(set(self.blacklist))
         self.manual_blacklist = list(set(self.manual_blacklist))
 
-    def process_indicators(self):
-        for intel_entry in self.intel_entries:
-            if intel_entry.is_approved is True:
-                self.update_indicator(intel_entry)
-                if intel_entry.is_valid_update is True:
-                    if intel_entry.intel_list.lower() == "whitelist":
-                        if intel_entry.operation.lower() == "add":
-                            self.whitelist.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the allow list.")
-                        elif intel_entry.operation.lower() == "remove":
-                            self.whitelist_removal.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for whitelist removal.")
-                    elif intel_entry.intel_list.lower() == "blacklist":
-                        if intel_entry.operation.lower() == "add":
-                            self.blacklist.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the block list.")
-                        elif intel_entry.operation.lower() == "remove":
-                            self.manual_blacklist.append(intel_entry)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for manual blacklist removal.")
+    # def process_indicators(self):
+    #     for intel_entry in self.intel_entries:
+    #         if intel_entry.is_approved is True:
+    #             self.update_indicator(intel_entry)
+    #             if intel_entry.is_valid_update is True:
+    #                 if intel_entry.intel_list.lower() == "whitelist":
+    #                     if intel_entry.operation.lower() == "add":
+    #                         self.whitelist.append(intel_entry)
+    #                         self.logger.info(
+    #                             f"{intel_entry.indicator.fqdn} identified for the allow list."
+    #                         )
+    #                     elif intel_entry.operation.lower() == "remove":
+    #                         self.whitelist_removal.append(intel_entry)
+    #                         self.logger.info(
+    #                             f"{intel_entry.indicator.fqdn} identified for whitelist removal."
+    #                         )
+    #                 elif intel_entry.intel_list.lower() == "blacklist":
+    #                     if intel_entry.operation.lower() == "add":
+    #                         self.blacklist.append(intel_entry)
+    #                         self.logger.info(
+    #                             f"{intel_entry.indicator.fqdn} identified for the block list."
+    #                         )
+    #                     elif intel_entry.operation.lower() == "remove":
+    #                         self.manual_blacklist.append(intel_entry)
+    #                         self.logger.info(
+    #                             f"{intel_entry.indicator.fqdn} identified for manual blacklist removal."
+    #                         )
 
-        self.whitelist = list(set(self.whitelist))
-        self.blacklist = list(set(self.blacklist))
-        self.manual_blacklist = list(set(self.manual_blacklist))
+    #     self.whitelist = list(set(self.whitelist))
+    #     self.blacklist = list(set(self.blacklist))
+    #     self.manual_blacklist = list(set(self.manual_blacklist))
 
     def process_indicators(self):
         for intel_entry in self.intel_entries:
@@ -81,22 +107,34 @@ class IntelProcessor:
                     if intel_entry.intel_list.lower() == "whitelist":
                         if intel_entry.operation.lower() == "add":
                             self.whitelist.append(intel_entry.approved_intel_change)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the allow list.")
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for the allow list."
+                            )
                         elif intel_entry.operation.lower() == "remove":
-                            self.whitelist_removal.append(intel_entry.approved_intel_change)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for whitelist removal.")
+                            self.whitelist_removal.append(
+                                intel_entry.approved_intel_change
+                            )
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for whitelist removal."
+                            )
                     elif intel_entry.intel_list.lower() == "blacklist":
                         if intel_entry.operation.lower() == "add":
                             self.blacklist.append(intel_entry.approved_intel_change)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for the block list.")
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for the block list."
+                            )
                         elif intel_entry.operation.lower() == "remove":
-                            self.manual_blacklist.append(intel_entry.approved_intel_change)
-                            self.logger.info(f"{intel_entry.indicator.fqdn} identified for manual blacklist removal.")
+                            self.manual_blacklist.append(
+                                intel_entry.approved_intel_change
+                            )
+                            self.logger.info(
+                                f"{intel_entry.indicator.fqdn} identified for manual blacklist removal."
+                            )
 
         self.whitelist = list(set(self.whitelist))
         self.blacklist = list(set(self.blacklist))
         self.manual_blacklist = list(set(self.manual_blacklist))
-    
+
     def add_to_etp_whitelist(self):
         if self.whitelist:
             self.logger.info("Adding to manual whitelist")
@@ -145,7 +183,7 @@ class IntelProcessor:
     #                 self.logger.info("Writing %s to %s", intel_entry, sps_intel_update_file)
     #                 writer.writerow([intel_entry])
 
-    def transfer_sps_update_file(self): 
+    def transfer_sps_update_file(self):
         self.update_triggered = False
         if self.whitelist or self.blacklist:
             scp_command = [
@@ -154,24 +192,25 @@ class IntelProcessor:
                 private_key_path,
                 f"-J {jump_host_username}@{jump_host_ip}",
                 sps_intel_update_file,
-                f"{destination_username}@{destination_ip}:{destination_intel_file_path}"
+                f"{destination_username}@{destination_ip}:{destination_intel_file_path}",
             ]
 
             try:
-                result = subprocess.run(scp_command, check=True, capture_output=True, text=True)
+                result = subprocess.run(
+                    scp_command, check=True, capture_output=True, text=True
+                )
                 self.logger.info("File copied successfully.")
                 self.logger.debug(result.stdout)
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"ERROR Processing Whitelist Entities: {e}")
-                self.logger.error(f"SCP command failed!")
+                self.logger.error("SCP command failed!")
                 self.logger.error(f"Error message: {e.stderr}")
                 self.logger.error(f"Return code: {e.returncode}")
                 self.add_error_comment = True
                 self.error_comment = (
-                    "Failed to transfer intel updates to VM.\n"
-                    + f"Error: {e.stderr}\n"
+                    "Failed to transfer intel updates to VM.\n" + f"Error: {e.stderr}\n"
                 )
-        
+
     def trigger_sps_intel_update(self):
         if self.add_error_comment is False:
             self.update_triggered = True
@@ -182,11 +221,13 @@ class IntelProcessor:
                     private_key_path,
                     f"-J {jump_host_username}@{jump_host_ip}",
                     f"{destination_username}@{destination_ip}",
-                    f"python3 {intel_processor_path}", 
+                    f"python3 {intel_processor_path}",
                 ]
 
                 try:
-                    result = subprocess.run(ssh_command, check=True, capture_output=True, text=True)
+                    result = subprocess.run(
+                        ssh_command, check=True, capture_output=True, text=True
+                    )
                     intel_update_results = result.stdout.lower()
                     if '"success": false' in intel_update_results:
                         self.update_triggered = False
@@ -200,7 +241,7 @@ class IntelProcessor:
                 except subprocess.CalledProcessError as e:
                     self.update_triggered = False
                     self.logger.error(f"ERROR Processing Whitelist Entities: {e}")
-                    self.logger.error(f"SSH command failed!")
+                    self.logger.error("SSH command failed!")
                     self.logger.error(f"Error message: {e.stderr}")
                     self.logger.error(f"Return code: {e.returncode}")
                     self.add_error_comment = True
@@ -224,7 +265,7 @@ class IntelProcessor:
             "time_expire": "3650 days",
             "reason": f"Internal|Carrier|SecOps|{ticket}",
             "confidence": "0.95",
-            "api_key": feed_processor_api_key
+            "api_key": feed_processor_api_key,
         }
 
         for url in urls:
@@ -248,7 +289,7 @@ class IntelProcessor:
             "time_expire": "1 minute",
             "reason": f"Internal|Carrier|SecOps|{ticket}",
             "confidence": "0.95",
-            "api_key": feed_processor_api_key
+            "api_key": feed_processor_api_key,
         }
 
         for url in urls:
@@ -280,7 +321,7 @@ class IntelProcessor:
             "time_expire": "3650 days",
             "reason": f"Internal|Carrier|SecOps|{ticket}",
             "confidence": "0.95",
-            "api_key": feed_processor_api_key
+            "api_key": feed_processor_api_key,
         }
 
         urls = [
@@ -296,7 +337,6 @@ class IntelProcessor:
             self.logger.info(f"Response status code - {response.status_code}")
             self.logger.info(f"Response text - {response.text}")
 
-            
     def update_linode(self):
         for intel_entry in self.whitelist:
             entry = intel_entry.split(",")
@@ -310,13 +350,10 @@ class IntelProcessor:
                 "time_expire": "3650 days",
                 "reason": f"Internal|Carrier|SecOps|{ticket}",
                 "confidence": "0.95",
-                "api_key": feed_processor_api_key
+                "api_key": feed_processor_api_key,
             }
 
-            urls = [
-                feed_processor_url,
-                feed_processor_url2
-            ]
+            urls = [feed_processor_url, feed_processor_url2]
 
             for url in urls:
                 response = requests.post(url, data=data, verify=False)
@@ -348,13 +385,10 @@ class IntelProcessor:
                 "time_expire": "3650 days",
                 "reason": f"Internal|Carrier|SecOps|{ticket}",
                 "confidence": "0.95",
-                "api_key": feed_processor_api_key
+                "api_key": feed_processor_api_key,
             }
 
-            urls = [
-                feed_processor_url,
-                feed_processor_url2
-            ]
+            urls = [feed_processor_url, feed_processor_url2]
 
             for url in urls:
                 response = requests.post(url, data=data, verify=False)
@@ -365,12 +399,14 @@ class IntelProcessor:
 
     def update_indicator(self, entry):
         entry.is_valid_update = True
-        
+
         if not entry.approved_intel_change:
             entry.is_valid_update = False
             return
 
-        entry.approved_intel_change = entry.approved_intel_change.replace("+++ ", "").replace("--- ", "")
+        entry.approved_intel_change = entry.approved_intel_change.replace(
+            "+++ ", ""
+        ).replace("--- ", "")
 
     def generate_data_string_comment(self):
         summary_strings = []
@@ -382,11 +418,12 @@ class IntelProcessor:
                 summary_strings.append(new_string)
 
         if self.error_comment:
-            summary_strings.append("*{color:#de350b}!!! Failed Intel Updates !!!{color}*")
-            
+            summary_strings.append(
+                "*{color:#de350b}!!! Failed Intel Updates !!!{color}*"
+            )
+
             for data_string in self.error_comment:
                 new_string = "|" + "|".join(data_string) + "|"
                 summary_strings.append(new_string)
 
-        
         self.data_string_comment = "\n".join(summary_strings)
