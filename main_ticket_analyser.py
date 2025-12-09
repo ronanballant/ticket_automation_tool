@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "-t",
         "--tickets",
-        default="ENTESC-16971",
+        # default="ENTESC-16971",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
