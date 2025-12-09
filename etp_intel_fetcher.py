@@ -89,7 +89,7 @@ class ETPIntelFetcher:
                 self.logger.error(f"Error querying ETP intel: {e}")
                 self.no_intel()
 
-    def assign_results(self):
+    def assign_results(self, carrier_check):
         if self.attributes_assigned is False:
             sources = []
             etp_fqdn_status_list = []
@@ -125,60 +125,65 @@ class ETPIntelFetcher:
                 if etp_fqdn_status_list:
                     strongest_result = etp_fqdn_status_list[0]
 
-                    self.indicator.intel_category = strongest_result.get(
-                        "intel_category", "-"
-                    )
-                    self.indicator.intel_source = strongest_result.get(
-                        "intel_source", "-"
-                    )
-                    self.indicator.is_internal = is_internal_source(
-                        self.indicator.intel_source
-                    )
-                    self.indicator.is_in_man_bl = is_in_man_bl(", ".join(sources))
-                    self.indicator.intel_description = strongest_result.get(
-                        "intel_description", "-"
-                    )
-                    self.indicator.is_filtered = str_to_bool(
-                        strongest_result.get("is_filtered", "-")
-                    )
-                    self.indicator.filter_reason = strongest_result.get(
-                        "filter_reason", "-"
-                    )
-                    self.indicator.intel_threat_id = strongest_result.get(
-                        "intel_threat_id", "-"
-                    )
-                    self.indicator.intel_list_id = strongest_result.get(
-                        "intel_list_id", "-"
-                    )
-                    if self.indicator.intel_list_id != "-":
-                        self.indicator.intel_category_strength = (
-                            "strong"
-                            if self.indicator.intel_list_id in [1, 2, 3]
-                            else "weak"
+                    if carrier_check is False:
+                        self.indicator.intel_category = strongest_result.get(
+                            "intel_category", "-"
                         )
+                        self.indicator.intel_source = strongest_result.get(
+                            "intel_source", "-"
+                        )
+                        self.indicator.is_internal = is_internal_source(
+                            self.indicator.intel_source
+                        )
+                        self.indicator.is_in_man_bl = is_in_man_bl(", ".join(sources))
+                        self.indicator.intel_description = strongest_result.get(
+                            "intel_description", "-"
+                        )
+                        self.indicator.is_filtered = str_to_bool(
+                            strongest_result.get("is_filtered", "-")
+                        )
+                        self.indicator.filter_reason = strongest_result.get(
+                            "filter_reason", "-"
+                        )
+                        self.indicator.intel_threat_id = strongest_result.get(
+                            "intel_threat_id", "-"
+                        )
+                        self.indicator.intel_list_id = strongest_result.get(
+                            "intel_list_id", "-"
+                        )
+                        if self.indicator.intel_list_id != "-":
+                            self.indicator.intel_category_strength = (
+                                "strong"
+                                if self.indicator.intel_list_id in [1, 2, 3]
+                                else "weak"
+                            )
+                        else:
+                            self.indicator.intel_category_strength = "-"
+                        self.indicator.intel_threat_keywords = strongest_result.get(
+                            "intel_threat_keywords", "-"
+                        )
+                        self.indicator.is_in_intel = (
+                            True if self.indicator.intel_category != "-" else False
+                        )
+                        ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
+                            "intel_category": self.indicator.intel_category,
+                            "intel_source": self.indicator.intel_source,
+                            "is_internal": self.indicator.is_internal,
+                            "is_in_man_bl": self.indicator.is_in_man_bl,
+                            "intel_description": self.indicator.intel_description,
+                            "is_filtered": self.indicator.is_filtered,
+                            "filter_reason": self.indicator.filter_reason,
+                            "intel_threat_id": self.indicator.intel_threat_id,
+                            "intel_list_id": self.indicator.intel_list_id,
+                            "intel_category_strength": self.indicator.intel_category_strength,
+                            "is_in_intel": self.indicator.is_in_intel,
+                            "subdomain_only": self.indicator.subdomain_only,
+                            "subdomain_count": self.indicator.subdomain_count,
+                        }
                     else:
-                        self.indicator.intel_category_strength = "-"
-                    self.indicator.intel_threat_keywords = strongest_result.get(
-                        "intel_threat_keywords", "-"
-                    )
-                    self.indicator.is_in_intel = (
-                        True if self.indicator.intel_category != "-" else False
-                    )
-                    ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
-                        "intel_category": self.indicator.intel_category,
-                        "intel_source": self.indicator.intel_source,
-                        "is_internal": self.indicator.is_internal,
-                        "is_in_man_bl": self.indicator.is_in_man_bl,
-                        "intel_description": self.indicator.intel_description,
-                        "is_filtered": self.indicator.is_filtered,
-                        "filter_reason": self.indicator.filter_reason,
-                        "intel_threat_id": self.indicator.intel_threat_id,
-                        "intel_list_id": self.indicator.intel_list_id,
-                        "intel_category_strength": self.indicator.intel_category_strength,
-                        "is_in_intel": self.indicator.is_in_intel,
-                        "subdomain_only": self.indicator.subdomain_only,
-                        "subdomain_count": self.indicator.subdomain_count,
-                    }
+                        self.indicator.intel_source = strongest_result.get(
+                            "intel_source", "-"
+                        )
                 else:
                     self.no_intel()
             else:

@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "-t",
         "--tickets",
-        # default="RCSOR-8722",
+        default="ENTESC-16971",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
@@ -58,6 +58,93 @@ def parse_args():
     else:
         return args
 
+def query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=False):
+    try:
+        logger.info("Querying SPS intel")
+        carrier_intel_fetcher.indicator = indicator
+        for candidate in indicator.candidates:
+            indicator.matched_ioc_type = "DOMAIN"
+            indicator.candidate = candidate
+            carrier_intel_fetcher.read_previous_s3_queries()
+            if carrier_intel_fetcher.result:
+                carrier_intel_fetcher.assign_s3_intel(etp_check)
+            else:
+                carrier_intel_fetcher.query_s3_intel()
+                if carrier_intel_fetcher.result:
+                    carrier_intel_fetcher.assign_s3_intel(etp_check)
+                else:
+                    carrier_intel_fetcher.no_s3_intel()
+                        
+
+            if indicator.is_in_intel is True:
+                indicator.matched_ioc = candidate
+                break
+            else:
+                # Add IP functioinality
+                # Add VT for matched candidate here
+                pass
+    except Exception as e:
+        logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
+
+def query_etp_intel(indicator, mongo_connection, vt_api_key, carrier_check=False):
+    try:
+        logger.info("Querying ETP intel")
+        intel_fetcher = ETPIntelFetcher(
+            logger, indicator, mongo_connection
+        )
+
+        for candidate in indicator.candidates:
+            indicator.matched_ioc_type = "DOMAIN"
+            indicator.candidate = (
+                candidate + "." if candidate[-1] != "." else candidate
+            )
+            intel_fetcher.query_intel()
+            intel_fetcher.assign_results(carrier_check)
+            # if carrier intel, fetch carrier
+
+            if indicator.is_in_intel is True:
+                indicator.matched_ioc = indicator.candidate
+                if indicator.matched_ioc != indicator.fqdn:
+                    vt_fetcher = VirusTotalFetcher(
+                        logger, indicator, indicator.matched_ioc[:-1], vt_api_key
+                    )
+                    vt_fetcher.prepare_indicator()
+                    vt_fetcher.set_vt_link()
+                    vt_fetcher.get_previous_query()
+                    if not vt_fetcher.previous_vt_query:
+                        vt_fetcher.rescan = False
+                        vt_fetcher.get_external_data()
+                        vt_fetcher.scan_domain()
+                        vt_fetcher.analyse_vt_rescan()
+                        vt_fetcher.save_results()
+                        if vt_fetcher.indicator.has_vt_data is True:
+                            vt_fetcher.get_domain_attributions()
+                    if (
+                        not vt_fetcher.previous_vt_query
+                        and vt_fetcher.indicator.has_vt_data
+                    ):
+                        vt_fetcher.write_vt_data()
+                break
+            else:
+                if carrier_check is False:
+                    if indicator.ticket.ticket_type.lower() == "fp":
+                        if candidate == indicator.candidates[-1]:
+                            indicator.get_resolved_ip()
+
+                            if indicator.resolved_ips:
+                                intel_fetcher.query_resolved_ip()
+
+                                if indicator.ip_in_intel is True:
+                                    intel_fetcher.attributes_assigned = (
+                                        False
+                                    )
+                                    intel_fetcher.assign_results(carrier_check)
+                                    indicator.matched_ioc = (
+                                        indicator.resolved_ip
+                                    )
+                                    indicator.matched_ioc_type = "IPV4"
+    except Exception as e:
+        logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
 
 def run_process():
     queue = args.queue.lower()
@@ -213,90 +300,18 @@ def run_process():
                     logger.error(f"Failed to query VT for {indicator.fqdn}: {e}")
 
                 if queue == "sps":
-                    try:
-                        logger.info("Querying SPS intel")
-                        carrier_intel_fetcher.indicator = indicator
-                        for candidate in indicator.candidates:
-                            indicator.matched_ioc_type = "DOMAIN"
-                            indicator.candidate = candidate
-                            carrier_intel_fetcher.read_previous_s3_queries()
-                            if carrier_intel_fetcher.result:
-                                carrier_intel_fetcher.assign_s3_intel()
-                            else:
-                                carrier_intel_fetcher.query_s3_intel()
-                                if carrier_intel_fetcher.result:
-                                    carrier_intel_fetcher.assign_s3_intel()
-                                    # If ETP feed fetch ETP intel
-                                else:
-                                    carrier_intel_fetcher.no_s3_intel()
+                    query_carrier_intel(indicator, carrier_intel_fetcher)
 
-                            if indicator.is_in_intel is True:
-                                indicator.matched_ioc = candidate
-                                break
-                            else:
-                                # Add IP functioinality
-                                # Add VT for matched candidate here
-                                pass
-                    except Exception as e:
-                        logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
+                    if "etp" in indicator.intel_source.lower():
+                        query_etp_intel(indicator, mongo_connection, vt_api_key, False)
+
                 else:
-                    try:
-                        logger.info("Querying ETP intel")
-                        intel_fetcher = ETPIntelFetcher(
-                            logger, indicator, mongo_connection
-                        )
+                    query_etp_intel(indicator, mongo_connection, vt_api_key)
 
-                        for candidate in indicator.candidates:
-                            indicator.matched_ioc_type = "DOMAIN"
-                            indicator.candidate = (
-                                candidate + "." if candidate[-1] != "." else candidate
-                            )
-                            intel_fetcher.query_intel()
-                            intel_fetcher.assign_results()
-                            # if carrier intel, fetch carrier
-
-                            if indicator.is_in_intel is True:
-                                indicator.matched_ioc = indicator.candidate
-                                if indicator.matched_ioc != indicator.fqdn:
-                                    vt_fetcher = VirusTotalFetcher(
-                                        logger, indicator, indicator.matched_ioc[:-1], vt_api_key
-                                    )
-                                    vt_fetcher.prepare_indicator()
-                                    vt_fetcher.set_vt_link()
-                                    vt_fetcher.get_previous_query()
-                                    if not vt_fetcher.previous_vt_query:
-                                        vt_fetcher.rescan = False
-                                        vt_fetcher.get_external_data()
-                                        vt_fetcher.scan_domain()
-                                        vt_fetcher.analyse_vt_rescan()
-                                        vt_fetcher.save_results()
-                                        if vt_fetcher.indicator.has_vt_data is True:
-                                            vt_fetcher.get_domain_attributions()
-                                    if (
-                                        not vt_fetcher.previous_vt_query
-                                        and vt_fetcher.indicator.has_vt_data
-                                    ):
-                                        vt_fetcher.write_vt_data()
-                                break
-                            else:
-                                if indicator.ticket.ticket_type.lower() == "fp":
-                                    if candidate == indicator.candidates[-1]:
-                                        indicator.get_resolved_ip()
-
-                                        if indicator.resolved_ips:
-                                            intel_fetcher.query_resolved_ip()
-
-                                            if indicator.ip_in_intel is True:
-                                                intel_fetcher.attributes_assigned = (
-                                                    False
-                                                )
-                                                intel_fetcher.assign_results()
-                                                indicator.matched_ioc = (
-                                                    indicator.resolved_ip
-                                                )
-                                                indicator.matched_ioc_type = "IPV4"
-                    except Exception as e:
-                        logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
+                    if "nominum" in indicator.intel_source.lower():
+                        query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=True)
+                        if indicator.etp_check_found is True:
+                            indicator.intel_source_list.append(indicator.intel_source)
 
                 try:
                     logger.info("Finding resolution")

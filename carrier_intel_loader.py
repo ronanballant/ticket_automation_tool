@@ -39,7 +39,7 @@ class CarrierIntelLoader:
     def query_s3_intel(self):
         self.result = self.client.query_fqdn(self.indicator.candidate)
 
-    def assign_s3_intel(self):
+    def assign_s3_intel(self, etp_check):
         intel_feeds = []
         pairs = self.result.get("category_reason_pairs", [])
         for pair in pairs:
@@ -47,26 +47,34 @@ class CarrierIntelLoader:
             intel_feeds.append((feed.strip(), source.strip()))
 
         intel_feeds.sort(key=lambda x: x[0], reverse=True)
-        self.indicator.intel_feed_list = intel_feeds
-        first_reason_pair = intel_feeds[0]
-        first_feed = first_reason_pair[0].replace("|", "\|")
-        first_source = first_reason_pair[1].replace("|", "\|")
-        self.indicator.intel_feed = first_feed
-        self.indicator.intel_source = first_source
+        
+        if etp_check is False:
+            self.indicator.intel_feed_list = intel_feeds
+            first_reason_pair = intel_feeds[0]
+            first_feed = first_reason_pair[0].replace("|", "\|")
+            first_source = first_reason_pair[1].replace("|", "\|")
+            self.indicator.intel_feed = first_feed
+            self.indicator.intel_source = first_source
 
-        self.indicator.intel_confidence = self.result.get("max_confidence", "-")
-        nps_cat = self.result.get("nps_cat", 0)
-        if self.indicator.intel_confidence == "-" and nps_cat > 0:
-            self.indicator.intel_confidence = nps_cat
+            self.indicator.intel_confidence = self.result.get("max_confidence", "-")
+            nps_cat = self.result.get("nps_cat", 0)
+            if self.indicator.intel_confidence == "-" and nps_cat > 0:
+                self.indicator.intel_confidence = nps_cat
 
-        self.indicator.subdomain_count = self.result.get("subdomain_count", 0)
-        self.indicator.url_count = self.result.get("path_count", "-")
-        self.indicator.is_in_intel = True
+            self.indicator.subdomain_count = self.result.get("subdomain_count", 0)
+            self.indicator.url_count = self.result.get("path_count", "-")
+            self.indicator.is_in_intel = True
 
-        is_inexact = self.result.get("is_inexact", False)
-        self.indicator.e_list_entry = not is_inexact
-        self.indicator.subdomain_only = False
-        CarrierIntelLoader.previous_queries[self.indicator.candidate] = self.result
+            is_inexact = self.result.get("is_inexact", False)
+            self.indicator.e_list_entry = not is_inexact
+            self.indicator.subdomain_only = False
+            CarrierIntelLoader.previous_queries[self.indicator.candidate] = self.result
+        else:
+            first_reason_pair = intel_feeds[0]
+            first_feed = first_reason_pair[0].replace("|", "\|")
+            first_source = first_reason_pair[1].replace("|", "\|")
+            self.indicator.intel_source = first_source
+            self.indicator.etp_check_found = True if first_source else False
 
 
 def str_to_bool(string):

@@ -133,3 +133,9 @@ class GitRepoManager:
         subprocess.run(
             ["ssh-agent", "-k"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
+
+    def configure_git_identity(self, name, email):
+        self.logger.info(f"Configuring local git identity: {name} <{email}>")
+        self.run_command(["git", "config", "user.name", name])
+        self.run_command(["git", "config", "user.email", email])
+        self.logger.info("Git identity updated locally.")
