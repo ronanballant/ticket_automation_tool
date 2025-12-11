@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument(
         "-t",
         "--tickets",
-        # default="ENTESC-16971",
+        default="ENTESC-17006",
         required=False,
         help="A comma seperated string of specific tickets to analyse",
     )
@@ -145,6 +145,10 @@ def query_etp_intel(indicator, mongo_connection, vt_api_key, carrier_check=False
                                     indicator.matched_ioc_type = "IPV4"
     except Exception as e:
         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
+
+def ensure_single_period(s: str) -> str:
+    s = s.strip()
+    return s.rstrip('.') + '.'
 
 def run_process():
     queue = args.queue.lower()
@@ -312,6 +316,8 @@ def run_process():
                         query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=True)
                         if indicator.etp_check_found is True:
                             indicator.intel_source_list.append(indicator.intel_source)
+                            matched_ioc = ensure_single_period(matched_ioc)
+                            indicator.matched_ioc = matched_ioc
 
                 try:
                     logger.info("Finding resolution")
