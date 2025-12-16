@@ -316,7 +316,7 @@ def run_process():
                         query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=True)
                         if indicator.etp_check_found is True:
                             indicator.intel_source_list.append(indicator.intel_source)
-                            matched_ioc = ensure_single_period(matched_ioc)
+                            matched_ioc = ensure_single_period(indicator.matched_ioc or indicator.etp_fqdn)
                             indicator.matched_ioc = matched_ioc
 
                 try:
