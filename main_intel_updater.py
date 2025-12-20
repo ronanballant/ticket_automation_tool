@@ -1,12 +1,11 @@
 import argparse
 
-import os
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
 from config import (
     BLACKLIST_FILE,
-    DATA_DIR,
+    LOGS_DIR,
     ETP_INTEL_REPO,
     ETP_PROCESSED_TICKETS_FILE,
     ETP_TICKETS_IN_PROGRESS_FILE,
@@ -29,7 +28,7 @@ from intel_processor import IntelProcessor
 from key_handler import KeyHandler
 from ticket import Ticket
 
-logger = get_logger(str(DATA_DIR / "intel_updater.log"))
+logger = get_logger(str(LOGS_DIR / "intel_updater.log"))
 
 
 def parse_args():

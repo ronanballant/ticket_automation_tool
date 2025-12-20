@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import argparse
-import os
 
 from config import (
     ANALYSER_CERT_PATH,
@@ -10,7 +9,7 @@ from config import (
     CARRIER_INTEL_BUCKET,
     CARRIER_INTEL_ENDPOINT,
     CARRIER_INTEL_REGION,
-    DATA_DIR,
+    LOGS_DIR,
     ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
     SECOPS_MEMBER,
@@ -30,7 +29,7 @@ from ticket_resolver import TicketResolver
 from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
 
-logger = get_logger(str(DATA_DIR / "ticket_analyser.log"))
+logger = get_logger(str(LOGS_DIR / "ticket_analyser.log"))
 
 
 def parse_args():

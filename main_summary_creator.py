@@ -1,8 +1,7 @@
 import argparse
-import os
 
 from config import (
-    DATA_DIR,
+    LOGS_DIR,
     ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
     OPEN_ETP_SUMMARY_TICKETS_FILE,
@@ -18,7 +17,7 @@ from summary_creator import SummaryCreator
 from ticket import Ticket
 from ticket_responder import TicketResponder
 
-logger = get_logger(str(DATA_DIR / "summary_creator.log"))
+logger = get_logger(str(LOGS_DIR / "summary_creator.log"))
 
 
 def parse_args():

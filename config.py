@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import os
 from pathlib import Path
-from logger import logging
+import logging
 
 
 PROJECT_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
