@@ -2,13 +2,13 @@ import argparse
 import os
 
 from config import (
-    etp_tickets_in_progress_file,
+    ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
-    open_etp_summary_tickets_file,
-    open_sps_summary_tickets_file,
-    project_folder,
-    secops_member,
-    sps_tickets_in_progress_file,
+    OPEN_ETP_SUMMARY_TICKETS_FILE,
+    OPEN_SPS_SUMMARY_TICKETS_FILE,
+    PROJECT_DIR,
+    SECOPS_MEMBER,
+    SPS_TICKETS_IN_PROGRESS_FILE,
 )
 from key_handler import KeyHandler
 from summary_creator import SummaryCreator
@@ -16,9 +16,9 @@ from ticket import Ticket
 from ticket_responder import TicketResponder
 
 logger = get_logger("logs_summary_creator.txt")
-cert_path = os.path.join(project_folder, ".summary_creator_personal_crt.crt")
-key_path = os.path.join(project_folder, ".summary_creator_personal_key.key")
-ssh_key_path = os.path.join(project_folder, ".summary_creator_ssh_key")
+cert_path = os.path.join(PROJECT_DIR, ".summary_creator_personal_crt.crt")
+key_path = os.path.join(PROJECT_DIR, ".summary_creator_personal_key.key")
+ssh_key_path = os.path.join(PROJECT_DIR, ".summary_creator_ssh_key")
 
 
 def parse_args():
@@ -75,12 +75,12 @@ if __name__ == "__main__":
     logger.info("Summary process in progress")
     if queue.lower() == "sps":
         queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
+        tickets_in_progress_file = SPS_TICKETS_IN_PROGRESS_FILE
+        open_summary_tickets_file = OPEN_SPS_SUMMARY_TICKETS_FILE
     elif queue.lower() == "etp":
         queue = "ETP"
-        tickets_in_progress_file = etp_tickets_in_progress_file
-        open_summary_tickets_file = open_etp_summary_tickets_file
+        tickets_in_progress_file = ETP_TICKETS_IN_PROGRESS_FILE
+        open_summary_tickets_file = OPEN_ETP_SUMMARY_TICKETS_FILE
 
     if args.resummarise is True:
         if args.archive_path:
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     logger.info("Creating ticket instances")
     summary_creator.create_tickets()
 
-    responder = TicketResponder(logger, secops_member, cert_path, key_path)
+    responder = TicketResponder(logger, SECOPS_MEMBER, cert_path, key_path)
     logger.info("Finding unprocessed tickets")
     new_tickets = [
         ticket for ticket in Ticket.all_tickets if not ticket.linked_summary_ticket

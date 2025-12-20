@@ -1,6 +1,6 @@
 import csv
 
-from config import rule_path
+from config import RULE_PATH
 
 
 class RuleFetcher:
@@ -16,12 +16,12 @@ class RuleFetcher:
     def open_file(self):
         self.logger.info("Loading Rule-Set")
         try:
-            with open(rule_path, "r", newline="", encoding="utf-8") as csv_file:
+            with open(RULE_PATH, "r", newline="", encoding="utf-8") as csv_file:
                 file = csv.DictReader(csv_file, delimiter=",")
                 self.file = [row for row in file]
             self.logger.info("Rule-Set loaded successfully")
         except FileNotFoundError:
-            self.logger.error(f"File not found: {rule_path}")
+            self.logger.error(f"File not found: {RULE_PATH}")
             raise
         except csv.Error as e:
             self.logger.error(f"CSV parsing error: {e}")

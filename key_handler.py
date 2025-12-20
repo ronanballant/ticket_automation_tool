@@ -14,17 +14,17 @@ from config import (
     mcohen_cert_name,
     mcohen_key_name,
     mcohen_ssh_key_name,
-    rballant_cert_name,
-    rballant_key_name,
-    rballant_ssh_key_name,
+    RBALLANT_CERT_NAME,
+    RBALLANT_KEY_NAME,
+    RBALLANT_SSH_KEY_NAME,
     tbelouso_cert_name,
     tbelouso_key_name,
     tbelouso_ssh_key_name,
-    vt_api_key_name,
-    carrier_intel_access_key_name,
-    carrier_intel_secret_key_name,
-    feed_processor_api_key_name,
-    mongo_password_name,
+    VT_API_KEY_NAME,
+    CARRIER_INTEL_ACCESS_KEY_NAME,
+    CARRIER_INTEL_SECRET_KEY_NAME,
+    FEED_PROCESSOR_API_KEY_NAME,
+    MONGO_PASSWORD_NAME,
 )
 
 
@@ -75,9 +75,9 @@ class KeyHandler:
             self.key_name = tbelouso_key_name
             self.ssh_key_name = tbelouso_ssh_key_name
         else:
-            self.cert_name = rballant_cert_name
-            self.key_name = rballant_key_name
-            self.ssh_key_name = rballant_ssh_key_name
+            self.cert_name = RBALLANT_CERT_NAME
+            self.key_name = RBALLANT_KEY_NAME
+            self.ssh_key_name = RBALLANT_SSH_KEY_NAME
 
     def get_ssh_key(self):
         self.logger.info("Getting SSH key")
@@ -89,7 +89,7 @@ class KeyHandler:
 
             os.chmod(self.ssh_key_path, 0o600)
         except Exception:
-            encoded_ssh_key = get_az_secret.get_az_secret(rballant_ssh_key_name)
+            encoded_ssh_key = get_az_secret.get_az_secret(RBALLANT_SSH_KEY_NAME)
             ssh_key = self.decode_key(encoded_ssh_key).decode("utf-8")
             with open(self.ssh_key_path, "w") as f:
                 f.write(ssh_key.replace("\\n", "\n").replace("\n ", "\n"))
@@ -109,12 +109,12 @@ class KeyHandler:
             with open(self.key_path, "w") as f:
                 f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
         except Exception:
-            encoded_cert = get_az_secret.get_az_secret(rballant_cert_name)
+            encoded_cert = get_az_secret.get_az_secret(RBALLANT_CERT_NAME)
             cert = self.decode_key(encoded_cert).decode("utf-8")
             with open(self.cert_path, "w") as f:
                 f.write(cert.replace("\\n", "\n").replace("\n ", "\n"))
 
-            encoded_key = get_az_secret.get_az_secret(rballant_key_name)
+            encoded_key = get_az_secret.get_az_secret(RBALLANT_KEY_NAME)
             key = self.decode_key(encoded_key).decode("utf-8")
             with open(self.key_path, "w") as f:
                 f.write(key.replace("\\n", "\n").replace("\n ", "\n"))
@@ -122,7 +122,7 @@ class KeyHandler:
     def get_vt_api_key(self):
         self.logger.info("Getting VT API key")
         try:
-            encoded_cert = get_az_secret.get_az_secret(vt_api_key_name)
+            encoded_cert = get_az_secret.get_az_secret(VT_API_KEY_NAME)
             vt_key = self.decode_key(encoded_cert).decode("utf-8")
             self.vt_api_key = vt_key
         except Exception as e:
@@ -131,7 +131,7 @@ class KeyHandler:
     def get_carrier_intel_access_key(self):
         self.logger.info("Getting Carrier TI access key")
         try:
-            encoded_cert = get_az_secret.get_az_secret(carrier_intel_access_key_name)
+            encoded_cert = get_az_secret.get_az_secret(CARRIER_INTEL_ACCESS_KEY_NAME)
             carrier_intel_access_key = self.decode_key(encoded_cert).decode("utf-8")
             self.carrier_intel_access_key = carrier_intel_access_key
         except Exception as e:
@@ -140,7 +140,7 @@ class KeyHandler:
     def get_carrier_intel_secret_key(self):
         self.logger.info("Getting Carrier TI secret key")
         try:
-            encoded_cert = get_az_secret.get_az_secret(carrier_intel_secret_key_name)
+            encoded_cert = get_az_secret.get_az_secret(CARRIER_INTEL_SECRET_KEY_NAME)
             carrier_intel_secret_key = self.decode_key(encoded_cert).decode("utf-8")
             self.carrier_intel_secret_key = carrier_intel_secret_key
         except Exception as e:
@@ -149,7 +149,7 @@ class KeyHandler:
     def get_feed_processor_api_key(self):
         self.logger.info("Getting VT API key")
         try:
-            encoded_cert = get_az_secret.get_az_secret(feed_processor_api_key_name)
+            encoded_cert = get_az_secret.get_az_secret(FEED_PROCESSOR_API_KEY_NAME)
             feed_processor_api_key = self.decode_key(encoded_cert).decode("utf-8")
             self.feed_processor_api_key = feed_processor_api_key
         except Exception as e:
@@ -158,7 +158,7 @@ class KeyHandler:
     def get_mongo_password(self):
         self.logger.info("Getting Mongo password")
         try:
-            encoded_cert = get_az_secret.get_az_secret(mongo_password_name)
+            encoded_cert = get_az_secret.get_az_secret(MONGO_PASSWORD_NAME)
             mongo_password = quote(encoded_cert, safe="")
             self.mongo_password = mongo_password
         except Exception as e:

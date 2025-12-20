@@ -18,10 +18,11 @@ myvenv/
 tickets_ioc/
 automation_intel/
 __pycache__/
+.sps_server_process/
 
 # Ignore python files
 tb_cred.py
-config.py
+old_config.py
 mongo_craden.py
 pr_status.py
 etp_intel_fetcher_update.py

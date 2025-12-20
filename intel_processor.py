@@ -1,19 +1,19 @@
 import fileinput
 import csv
 from config import (
-    destination_ip,
-    destination_username,
+    DESTINATION_IP,
+    DESTINATION_USERNAME,
     intel_processor_path,
-    jump_host_ip,
-    jump_host_username,
-    private_key_path,
+    JUMP_HOST_IP,
+    JUMP_HOST_USERNAME,
+    PRIVATE_KEY_PATH,
     destination_intel_file_path,
-    whitelist_file,
-    blacklist_file,
-    secops_feed_file,
-    sps_intel_update_file,
-    feed_processor_url,
-    feed_processor_url2,
+    WHITELIST_FILE,
+    BLACKLIST_FILE,
+    SECOPS_FEED_FILE,
+    SPS_INTEL_UPDATE_FILE,
+    FEED_PROCESSOR_URL,
+    FEED_PROCESSOR_URL2,
 )
 from typing import List
 import subprocess
@@ -138,10 +138,10 @@ class IntelProcessor:
     def add_to_etp_whitelist(self):
         if self.whitelist:
             self.logger.info("Adding to manual whitelist")
-            with open(whitelist_file, "a", newline="") as file:
+            with open(WHITELIST_FILE, "a", newline="") as file:
                 writer = csv.writer(file, lineterminator="\n")
                 for intel_entry in self.whitelist:
-                    self.logger.info(f"Adding {intel_entry} to {whitelist_file}")
+                    self.logger.info(f"Adding {intel_entry} to {WHITELIST_FILE}")
                     entry = [x.strip() for x in intel_entry.strip().split(",")]
                     writer.writerow(entry)
         else:
@@ -150,10 +150,10 @@ class IntelProcessor:
     def add_to_etp_blacklist(self):
         if self.blacklist:
             self.logger.info("Adding to SecOps Feed")
-            with open(secops_feed_file, "a", newline="") as file:
+            with open(SECOPS_FEED_FILE, "a", newline="") as file:
                 writer = csv.writer(file, lineterminator="\n")
                 for intel_entry in self.blacklist:
-                    self.logger.info(f"Adding {intel_entry} to {secops_feed_file}")
+                    self.logger.info(f"Adding {intel_entry} to {SECOPS_FEED_FILE}")
                     entry = [x.strip() for x in intel_entry.strip().split(",")]
                     writer.writerow(entry)
         else:
@@ -162,10 +162,10 @@ class IntelProcessor:
     def remove_from_etp_manual_blacklist(self):
         if self.manual_blacklist:
             self.logger.info("Removing from manual blacklist")
-            with fileinput.input(blacklist_file, inplace=True) as file:
+            with fileinput.input(BLACKLIST_FILE, inplace=True) as file:
                 for line in file:
                     if line.strip() in self.manual_blacklist:
-                        self.logger.info(f"Removing {line} from {blacklist_file}")
+                        self.logger.info(f"Removing {line} from {BLACKLIST_FILE}")
                     else:
                         print(line, end="")
         else:
@@ -189,10 +189,10 @@ class IntelProcessor:
             scp_command = [
                 "scp",
                 "-i",
-                private_key_path,
-                f"-J {jump_host_username}@{jump_host_ip}",
-                sps_intel_update_file,
-                f"{destination_username}@{destination_ip}:{destination_intel_file_path}",
+                PRIVATE_KEY_PATH,
+                f"-J {JUMP_HOST_USERNAME}@{JUMP_HOST_IP}",
+                SPS_INTEL_UPDATE_FILE,
+                f"{DESTINATION_USERNAME}@{DESTINATION_IP}:{destination_intel_file_path}",
             ]
 
             try:
@@ -218,9 +218,9 @@ class IntelProcessor:
                 ssh_command = [
                     "ssh",
                     "-i",
-                    private_key_path,
-                    f"-J {jump_host_username}@{jump_host_ip}",
-                    f"{destination_username}@{destination_ip}",
+                    PRIVATE_KEY_PATH,
+                    f"-J {JUMP_HOST_USERNAME}@{JUMP_HOST_IP}",
+                    f"{DESTINATION_USERNAME}@{DESTINATION_IP}",
                     f"python3 {intel_processor_path}",
                 ]
 
@@ -254,8 +254,8 @@ class IntelProcessor:
 
     def linode_whitelist_addition(self, fqdn, ticket):
         urls = [
-            feed_processor_url,
-            feed_processor_url2,
+            FEED_PROCESSOR_URL,
+            FEED_PROCESSOR_URL2,
         ]
 
         data = {
@@ -278,8 +278,8 @@ class IntelProcessor:
 
     def linode_whitelist_removal(self, fqdn, ticket):
         urls = [
-            feed_processor_url,
-            feed_processor_url2,
+            FEED_PROCESSOR_URL,
+            FEED_PROCESSOR_URL2,
         ]
 
         data = {
@@ -325,8 +325,8 @@ class IntelProcessor:
         }
 
         urls = [
-            feed_processor_url,
-            feed_processor_url2,
+            FEED_PROCESSOR_URL,
+            FEED_PROCESSOR_URL2,
         ]
 
         for url in urls:
@@ -353,7 +353,7 @@ class IntelProcessor:
                 "api_key": self.feed_processor_api_key,
             }
 
-            urls = [feed_processor_url, feed_processor_url2]
+            urls = [FEED_PROCESSOR_URL, FEED_PROCESSOR_URL2]
 
             for url in urls:
                 response = requests.post(url, data=data, verify=False)
@@ -388,7 +388,7 @@ class IntelProcessor:
                 "api_key": self.feed_processor_api_key,
             }
 
-            urls = [feed_processor_url, feed_processor_url2]
+            urls = [FEED_PROCESSOR_URL, FEED_PROCESSOR_URL2]
 
             for url in urls:
                 response = requests.post(url, data=data, verify=False)

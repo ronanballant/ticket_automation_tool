@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 
 import requests
-from config import previous_queries_file
+from config import PREVIOUS_QUERIES_FILE
 
 
 class VirusTotalFetcher:
@@ -35,7 +35,7 @@ class VirusTotalFetcher:
                 self.indicator.fqdn = self.indicator.fqdn[:-1]
 
     def load_previous_queries():
-        with open(previous_queries_file, "r") as f:
+        with open(PREVIOUS_QUERIES_FILE, "r") as f:
             file = csv.reader(f)
 
             for line in file:
@@ -63,7 +63,7 @@ class VirusTotalFetcher:
                 }
 
     def write_vt_data(self):
-        with open(previous_queries_file, "a", newline="") as f:
+        with open(PREVIOUS_QUERIES_FILE, "a", newline="") as f:
             writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_MINIMAL)
             writer.writerow(
                 [

@@ -7,20 +7,20 @@ from datetime import datetime
 import requests
 
 from config import (
-    dashboard_ticket_file,
-    etp_processed_tickets_file,
+    DASHBOARD_TICKET_FILE,
+    ETP_PROCESSED_TICKETS_FILE,
     get_logger,
-    jira_search_api,
-    project_folder,
-    sps_processed_tickets_file,
+    JIRA_SEARCH_API,
+    PROJECT_DIR,
+    SPS_PROCESSED_TICKETS_FILE,
 )
 from key_handler import KeyHandler
 from ticket import Ticket
 
 logger = get_logger("logs_dashboard_process.txt")
-cert_path = os.path.join(project_folder, ".dashboard_personal_crt.crt")
-key_path = os.path.join(project_folder, ".dashboard_personal_key.key")
-ssh_key_path = os.path.join(project_folder, ".dashboard_ssh_key")
+cert_path = os.path.join(PROJECT_DIR, ".dashboard_personal_crt.crt")
+key_path = os.path.join(PROJECT_DIR, ".dashboard_personal_key.key")
+ssh_key_path = os.path.join(PROJECT_DIR, ".dashboard_ssh_key")
 
 
 class TicketHandler:
@@ -79,7 +79,7 @@ class TicketHandler:
 
             params = {"jql": jql_query, "maxResults": 100}
             self.req = requests.get(
-                jira_search_api,
+                JIRA_SEARCH_API,
                 params=params,
                 cert=(cert_path, key_path),
                 verify=False,
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     key_handler.get_personal_keys()
 
     ticket_handler = TicketHandler(
-        dashboard_ticket_file, etp_processed_tickets_file, sps_processed_tickets_file
+        DASHBOARD_TICKET_FILE, ETP_PROCESSED_TICKETS_FILE, SPS_PROCESSED_TICKETS_FILE
     )
 
     dashboard_ticket_data = ticket_handler.load_ticket_data(

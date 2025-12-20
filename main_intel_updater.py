@@ -5,20 +5,20 @@ from datetime import datetime
 
 from approval_finder import ApprovalFinder
 from config import (
-    blacklist_file,
-    etp_intel_repo,
-    etp_processed_tickets_file,
-    etp_tickets_in_progress_file,
+    BLACKLIST_FILE,
+    ETP_INTEL_REPO,
+    ETP_PROCESSED_TICKETS_FILE,
+    ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
-    jira_search_api,
-    jira_ticket_api,
-    open_etp_summary_tickets_file,
-    open_sps_summary_tickets_file,
-    project_folder,
-    secops_feed_file,
-    sps_processed_tickets_file,
-    sps_tickets_in_progress_file,
-    whitelist_file,
+    JIRA_SEARCH_API,
+    JIRA_TICKET_API,
+    OPEN_ETP_SUMMARY_TICKETS_FILE,
+    OPEN_SPS_SUMMARY_TICKETS_FILE,
+    PROJECT_DIR,
+    SECOPS_FEED_FILE,
+    SPS_PROCESSED_TICKETS_FILE,
+    SPS_TICKETS_IN_PROGRESS_FILE,
+    WHITELIST_FILE,
 )
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
@@ -27,9 +27,9 @@ from key_handler import KeyHandler
 from ticket import Ticket
 
 logger = get_logger("logs_intel_updater.txt")
-cert_path = os.path.join(project_folder, ".intel_updater_personal_crt.crt")
-key_path = os.path.join(project_folder, ".intel_updater_personal_key.key")
-ssh_key_path = os.path.join(project_folder, ".intel_updater_ssh_key")
+cert_path = os.path.join(PROJECT_DIR, ".intel_updater_personal_crt.crt")
+key_path = os.path.join(PROJECT_DIR, ".intel_updater_personal_key.key")
+ssh_key_path = os.path.join(PROJECT_DIR, ".intel_updater_ssh_key")
 
 
 def parse_args():
@@ -79,14 +79,14 @@ if __name__ == "__main__":
 
     if args.queue.lower() == "sps":
         queue = "SPS"
-        tickets_in_progress_file = sps_tickets_in_progress_file
-        processed_tickets_file = sps_processed_tickets_file
-        open_summary_tickets_file = open_sps_summary_tickets_file
+        tickets_in_progress_file = SPS_TICKETS_IN_PROGRESS_FILE
+        processed_tickets_file = SPS_PROCESSED_TICKETS_FILE
+        open_summary_tickets_file = OPEN_SPS_SUMMARY_TICKETS_FILE
     else:
         queue = "ETP"
-        tickets_in_progress_file = etp_tickets_in_progress_file
-        processed_tickets_file = etp_processed_tickets_file
-        open_summary_tickets_file = open_etp_summary_tickets_file
+        tickets_in_progress_file = ETP_TICKETS_IN_PROGRESS_FILE
+        processed_tickets_file = ETP_PROCESSED_TICKETS_FILE
+        open_summary_tickets_file = OPEN_ETP_SUMMARY_TICKETS_FILE
 
     logger.info(f"Processing {queue} queue...")
     logger.info(f"tickets_in_progress_file path = {tickets_in_progress_file}")
@@ -97,8 +97,8 @@ if __name__ == "__main__":
         tickets_in_progress_file,
         open_summary_tickets_file,
         processed_tickets_file,
-        jira_search_api,
-        jira_ticket_api,
+        JIRA_SEARCH_API,
+        JIRA_TICKET_API,
         cert_path,
         key_path,
     )
@@ -305,7 +305,7 @@ if __name__ == "__main__":
                         logger.info("Loading SSH Keys")
                         key_handler.get_ssh_key()
 
-                        git_manager = GitRepoManager(logger, etp_intel_repo)
+                        git_manager = GitRepoManager(logger, ETP_INTEL_REPO)
                         logger.info("Starting SSH Agent")
                         git_manager.start_ssh_agent()
                         logger.info("Adding SSH Keys")
@@ -334,7 +334,7 @@ if __name__ == "__main__":
                                 or intel_processor.manual_blacklist
                             ):
                                 git_manager.git_add(
-                                    [whitelist_file, blacklist_file, secops_feed_file]
+                                    [WHITELIST_FILE, BLACKLIST_FILE, SECOPS_FEED_FILE]
                                 )
                                 git_manager.git_commit("Ticket Automation")
                                 git_manager.git_status()

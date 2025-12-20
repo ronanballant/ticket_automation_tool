@@ -64,18 +64,18 @@ def parse_args():
 
 if __name__ == "__main__":
     from config import (
-        carrier_intel_region,
-        carrier_intel_endpoint,
-        carrier_intel_bucket,
+        CARRIER_INTEL_REGION,
+        CARRIER_INTEL_ENDPOINT,
+        CARRIER_INTEL_BUCKET,
         carrier_intel_access_key,
         carrier_intel_secret_key,
     )
 
     args = parse_args()
     client = S3FQDNLookup(
-        carrier_intel_region,
-        carrier_intel_endpoint,
-        carrier_intel_bucket,
+        CARRIER_INTEL_REGION,
+        CARRIER_INTEL_ENDPOINT,
+        CARRIER_INTEL_BUCKET,
         carrier_intel_access_key,
         carrier_intel_secret_key,
     )

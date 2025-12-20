@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from config import blacklist_file, jira_ticket_api
+from config import BLACKLIST_FILE, JIRA_TICKET_API
 from intel_entry import IntelEntry
 from ticket import Ticket
 
@@ -201,7 +201,7 @@ class TicketResponder:
 
         try:
             response = requests.post(
-                jira_ticket_api,
+                JIRA_TICKET_API,
                 json=data,
                 headers=headers,
                 cert=(self.cert_path, self.key_path),
@@ -431,7 +431,7 @@ class TicketResponder:
         json_object = json.dumps(tmp_dict, indent=4)
         try:
             response = requests.post(
-                jira_ticket_api,
+                JIRA_TICKET_API,
                 data=json_object,
                 headers=headers,
                 cert=(self.cert_path, self.key_path),
@@ -512,7 +512,7 @@ class TicketResponder:
 
     def add_comment(self):
         self.logger.info(f"Adding comment to {self.ticket.ticket_id}")
-        url = jira_ticket_api + self.ticket.ticket_id
+        url = JIRA_TICKET_API + self.ticket.ticket_id
 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
@@ -640,7 +640,7 @@ class TicketResponder:
                 else:
                     self.service_type = "ESCR_TRUE_NEGATIVE_GENERIC"
 
-            url = jira_ticket_api + f"{self.ticket.ticket_id}"
+            url = JIRA_TICKET_API + f"{self.ticket.ticket_id}"
             headers = {"Content-Type": "application/json"}
             payload = {
                 "update": {"customfield_17300": [{"set": {"value": self.service_type}}]}
@@ -668,7 +668,7 @@ class TicketResponder:
                     )
 
     def transition_ticket(self, transitions):
-        url = jira_ticket_api + f"{self.ticket.ticket_id}/transitions"
+        url = JIRA_TICKET_API + f"{self.ticket.ticket_id}/transitions"
         headers = {"Content-Type": "application/json"}
         for transition in transitions:
             payload = {"transition": {"id": transition}}
@@ -699,7 +699,7 @@ class TicketResponder:
     def find_manual_blacklist_entry(self, indicator):
         self.manual_blacklist_entry = None
         try:
-            with open(blacklist_file, "r") as file:
+            with open(BLACKLIST_FILE, "r") as file:
                 reader = file.readlines()
 
             for line in reader:
@@ -712,7 +712,7 @@ class TicketResponder:
                 f"{self.manual_blacklist_entry} removed from the blacklist"
             )
         except FileNotFoundError:
-            self.logger.info(f"Error: File '{blacklist_file}' not found.")
+            self.logger.info(f"Error: File '{BLACKLIST_FILE}' not found.")
         except Exception as e:
             self.logger.info(f"An unexpected error occurred: {e}")
 

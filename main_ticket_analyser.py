@@ -4,14 +4,14 @@ import argparse
 import os
 
 from config import (
-    carrier_intel_bucket,
-    carrier_intel_endpoint,
-    carrier_intel_region,
-    etp_tickets_in_progress_file,
+    CARRIER_INTEL_BUCKET,
+    CARRIER_INTEL_ENDPOINT,
+    CARRIER_INTEL_REGION,
+    ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
-    project_folder,
-    secops_member,
-    sps_tickets_in_progress_file,
+    PROJECT_DIR,
+    SECOPS_MEMBER,
+    SPS_TICKETS_IN_PROGRESS_FILE,
 )
 from s3_fqdn_lookup import S3FQDNLookup
 from etp_intel_fetcher import ETPIntelFetcher
@@ -28,9 +28,9 @@ from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
 
 logger = get_logger("logs_ticket_analyser.txt")
-cert_path = os.path.join(project_folder, ".ticket_analyser_personal_cert.crt")
-key_path = os.path.join(project_folder, ".ticket_analyser_personal_key.key")
-ssh_key_path = os.path.join(project_folder, ".ticket_analyser_ssh_key")
+cert_path = os.path.join(PROJECT_DIR, ".ticket_analyser_personal_cert.crt")
+key_path = os.path.join(PROJECT_DIR, ".ticket_analyser_personal_key.key")
+ssh_key_path = os.path.join(PROJECT_DIR, ".ticket_analyser_ssh_key")
 
 
 def parse_args():
@@ -155,7 +155,7 @@ def run_process():
     specified_tickets = args.tickets
     logger.info(f"{queue.upper()} Process In Progress...")
     tickets_in_progress_file = (
-        sps_tickets_in_progress_file if queue == "sps" else etp_tickets_in_progress_file
+        SPS_TICKETS_IN_PROGRESS_FILE if queue == "sps" else ETP_TICKETS_IN_PROGRESS_FILE
     )
 
     logger.info("Fetching Keys")
@@ -261,15 +261,15 @@ def run_process():
                 logger.error(f"Failed to create indicator for {fqdn}: {e}")
 
     carrier_s3_client = S3FQDNLookup(
-        carrier_intel_region,
-        carrier_intel_endpoint,
-        carrier_intel_bucket,
+        CARRIER_INTEL_REGION,
+        CARRIER_INTEL_ENDPOINT,
+        CARRIER_INTEL_BUCKET,
         carrier_intel_access_key,
         carrier_intel_secret_key,
     )
     carrier_intel_fetcher = CarrierIntelLoader(logger, carrier_s3_client)
 
-    responder = TicketResponder(logger, secops_member, cert_path, key_path)
+    responder = TicketResponder(logger, SECOPS_MEMBER, cert_path, key_path)
     try:
         for ticket in Ticket.all_tickets:
             logger.info(f"Processing {ticket.ticket_id}")

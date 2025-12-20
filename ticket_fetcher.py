@@ -4,7 +4,7 @@ from datetime import datetime
 import requests
 import tldextract as tld
 
-from config import jira_search_api
+from config import JIRA_SEARCH_API
 
 
 class TicketFetcher:
@@ -36,7 +36,7 @@ class TicketFetcher:
             params = {"jql": jql_query, "maxResults": 100}
 
             self.req = requests.get(
-                jira_search_api,
+                JIRA_SEARCH_API,
                 params=params,
                 cert=(self.cert_path, self.key_path),
                 verify=False,

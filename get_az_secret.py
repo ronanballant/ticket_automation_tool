@@ -1,12 +1,12 @@
 from azure.identity import AzureCliCredential
 from azure.keyvault.secrets import SecretClient
 
-from config import secops_vault
+from config import SECOPS_VAULT
 
 
 def get_az_secret(secret_name):
     # Set the URL for your Key Vault
-    vault_url = secops_vault
+    vault_url = SECOPS_VAULT
 
     try:
         # Create an instance of the DefaultAzureCredential class
