@@ -36,11 +36,6 @@ CARRIER_INTEL_ENDPOINT = "us-iad-5.linodeobjects.com"
 CARRIER_INTEL_BUCKET = "esg-secops-discovery-week"
 FEED_PROCESSOR_URL = "https://freshmilk.prod-us-ord.prod.spof.akaetp.net/api/v1/entry/add"
 FEED_PROCESSOR_URL2 = "https://freshmilk.prod-us-sea.prod.spof.akaetp.net/api/v1/entry/add"
-PRIVATE_KEY_PATH = "~/.ssh/azvmcommon"
-JUMP_HOST_USERNAME = "azuser"
-JUMP_HOST_IP = "20.232.62.46"
-DESTINATION_USERNAME = "azuser"
-DESTINATION_IP = "172.27.9.9"
 SECOPS_VAULT = "https://secops4kv.vault.azure.net/"
 JIRA_SEARCH_API = "https://track-api.akamai.com/jira/rest/api/2/search"
 JIRA_TICKET_API = "https://track-api.akamai.com/jira/rest/api/2/issue/"
@@ -62,6 +57,10 @@ MONGO_URI = '@localhost:27017/?authSource=admin'
 WHITELIST_FILE = ETP_INTEL_REPO / "manual_whitelist.csv"
 BLACKLIST_FILE = ETP_INTEL_REPO / "manual_blacklist.csv"
 SECOPS_FEED_FILE = ETP_INTEL_REPO / "secops-feed" / "manual_secops_feed_additions.csv"
+
+DASHBOARD_CERT_PATH = os.path.join(DATA_DIR, ".dashboard_personal_crt.crt")
+DASHBOARD_KEY_PATH = os.path.join(DATA_DIR, ".dashboard_personal_key.key")
+DASHBOARD_SSH_KEY_PATH = os.path.join(DATA_DIR, ".dashboard_ssh_key")
 
 # # Mongo Config 
 # MONGO_NAME = "mongosecops"

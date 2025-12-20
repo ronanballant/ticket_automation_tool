@@ -5,21 +5,9 @@ from urllib.parse import quote
 
 import get_az_secret
 from config import (
-    asheik_cert_name,
-    asheik_key_name,
-    asheik_ssh_key_name,
-    gkochner_cert_name,
-    gkochner_key_name,
-    gkochner_ssh_key_name,
-    mcohen_cert_name,
-    mcohen_key_name,
-    mcohen_ssh_key_name,
     RBALLANT_CERT_NAME,
     RBALLANT_KEY_NAME,
     RBALLANT_SSH_KEY_NAME,
-    tbelouso_cert_name,
-    tbelouso_key_name,
-    tbelouso_ssh_key_name,
     VT_API_KEY_NAME,
     CARRIER_INTEL_ACCESS_KEY_NAME,
     CARRIER_INTEL_SECRET_KEY_NAME,
@@ -58,23 +46,6 @@ class KeyHandler:
         return base64.b64decode(key)
 
     def get_key_names(self):
-        if self.analyst == "asheik":
-            self.cert_name = asheik_cert_name
-            self.key_name = asheik_key_name
-            self.ssh_key_name = asheik_ssh_key_name
-        if self.analyst == "gkochner":
-            self.cert_name = gkochner_cert_name
-            self.key_name = gkochner_key_name
-            self.ssh_key_name = gkochner_ssh_key_name
-        if self.analyst == "mcohen":
-            self.cert_name = mcohen_cert_name
-            self.key_name = mcohen_key_name
-            self.ssh_key_name = mcohen_ssh_key_name
-        if self.analyst == "tbelouso":
-            self.cert_name = tbelouso_cert_name
-            self.key_name = tbelouso_key_name
-            self.ssh_key_name = tbelouso_ssh_key_name
-        else:
             self.cert_name = RBALLANT_CERT_NAME
             self.key_name = RBALLANT_KEY_NAME
             self.ssh_key_name = RBALLANT_SSH_KEY_NAME

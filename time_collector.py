@@ -11,16 +11,16 @@ from config import (
     ETP_PROCESSED_TICKETS_FILE,
     get_logger,
     JIRA_SEARCH_API,
-    PROJECT_DIR,
     SPS_PROCESSED_TICKETS_FILE,
+    DATA_DIR,
+    DASHBOARD_CERT_PATH,
+    DASHBOARD_KEY_PATH,
+    DASHBOARD_SSH_KEY_PATH,
 )
 from key_handler import KeyHandler
 from ticket import Ticket
 
-logger = get_logger("logs_dashboard_process.txt")
-cert_path = os.path.join(PROJECT_DIR, ".dashboard_personal_crt.crt")
-key_path = os.path.join(PROJECT_DIR, ".dashboard_personal_key.key")
-ssh_key_path = os.path.join(PROJECT_DIR, ".dashboard_ssh_key")
+logger = get_logger(str(DATA_DIR / "dashboard_process.log"))
 
 
 class TicketHandler:
@@ -81,7 +81,7 @@ class TicketHandler:
             self.req = requests.get(
                 JIRA_SEARCH_API,
                 params=params,
-                cert=(cert_path, key_path),
+                cert=(DASHBOARD_CERT_PATH, DASHBOARD_KEY_PATH),
                 verify=False,
             )
         except Exception as e:
@@ -156,7 +156,7 @@ class TicketHandler:
 if __name__ == "__main__":
     server_name = socket.gethostname()
 
-    key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
+    key_handler = KeyHandler(logger, DASHBOARD_CERT_PATH, DASHBOARD_KEY_PATH, DASHBOARD_SSH_KEY_PATH)
     key_handler.get_key_names()
     key_handler.get_personal_keys()
 

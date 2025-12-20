@@ -1,22 +1,13 @@
 import fileinput
 import csv
 from config import (
-    DESTINATION_IP,
-    DESTINATION_USERNAME,
-    intel_processor_path,
-    JUMP_HOST_IP,
-    JUMP_HOST_USERNAME,
-    PRIVATE_KEY_PATH,
-    destination_intel_file_path,
     WHITELIST_FILE,
     BLACKLIST_FILE,
     SECOPS_FEED_FILE,
-    SPS_INTEL_UPDATE_FILE,
     FEED_PROCESSOR_URL,
     FEED_PROCESSOR_URL2,
 )
 from typing import List
-import subprocess
 import requests
 
 
@@ -170,87 +161,6 @@ class IntelProcessor:
                         print(line, end="")
         else:
             self.logger.info("No removals for manual blacklist")
-
-    # def add_to_sps_intel_file(self):
-    #     if self.whitelist or self.blacklist:
-    #         with open(sps_intel_update_file, "w", newline="") as file:
-    #             writer = csv.writer(file)
-    #             for intel_entry in self.whitelist:
-    #                 self.logger.info("Writing %s to %s", intel_entry, sps_intel_update_file)
-    #                 writer.writerow([intel_entry])
-
-    #             for intel_entry in self.blacklist:
-    #                 self.logger.info("Writing %s to %s", intel_entry, sps_intel_update_file)
-    #                 writer.writerow([intel_entry])
-
-    def transfer_sps_update_file(self):
-        self.update_triggered = False
-        if self.whitelist or self.blacklist:
-            scp_command = [
-                "scp",
-                "-i",
-                PRIVATE_KEY_PATH,
-                f"-J {JUMP_HOST_USERNAME}@{JUMP_HOST_IP}",
-                SPS_INTEL_UPDATE_FILE,
-                f"{DESTINATION_USERNAME}@{DESTINATION_IP}:{destination_intel_file_path}",
-            ]
-
-            try:
-                result = subprocess.run(
-                    scp_command, check=True, capture_output=True, text=True
-                )
-                self.logger.info("File copied successfully.")
-                self.logger.debug(result.stdout)
-            except subprocess.CalledProcessError as e:
-                self.logger.error(f"ERROR Processing Whitelist Entities: {e}")
-                self.logger.error("SCP command failed!")
-                self.logger.error(f"Error message: {e.stderr}")
-                self.logger.error(f"Return code: {e.returncode}")
-                self.add_error_comment = True
-                self.error_comment = (
-                    "Failed to transfer intel updates to VM.\n" + f"Error: {e.stderr}\n"
-                )
-
-    def trigger_sps_intel_update(self):
-        if self.add_error_comment is False:
-            self.update_triggered = True
-            if self.whitelist or self.blacklist:
-                ssh_command = [
-                    "ssh",
-                    "-i",
-                    PRIVATE_KEY_PATH,
-                    f"-J {JUMP_HOST_USERNAME}@{JUMP_HOST_IP}",
-                    f"{DESTINATION_USERNAME}@{DESTINATION_IP}",
-                    f"python3 {intel_processor_path}",
-                ]
-
-                try:
-                    result = subprocess.run(
-                        ssh_command, check=True, capture_output=True, text=True
-                    )
-                    intel_update_results = result.stdout.lower()
-                    if '"success": false' in intel_update_results:
-                        self.update_triggered = False
-                        self.error_comment = (
-                            "*{color:#de350b}!!! Failed to trigger intel update !!!{color}*"
-                            + "{code:java} \n"
-                            + intel_update_results
-                            + "{code}"
-                        )
-                    self.logger.debug(result.stdout)
-                except subprocess.CalledProcessError as e:
-                    self.update_triggered = False
-                    self.logger.error(f"ERROR Processing Whitelist Entities: {e}")
-                    self.logger.error("SSH command failed!")
-                    self.logger.error(f"Error message: {e.stderr}")
-                    self.logger.error(f"Return code: {e.returncode}")
-                    self.add_error_comment = True
-                    self.error_comment = (
-                        "*{color:#de350b}!!! Failed to trigger intel update !!!{color}*"
-                        + "{code:java} \n"
-                        + f"Error: {e.stderr}\n"
-                        + "{code}"
-                    )
 
     def linode_whitelist_addition(self, fqdn, ticket):
         urls = [
