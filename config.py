@@ -29,15 +29,11 @@ ETP_TICKETS_IN_PROGRESS_FILE = DATA_DIR / "etp_tickets_in_progress.json"
 ETP_PROCESSED_TICKETS_FILE = DATA_DIR / "etp_processed_tickets.json"
 OPEN_SPS_SUMMARY_TICKETS_FILE = DATA_DIR / "open_sps_summary_tickets.csv"
 OPEN_ETP_SUMMARY_TICKETS_FILE = DATA_DIR / "open_etp_summary_tickets.csv"
-SPS_INTEL_UPDATE_FILE = DATA_DIR / "sps_intel_update_file.csv"
 DASHBOARD_TICKET_FILE = DATA_DIR / "dashboard_tickets.json"
 
-# S3 Config
 CARRIER_INTEL_REGION = "us-iad-5"
 CARRIER_INTEL_ENDPOINT = "us-iad-5.linodeobjects.com"
 CARRIER_INTEL_BUCKET = "esg-secops-discovery-week"
-
-# SPS Server Config
 FEED_PROCESSOR_URL = "https://freshmilk.prod-us-ord.prod.spof.akaetp.net/api/v1/entry/add"
 FEED_PROCESSOR_URL2 = "https://freshmilk.prod-us-sea.prod.spof.akaetp.net/api/v1/entry/add"
 PRIVATE_KEY_PATH = "~/.ssh/azvmcommon"
@@ -50,6 +46,7 @@ JIRA_SEARCH_API = "https://track-api.akamai.com/jira/rest/api/2/search"
 JIRA_TICKET_API = "https://track-api.akamai.com/jira/rest/api/2/issue/"
 INTERAL_VT_API = "http://172.233.237.203:8081/api/vt-category?domain="
 
+# SecOps Key Vault
 RBALLANT_CERT_NAME = "rballant-crt"
 RBALLANT_KEY_NAME = "rballant-key"
 RBALLANT_SSH_KEY_NAME = "rballant-ssh"
@@ -58,44 +55,53 @@ CARRIER_INTEL_ACCESS_KEY_NAME = "carrier-ti-access"
 CARRIER_INTEL_SECRET_KEY_NAME = "carrier-ti-secret"
 FEED_PROCESSOR_API_KEY_NAME = "feed-processor-api"
 MONGO_PASSWORD_NAME = "mongo-root"
+
 MONGO_PREFIX = f'mongodb://root:'
 MONGO_URI = '@localhost:27017/?authSource=admin'
 
-WHITELIST_FILE = os.path.join(ETP_INTEL_REPO, "manual_whitelist.csv")
-BLACKLIST_FILE = os.path.join(ETP_INTEL_REPO, "manual_blacklist.csv")
-SECOPS_FEED_FILE = os.path.join(ETP_INTEL_REPO, "secops-feed", "manual_secops_feed_additions.csv")
+WHITELIST_FILE = ETP_INTEL_REPO / "manual_whitelist.csv"
+BLACKLIST_FILE = ETP_INTEL_REPO / "manual_blacklist.csv"
+SECOPS_FEED_FILE = ETP_INTEL_REPO / "secops-feed" / "manual_secops_feed_additions.csv"
 
-# Mongo Config 
-MONGO_NAME = "mongosecops"
-MONGO_NAME_AUP = "mongoaup"
-# mongosecops
-MONGO_USERNAME = "secops-adm"
-MONGO_HOST = "prod-galaxy-t4tools.dfw02.corp.akamai.com"
-MONGO_PORT = 27017
-MONGO_DATABASE = "secops"
-# mongoaup
-MONGO_USERNAME_AUP = "aup-read"
-MONGO_HOST_AUP = "prod-galaxy-t4tools.dfw02.corp.akamai.com"
-MONGO_PORT_AUP = 27017
-MONGO_DATABASE_AUP = "aup"
+# # Mongo Config 
+# MONGO_NAME = "mongosecops"
+# MONGO_NAME_AUP = "mongoaup"
+# # mongosecops
+# MONGO_USERNAME = "secops-adm"
+# MONGO_HOST = "prod-galaxy-t4tools.dfw02.corp.akamai.com"
+# MONGO_PORT = 27017
+# MONGO_DATABASE = "secops"
+# # mongoaup
+# MONGO_USERNAME_AUP = "aup-read"
+# MONGO_HOST_AUP = "prod-galaxy-t4tools.dfw02.corp.akamai.com"
+# MONGO_PORT_AUP = 27017
+# MONGO_DATABASE_AUP = "aup"
 
+LOG_LEVEL = logging.INFO
 
-def get_logger(log_filename=f"{LOGS_DIR}ticket_automation_log.txt"):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+def get_logger(log_filename=str(LOGS_DIR / "ticket_automation.log")):
+    log_path = Path(log_filename) if log_filename else (LOGS_DIR / "ticket_automation.log")
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger("ticket_automation")
+    logger.setLevel(LOG_LEVEL)
+    logger.propagate = False 
 
     if not logger.handlers:
-        file_handler = logging.FileHandler(log_filename)
-        file_handler.setLevel(logging.INFO)
-        
-        logger.propagate = False
+        try:
+            from logging.handlers import RotatingFileHandler
+            file_handler = RotatingFileHandler(log_path, maxBytes=5_000_000, backupCount=3, encoding="utf-8")
+        except Exception:
+            file_handler = logging.FileHandler(log_path, encoding="utf-8")
+        file_handler.setLevel(LOG_LEVEL)
 
+        # Console handler
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(LOG_LEVEL)
 
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
+        fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+        file_handler.setFormatter(fmt)
+        console_handler.setFormatter(fmt)
 
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
