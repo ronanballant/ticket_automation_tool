@@ -58,9 +58,18 @@ WHITELIST_FILE = ETP_INTEL_REPO / "manual_whitelist.csv"
 BLACKLIST_FILE = ETP_INTEL_REPO / "manual_blacklist.csv"
 SECOPS_FEED_FILE = ETP_INTEL_REPO / "secops-feed" / "manual_secops_feed_additions.csv"
 
-DASHBOARD_CERT_PATH = os.path.join(DATA_DIR, ".dashboard_personal_crt.crt")
-DASHBOARD_KEY_PATH = os.path.join(DATA_DIR, ".dashboard_personal_key.key")
-DASHBOARD_SSH_KEY_PATH = os.path.join(DATA_DIR, ".dashboard_ssh_key")
+ANALYSER_CERT_PATH = DATA_DIR / ".ticket_analyser_personal_cert.crt"
+ANALYSER_KEY_PATH = DATA_DIR / ".ticket_analyser_personal_key.key"
+ANALYSER_SSH_KEY_PATH = DATA_DIR / ".ticket_analyser_ssh_key"
+DASHBOARD_CERT_PATH = DATA_DIR / ".dashboard_personal_crt.crt"
+DASHBOARD_KEY_PATH = DATA_DIR / ".dashboard_personal_key.key"
+DASHBOARD_SSH_KEY_PATH = DATA_DIR / ".dashboard_ssh_key"
+INTEL_UPDATER_CERT_PATH = DATA_DIR / ".intel_updater_personal_crt.crt"
+INTEL_UPDATER_KEY_PATH = DATA_DIR / ".intel_updater_personal_key.key"
+INTEL_UPDATER_SSH_KEY_PATH = DATA_DIR / ".intel_updater_ssh_key"
+SUMMARY_CERT_PATH = DATA_DIR / ".summary_creator_personal_crt.crt"
+SUMMARY_KEY_PATH = DATA_DIR / ".summary_creator_personal_key.key"
+SUMMARY_SSH_KEY_PATH = DATA_DIR / ".summary_creator_ssh_key"
 
 # # Mongo Config 
 # MONGO_NAME = "mongosecops"

@@ -6,15 +6,18 @@ from datetime import datetime
 from approval_finder import ApprovalFinder
 from config import (
     BLACKLIST_FILE,
+    DATA_DIR,
     ETP_INTEL_REPO,
     ETP_PROCESSED_TICKETS_FILE,
     ETP_TICKETS_IN_PROGRESS_FILE,
+    INTEL_UPDATER_CERT_PATH,
+    INTEL_UPDATER_KEY_PATH,
+    INTEL_UPDATER_SSH_KEY_PATH,
     get_logger,
     JIRA_SEARCH_API,
     JIRA_TICKET_API,
     OPEN_ETP_SUMMARY_TICKETS_FILE,
     OPEN_SPS_SUMMARY_TICKETS_FILE,
-    PROJECT_DIR,
     SECOPS_FEED_FILE,
     SPS_PROCESSED_TICKETS_FILE,
     SPS_TICKETS_IN_PROGRESS_FILE,
@@ -26,10 +29,7 @@ from intel_processor import IntelProcessor
 from key_handler import KeyHandler
 from ticket import Ticket
 
-logger = get_logger("logs_intel_updater.txt")
-cert_path = os.path.join(PROJECT_DIR, ".intel_updater_personal_crt.crt")
-key_path = os.path.join(PROJECT_DIR, ".intel_updater_personal_key.key")
-ssh_key_path = os.path.join(PROJECT_DIR, ".intel_updater_ssh_key")
+logger = get_logger(str(DATA_DIR / "intel_updater.log"))
 
 
 def parse_args():
@@ -99,8 +99,8 @@ if __name__ == "__main__":
         processed_tickets_file,
         JIRA_SEARCH_API,
         JIRA_TICKET_API,
-        cert_path,
-        key_path,
+        INTEL_UPDATER_CERT_PATH,
+        INTEL_UPDATER_KEY_PATH,
     )
 
     logger.info("Getting open summary tickets")
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         logger.info("No open tickets. Exiting Script")
         exit()
 
-    key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
+    key_handler = KeyHandler(logger, INTEL_UPDATER_CERT_PATH, INTEL_UPDATER_KEY_PATH, INTEL_UPDATER_SSH_KEY_PATH)
     key_handler.get_key_names()
     key_handler.get_personal_keys()
     key_handler.get_feed_processor_api_key()
@@ -309,7 +309,7 @@ if __name__ == "__main__":
                         logger.info("Starting SSH Agent")
                         git_manager.start_ssh_agent()
                         logger.info("Adding SSH Keys")
-                        git_manager.add_ssh_key(ssh_key_path)
+                        git_manager.add_ssh_key(INTEL_UPDATER_SSH_KEY_PATH)
                         logger.info("Checkout master...")
                         git_manager.checkout_master()
                         logger.info("Pulling repo...")

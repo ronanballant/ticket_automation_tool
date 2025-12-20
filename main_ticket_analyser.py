@@ -4,12 +4,15 @@ import argparse
 import os
 
 from config import (
+    ANALYSER_CERT_PATH,
+    ANALYSER_KEY_PATH,
+    ANALYSER_SSH_KEY_PATH,
     CARRIER_INTEL_BUCKET,
     CARRIER_INTEL_ENDPOINT,
     CARRIER_INTEL_REGION,
+    DATA_DIR,
     ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
-    PROJECT_DIR,
     SECOPS_MEMBER,
     SPS_TICKETS_IN_PROGRESS_FILE,
 )
@@ -27,10 +30,7 @@ from ticket_resolver import TicketResolver
 from ticket_responder import TicketResponder
 from virus_total_fetcher import VirusTotalFetcher
 
-logger = get_logger("logs_ticket_analyser.txt")
-cert_path = os.path.join(PROJECT_DIR, ".ticket_analyser_personal_cert.crt")
-key_path = os.path.join(PROJECT_DIR, ".ticket_analyser_personal_key.key")
-ssh_key_path = os.path.join(PROJECT_DIR, ".ticket_analyser_ssh_key")
+logger = get_logger(str(DATA_DIR / "ticket_analyser.log"))
 
 
 def parse_args():
@@ -160,7 +160,7 @@ def run_process():
 
     logger.info("Fetching Keys")
     try:
-        key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
+        key_handler = KeyHandler(logger, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH, ANALYSER_SSH_KEY_PATH)
         key_handler.get_key_names()
         key_handler.get_personal_keys()
         key_handler.get_vt_api_key()
@@ -177,7 +177,7 @@ def run_process():
 
     logger.info("Fetching Tickets")
     try:
-        ticket_fetcher = TicketFetcher(logger, cert_path, key_path, queue)
+        ticket_fetcher = TicketFetcher(logger, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH, queue)
         ticket_fetcher.get_tickets(specified_tickets)
         ticket_fetcher.parse_tickets()
         tickets = ticket_fetcher.tickets
@@ -269,7 +269,7 @@ def run_process():
     )
     carrier_intel_fetcher = CarrierIntelLoader(logger, carrier_s3_client)
 
-    responder = TicketResponder(logger, SECOPS_MEMBER, cert_path, key_path)
+    responder = TicketResponder(logger, SECOPS_MEMBER, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH)
     try:
         for ticket in Ticket.all_tickets:
             logger.info(f"Processing {ticket.ticket_id}")

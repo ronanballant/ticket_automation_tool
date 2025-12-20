@@ -2,12 +2,15 @@ import argparse
 import os
 
 from config import (
+    DATA_DIR,
     ETP_TICKETS_IN_PROGRESS_FILE,
     get_logger,
     OPEN_ETP_SUMMARY_TICKETS_FILE,
     OPEN_SPS_SUMMARY_TICKETS_FILE,
-    PROJECT_DIR,
     SECOPS_MEMBER,
+    SUMMARY_CERT_PATH,
+    SUMMARY_KEY_PATH,
+    SUMMARY_SSH_KEY_PATH,
     SPS_TICKETS_IN_PROGRESS_FILE,
 )
 from key_handler import KeyHandler
@@ -15,10 +18,7 @@ from summary_creator import SummaryCreator
 from ticket import Ticket
 from ticket_responder import TicketResponder
 
-logger = get_logger("logs_summary_creator.txt")
-cert_path = os.path.join(PROJECT_DIR, ".summary_creator_personal_crt.crt")
-key_path = os.path.join(PROJECT_DIR, ".summary_creator_personal_key.key")
-ssh_key_path = os.path.join(PROJECT_DIR, ".summary_creator_ssh_key")
+logger = get_logger(str(DATA_DIR / "summary_creator.log"))
 
 
 def parse_args():
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     logger.info("Creating ticket instances")
     summary_creator.create_tickets()
 
-    responder = TicketResponder(logger, SECOPS_MEMBER, cert_path, key_path)
+    responder = TicketResponder(logger, SECOPS_MEMBER, SUMMARY_CERT_PATH, SUMMARY_KEY_PATH)
     logger.info("Finding unprocessed tickets")
     new_tickets = [
         ticket for ticket in Ticket.all_tickets if not ticket.linked_summary_ticket
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         logger.info("No new tickets, exiting script")
         exit()
 
-    key_handler = KeyHandler(logger, cert_path, key_path, ssh_key_path)
+    key_handler = KeyHandler(logger, SUMMARY_CERT_PATH, SUMMARY_KEY_PATH, SUMMARY_SSH_KEY_PATH)
     key_handler.get_key_names()
     key_handler.get_personal_keys()
 
