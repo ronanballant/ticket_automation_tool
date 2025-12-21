@@ -165,6 +165,7 @@ class ETPIntelFetcher:
                         self.indicator.is_in_intel = (
                             True if self.indicator.intel_category != "-" else False
                         )
+                        self.indicator.etp_check_found = self.indicator.is_in_intel
                         ETPIntelFetcher.previous_queries[self.indicator.candidate] = {
                             "intel_category": self.indicator.intel_category,
                             "intel_source": self.indicator.intel_source,
@@ -204,6 +205,7 @@ class ETPIntelFetcher:
         self.indicator.subdomain_count = 0
         self.indicator.subdomain_only = False
         self.indicator.is_internal = False
+        self.indicator.etp_check_found = False
 
         ETPIntelFetcher.previous_queries[self.indicator.fqdn] = {}
 

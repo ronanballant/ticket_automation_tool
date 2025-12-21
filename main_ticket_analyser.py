@@ -149,6 +149,10 @@ def ensure_single_period(s: str) -> str:
     s = s.strip()
     return s.rstrip('.') + '.'
 
+def ensure_no_period(s: str) -> str:
+    s = s.strip()
+    return s.rstrip('.')
+
 def run_process():
     queue = args.queue.lower()
     specified_tickets = args.tickets
@@ -307,16 +311,17 @@ def run_process():
 
                     if "etp" in indicator.intel_source.lower():
                         query_etp_intel(indicator, mongo_connection, vt_api_key, False)
+                        indicator.matched_ioc  = ensure_no_period(indicator.matched_ioc or indicator.fqdn)
 
                 else:
                     query_etp_intel(indicator, mongo_connection, vt_api_key)
 
                     if "nominum" in indicator.intel_source.lower():
+                        logger.info("'nominum' in intel_source - quering Carrier intel")
                         query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=True)
                         if indicator.etp_check_found is True:
                             indicator.intel_source_list.append(indicator.intel_source)
-                            matched_ioc = ensure_single_period(indicator.matched_ioc or indicator.etp_fqdn)
-                            indicator.matched_ioc = matched_ioc
+                            indicator.matched_ioc = ensure_single_period(indicator.matched_ioc or indicator.etp_fqdn)
 
                 try:
                     logger.info("Finding resolution")
