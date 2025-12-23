@@ -11,6 +11,11 @@ if "prod-galaxy-t4tools01" in SERVER_NAME:
     LOGS_DIR = Path("/app01/secops/log/ticket_automation/")
     ETP_INTEL_REPO = Path("/app01/secops/repos/sia-secops-TCSI/etp-threat-intel-config/archive-root/akamai/etp/threat-intel-config/config/")
     SECOPS_FEED_DIRECTORY = ETP_INTEL_REPO /"secops-feed"
+if "prod-galaxy-t4tools" in SERVER_NAME:
+    DATA_DIR = Path("/app01/secops/data/ticket_automation/")
+    LOGS_DIR = Path("/app01/secops/log/ticket_automation/")
+    ETP_INTEL_REPO = Path("/app01/secops_code/ticket_automation/etp-threat-intel-config/archive-root/akamai/etp/threat-intel-config/config/")
+    SECOPS_FEED_DIRECTORY = ETP_INTEL_REPO / "secops-feed"
 else:
     DATA_DIR = PROJECT_DIR / "data"
     LOGS_DIR = PROJECT_DIR / "log"
