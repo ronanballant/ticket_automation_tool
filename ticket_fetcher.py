@@ -102,6 +102,9 @@ class TicketFetcher:
                                         summary, description
                                     )
 
+                                if 'exporer' in fields.get("labels"):
+                                    ticket_type = "None"
+
                             self.tickets[ticket_id] = {
                                 "ticket_type": ticket_type,
                                 "summary": fields.get("summary"),

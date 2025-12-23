@@ -216,6 +216,7 @@ def run_process():
     for ticket, values in tickets.items():
         in_progress = Ticket.tickets_in_progress.get(ticket, False)
         if in_progress is True:
+            logger.info("Ticket already in progress")
             continue
         ips = values.get("ips")
         ticket_id = ticket
