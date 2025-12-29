@@ -10,18 +10,21 @@ if "prod-galaxy-t4tools01" in SERVER_NAME:
     DATA_DIR = Path("/app01/secops/data/ticket_automation/")
     LOGS_DIR = Path("/app01/secops/log/ticket_automation/")
     ETP_INTEL_REPO = Path("/app01/secops/repos/sia-secops-TCSI/etp-threat-intel-config/archive-root/akamai/etp/threat-intel-config/config/")
-    SECOPS_FEED_DIRECTORY = ETP_INTEL_REPO /"secops-feed"
-if "prod-galaxy-t4tools" in SERVER_NAME:
-    DATA_DIR = Path("/app01/secops/data/ticket_automation/")
-    LOGS_DIR = Path("/app01/secops/log/ticket_automation/")
+    SECOPS_FEED_DIRECTORY = ETP_INTEL_REPO / "secops-feed"
+    T4_PR_LINK_PATTERN = r"https://github\.com/AkamaiSECOPS/sia-secops-TCSI/pull[^\s]+"
+elif "prod-galaxy-t4tools" in SERVER_NAME:
+    DATA_DIR = PROJECT_DIR / "data"
+    LOGS_DIR = PROJECT_DIR / "log"
     ETP_INTEL_REPO = Path("/app01/secops_code/ticket_automation/etp-threat-intel-config/archive-root/akamai/etp/threat-intel-config/config/")
     SECOPS_FEED_DIRECTORY = ETP_INTEL_REPO / "secops-feed"
+    T4_PR_LINK_PATTERN = r"https://git\.source\.akamai\.com[^\s]+"
 else:
     DATA_DIR = PROJECT_DIR / "data"
     LOGS_DIR = PROJECT_DIR / "log"
     ETP_INTEL_REPO = Path("/Users/rballant/work/etp/etp-threat-intel-config/archive-root/akamai/etp/threat-intel-config/config/")
     DOCKER_IMAGES = Path("/Users/rballant/work/secops/prod-galaxy-t4tools/app01/docker_images")
     SECOPS_FEED_DIRECTORY = ETP_INTEL_REPO / "secops-feed"
+    T4_PR_LINK_PATTERN = r"https://git\.source\.akamai\.com[^\s]+"
 
 
 # Project Config

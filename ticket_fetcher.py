@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+
 import requests
 import tldextract as tld
 
@@ -102,7 +103,7 @@ class TicketFetcher:
                                         summary, description
                                     )
 
-                                if 'exporer' in fields.get("labels"):
+                                if "exporer" in fields.get("labels"):
                                     ticket_type = "None"
 
                             self.tickets[ticket_id] = {

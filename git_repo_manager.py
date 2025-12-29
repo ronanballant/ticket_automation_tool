@@ -3,6 +3,8 @@ import os
 import sys
 import re
 
+from config import T4_PR_LINK_PATTERN
+
 
 class GitRepoManager:
     def __init__(self, logger, repo_path):
@@ -59,7 +61,7 @@ class GitRepoManager:
         self.push_link = self.result
 
     def get_pr_link(self):
-        match = re.search(r"https://git\.source\.akamai\.com[^\s]+", self.std_err)
+        match = re.search(T4_PR_LINK_PATTERN, self.std_err)
         self.pr_link = match.group(0) if match else None
         if self.pr_link:
             self.logger.info(f"PR link: {self.pr_link}")

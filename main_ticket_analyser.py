@@ -2,6 +2,7 @@
 
 import argparse
 
+from carrier_intel_loader import CarrierIntelLoader
 from config import (
     ANALYSER_CERT_PATH,
     ANALYSER_KEY_PATH,
@@ -9,20 +10,19 @@ from config import (
     CARRIER_INTEL_BUCKET,
     CARRIER_INTEL_ENDPOINT,
     CARRIER_INTEL_REGION,
-    LOGS_DIR,
     ETP_TICKETS_IN_PROGRESS_FILE,
-    get_logger,
+    LOGS_DIR,
     SECOPS_MEMBER,
     SPS_TICKETS_IN_PROGRESS_FILE,
+    get_logger,
 )
-from s3_fqdn_lookup import S3FQDNLookup
 from etp_intel_fetcher import ETPIntelFetcher
 from indicator import Indicator
 from initialise_mongo import InitialiseMongo
 from key_handler import KeyHandler
 from response_creator import ResponseCreator
 from rule_fetcher import RuleFetcher
-from carrier_intel_loader import CarrierIntelLoader
+from s3_fqdn_lookup import S3FQDNLookup
 from ticket import Ticket
 from ticket_fetcher import TicketFetcher
 from ticket_resolver import TicketResolver
@@ -57,6 +57,7 @@ def parse_args():
     else:
         return args
 
+
 def query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=False):
     try:
         logger.info("Querying SPS intel")
@@ -73,7 +74,6 @@ def query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=False):
                     carrier_intel_fetcher.assign_s3_intel(etp_check)
                 else:
                     carrier_intel_fetcher.no_s3_intel()
-                        
 
             if indicator.is_in_intel is True:
                 indicator.matched_ioc = candidate
@@ -85,18 +85,15 @@ def query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=False):
     except Exception as e:
         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
 
+
 def query_etp_intel(indicator, mongo_connection, vt_api_key, carrier_check=False):
     try:
         logger.info("Querying ETP intel")
-        intel_fetcher = ETPIntelFetcher(
-            logger, indicator, mongo_connection
-        )
+        intel_fetcher = ETPIntelFetcher(logger, indicator, mongo_connection)
 
         for candidate in indicator.candidates:
             indicator.matched_ioc_type = "DOMAIN"
-            indicator.candidate = (
-                candidate + "." if candidate[-1] != "." else candidate
-            )
+            indicator.candidate = candidate + "." if candidate[-1] != "." else candidate
             intel_fetcher.query_intel()
             intel_fetcher.assign_results(carrier_check)
             # if carrier intel, fetch carrier
@@ -134,24 +131,23 @@ def query_etp_intel(indicator, mongo_connection, vt_api_key, carrier_check=False
                                 intel_fetcher.query_resolved_ip()
 
                                 if indicator.ip_in_intel is True:
-                                    intel_fetcher.attributes_assigned = (
-                                        False
-                                    )
+                                    intel_fetcher.attributes_assigned = False
                                     intel_fetcher.assign_results(carrier_check)
-                                    indicator.matched_ioc = (
-                                        indicator.resolved_ip
-                                    )
+                                    indicator.matched_ioc = indicator.resolved_ip
                                     indicator.matched_ioc_type = "IPV4"
     except Exception as e:
         logger.error(f"Failed to query intel for {indicator.fqdn}: {e}")
 
+
 def ensure_single_period(s: str) -> str:
     s = s.strip()
-    return s.rstrip('.') + '.'
+    return s.rstrip(".") + "."
+
 
 def ensure_no_period(s: str) -> str:
     s = s.strip()
-    return s.rstrip('.')
+    return s.rstrip(".")
+
 
 def run_process():
     queue = args.queue.lower()
@@ -163,7 +159,9 @@ def run_process():
 
     logger.info("Fetching Keys")
     try:
-        key_handler = KeyHandler(logger, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH, ANALYSER_SSH_KEY_PATH)
+        key_handler = KeyHandler(
+            logger, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH, ANALYSER_SSH_KEY_PATH
+        )
         key_handler.get_key_names()
         key_handler.get_personal_keys()
         key_handler.get_vt_api_key()
@@ -180,7 +178,9 @@ def run_process():
 
     logger.info("Fetching Tickets")
     try:
-        ticket_fetcher = TicketFetcher(logger, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH, queue)
+        ticket_fetcher = TicketFetcher(
+            logger, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH, queue
+        )
         ticket_fetcher.get_tickets(specified_tickets)
         ticket_fetcher.parse_tickets()
         tickets = ticket_fetcher.tickets
@@ -273,7 +273,9 @@ def run_process():
     )
     carrier_intel_fetcher = CarrierIntelLoader(logger, carrier_s3_client)
 
-    responder = TicketResponder(logger, SECOPS_MEMBER, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH)
+    responder = TicketResponder(
+        logger, SECOPS_MEMBER, ANALYSER_CERT_PATH, ANALYSER_KEY_PATH
+    )
     try:
         for ticket in Ticket.all_tickets:
             logger.info(f"Processing {ticket.ticket_id}")
@@ -285,7 +287,9 @@ def run_process():
 
                 try:
                     logger.info("Querying VT")
-                    vt_fetcher = VirusTotalFetcher(logger, indicator, indicator.fqdn, vt_api_key)
+                    vt_fetcher = VirusTotalFetcher(
+                        logger, indicator, indicator.fqdn, vt_api_key
+                    )
                     vt_fetcher.prepare_indicator()
                     vt_fetcher.set_vt_link()
                     vt_fetcher.get_previous_query()
@@ -312,17 +316,23 @@ def run_process():
 
                     if "etp" in indicator.intel_source.lower():
                         query_etp_intel(indicator, mongo_connection, vt_api_key, False)
-                        indicator.matched_ioc  = ensure_no_period(indicator.matched_ioc or indicator.fqdn)
+                        indicator.matched_ioc = ensure_no_period(
+                            indicator.matched_ioc or indicator.fqdn
+                        )
 
                 else:
                     query_etp_intel(indicator, mongo_connection, vt_api_key)
 
                     if "nominum" in indicator.intel_source.lower():
                         logger.info("'nominum' in intel_source - quering Carrier intel")
-                        query_carrier_intel(indicator, carrier_intel_fetcher, etp_check=True)
+                        query_carrier_intel(
+                            indicator, carrier_intel_fetcher, etp_check=True
+                        )
                         if indicator.etp_check_found is True:
                             indicator.intel_source_list.append(indicator.intel_source)
-                            indicator.matched_ioc = ensure_single_period(indicator.matched_ioc or indicator.etp_fqdn)
+                            indicator.matched_ioc = ensure_single_period(
+                                indicator.matched_ioc or indicator.etp_fqdn
+                            )
 
                 try:
                     logger.info("Finding resolution")

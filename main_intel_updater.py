@@ -1,26 +1,25 @@
 import argparse
-
 from datetime import datetime
 
 from approval_finder import ApprovalFinder
 from config import (
     BLACKLIST_FILE,
-    LOGS_DIR,
     ETP_INTEL_REPO,
     ETP_PROCESSED_TICKETS_FILE,
     ETP_TICKETS_IN_PROGRESS_FILE,
     INTEL_UPDATER_CERT_PATH,
     INTEL_UPDATER_KEY_PATH,
     INTEL_UPDATER_SSH_KEY_PATH,
-    get_logger,
     JIRA_SEARCH_API,
     JIRA_TICKET_API,
+    LOGS_DIR,
     OPEN_ETP_SUMMARY_TICKETS_FILE,
     OPEN_SPS_SUMMARY_TICKETS_FILE,
     SECOPS_FEED_FILE,
     SPS_PROCESSED_TICKETS_FILE,
     SPS_TICKETS_IN_PROGRESS_FILE,
     WHITELIST_FILE,
+    get_logger,
 )
 from git_repo_manager import GitRepoManager
 from intel_entry import IntelEntry
@@ -117,7 +116,12 @@ if __name__ == "__main__":
         logger.info("No open tickets. Exiting Script")
         exit()
 
-    key_handler = KeyHandler(logger, INTEL_UPDATER_CERT_PATH, INTEL_UPDATER_KEY_PATH, INTEL_UPDATER_SSH_KEY_PATH)
+    key_handler = KeyHandler(
+        logger,
+        INTEL_UPDATER_CERT_PATH,
+        INTEL_UPDATER_KEY_PATH,
+        INTEL_UPDATER_SSH_KEY_PATH,
+    )
     key_handler.get_key_names()
     key_handler.get_personal_keys()
     key_handler.get_feed_processor_api_key()
@@ -167,7 +171,9 @@ if __name__ == "__main__":
             approval_finder.update_summary()
 
             logger.info("Processing Intel changes")
-            intel_processor = IntelProcessor(logger, IntelEntry.all_intel_entries, feed_processor_api_key)
+            intel_processor = IntelProcessor(
+                logger, IntelEntry.all_intel_entries, feed_processor_api_key
+            )
 
             intel_processor.update_triggered = True
             if queue == "SPS":
@@ -181,7 +187,9 @@ if __name__ == "__main__":
                                 whitelisted_entry.update_approved
                                 and whitelisted_entry.update_approved is True
                             ):
-                                entry = whitelisted_entry.approved_intel_change.strip().split(",")
+                                entry = whitelisted_entry.approved_intel_change.strip().split(
+                                    ","
+                                )
                                 fqdn = entry[0]
                                 ticket = entry[1]
                                 intel_processor.linode_whitelist_addition(fqdn, ticket)
@@ -214,7 +222,9 @@ if __name__ == "__main__":
                                 whitelisted_removal_entry.update_approved
                                 and whitelisted_removal_entry.update_approved is True
                             ):
-                                entry = whitelisted_removal_entry.approved_intel_change.strip().split(",")
+                                entry = whitelisted_removal_entry.approved_intel_change.strip().split(
+                                    ","
+                                )
                                 fqdn = entry[0]
                                 ticket = entry[1]
                                 intel_processor.linode_whitelist_removal(fqdn, ticket)
@@ -248,7 +258,9 @@ if __name__ == "__main__":
                                 and blocklist_entry.update_approved is True
                             ):
                                 entry = (
-                                    blocklist_entry.approved_intel_change.strip().split(",")
+                                    blocklist_entry.approved_intel_change.strip().split(
+                                        ","
+                                    )
                                 )
                                 fqdn = entry[0]
                                 ticket = entry[1]

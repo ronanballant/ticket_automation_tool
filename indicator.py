@@ -2,9 +2,10 @@ import re
 from datetime import timedelta
 from typing import List
 
-import tldextract as tld
-from intel_entry import IntelEntry
 import dns.resolver
+import tldextract as tld
+
+from intel_entry import IntelEntry
 
 
 class Indicator:

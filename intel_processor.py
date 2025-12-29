@@ -58,38 +58,6 @@ class IntelProcessor:
         self.blacklist = list(set(self.blacklist))
         self.manual_blacklist = list(set(self.manual_blacklist))
 
-    # def process_indicators(self):
-    #     for intel_entry in self.intel_entries:
-    #         if intel_entry.is_approved is True:
-    #             self.update_indicator(intel_entry)
-    #             if intel_entry.is_valid_update is True:
-    #                 if intel_entry.intel_list.lower() == "whitelist":
-    #                     if intel_entry.operation.lower() == "add":
-    #                         self.whitelist.append(intel_entry)
-    #                         self.logger.info(
-    #                             f"{intel_entry.indicator.fqdn} identified for the allow list."
-    #                         )
-    #                     elif intel_entry.operation.lower() == "remove":
-    #                         self.whitelist_removal.append(intel_entry)
-    #                         self.logger.info(
-    #                             f"{intel_entry.indicator.fqdn} identified for whitelist removal."
-    #                         )
-    #                 elif intel_entry.intel_list.lower() == "blacklist":
-    #                     if intel_entry.operation.lower() == "add":
-    #                         self.blacklist.append(intel_entry)
-    #                         self.logger.info(
-    #                             f"{intel_entry.indicator.fqdn} identified for the block list."
-    #                         )
-    #                     elif intel_entry.operation.lower() == "remove":
-    #                         self.manual_blacklist.append(intel_entry)
-    #                         self.logger.info(
-    #                             f"{intel_entry.indicator.fqdn} identified for manual blacklist removal."
-    #                         )
-
-    #     self.whitelist = list(set(self.whitelist))
-    #     self.blacklist = list(set(self.blacklist))
-    #     self.manual_blacklist = list(set(self.manual_blacklist))
-
     def process_indicators(self):
         for intel_entry in self.intel_entries:
             if intel_entry.is_approved is True:
